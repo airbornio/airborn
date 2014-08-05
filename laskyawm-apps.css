@@ -1,0 +1,11 @@
+.apps {
+	display: none;
+	z-index: 1000;
+	position: absolute;
+	background: lightgrey;
+	padding: 10px;
+	border-radius: 7px;
+}
+.app {
+	cursor: pointer;
+}

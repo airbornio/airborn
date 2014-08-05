@@ -1,0 +1,8 @@
+* default=edit view,edit=editor
+/ default=view view=files edit=editor
+txt view,edit=editor
+html edit=editor
+js edit=editor
+css edit=editor
+odt view,edit=writer
+laskyapkg default=install install=installer

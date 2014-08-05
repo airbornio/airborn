@@ -1,0 +1,205 @@
+* {
+	box-sizing: border-box;
+}
+html {
+	height: 100%;
+}
+body {
+	margin: 0;
+	background-color: #607B8B;
+	cursor: default;
+	font-family: sans-serif;
+}
+.window {
+	width: 800px;
+	height: 600px;
+	border-radius: 7px;
+	position: absolute !important;
+	top: 25px;
+	box-shadow: 0px 0px 5px #888;
+	background-color: #ECECEC;
+}
+.window .titlebar {
+	height: 25px;
+	border-top-left-radius: 7px;
+	border-top-right-radius: 7px;
+	padding: 0 5px;
+}
+.window.focused {
+	background-color: #D4E4EC;
+}
+.window .titlebar button {
+	border: 1px solid transparent;
+	border-radius: 7px;
+	width: 18px;
+	height: 18px;
+	margin-top: 6px;
+	float: left;
+}
+.window .titlebar .close {
+	background: url(close.png) center no-repeat;
+}
+.window .titlebar .minimize {
+	background: url(minimize.png) center no-repeat;
+}
+.window.minimized .titlebar .minimize {
+	background: url(unminimize.png) center no-repeat;
+}
+.window.minimized .titlebar .maximize {
+	display: none;
+}
+.window .titlebar .maximize {
+	background: url(maximize.png) center no-repeat;
+}
+.window.maximized .titlebar .maximize {
+	background: url(unmaximize.png) center no-repeat;
+}
+.window .titlebar button:hover {
+	border-color: #CCC;
+	background-color: #F5F5F5 !important;
+}
+.window .titlebar button:focus {
+	outline: 1px solid gray;
+	-moz-outline-radius: 4px;
+	outline: -webkit-focus-ring-color auto 5px;
+}
+.window .titlebar button::-moz-focus-inner {
+	border: 0;
+}
+.window .titlebar .tabbar {
+	display: inline-block;
+	white-space: nowrap;
+	max-width: calc(100% - 130px);
+	overflow: hidden;
+ 	float: left;
+	margin-top: 5px;
+	z-index: 1;
+	position: relative;
+	margin-left: 20px;
+}
+.window .titlebar .tabbar:hover {
+	overflow-x: auto;
+}
+.window .titlebar .tabbar .tabtitlebar, .window .titlebar .addtab {
+	background-color: #ECECEC;
+	display: inline-block;
+	height: 20px;
+	border-top-left-radius: 7px;
+	border-top-right-radius: 7px;
+	margin-left: 6px;
+	line-height: 23px;
+	padding: 0 7px;
+	cursor: default;
+}
+.window .titlebar .tabbar .tabtitlebar.focused {
+	background-color: white;
+}
+.window .titlebar .addtab {
+	float: left;
+	margin-top: 5px;
+}
+.window .titlebar .icon {
+	float: right;
+	margin-top: 6px;
+	height: 16px;
+}
+.window .tabs {
+	height: calc(100% - 50px);
+}
+.window .tab {
+	height: 100%;
+	display: none;
+	position: relative;
+}
+.window .tab.focused {
+	display: block;
+}
+.window .locationbar {
+	background: white;
+	height: 25px;
+}
+.window .locationbar .loaderContainer {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	left: 0;
+}
+.window .locationbar input {
+	width: 100%;
+}
+.window iframe {
+	width: 100%;
+	height: 100%;
+	border: 0;
+	border-bottom-left-radius: 7px;
+	border-bottom-right-radius: 7px;
+	background-color: white;
+	position: absolute;
+	top: 25px;
+	left: 0;
+}
+.hud {
+	position: absolute;
+	border: 5px solid #5CC9FF;
+	z-index: 999;
+	border-radius: 7px;
+}
+.window.maximized, .hud {
+	top: 25px !important;
+	height: calc(100% - 25px) !important;
+}
+.window.maximized.maximized-max, .hud-max {
+	left: 0 !important;
+	width: 100% !important;
+}
+.window.maximized.maximized-left, .hud-left {
+	left: 0 !important;
+	width: 50% !important;
+}
+.window.maximized.maximized-right, .hud-right {
+	left: 50% !important;
+	width: 50% !important;
+}
+.window.minimized.minimized { /* same specificity as .maximized above */
+	top: 0 !important;
+	width: 250px !important;
+	max-height: 25px;
+	overflow: hidden;
+}
+.window.minimized .titlebar .tabbar {
+	max-width: calc(100% - 112px);
+}
+.window.minimized iframe {
+	display: none;
+}
+.window.minimized.hover {
+	z-index: 1000 !important;
+	max-height: 120px;
+}
+.window.minimized.hover iframe {
+	display: block;
+	transform: scale(0.8);
+	transform-origin: 0 0;
+	-webkit-transform: scale(0.8);
+	-webkit-transform-origin: 0 0;
+	width: 125%;
+	height: 125%;
+	margin-bottom: -40px;
+}
+.window.minimized .ui-resizable-handle {
+	display: none !important;
+}
+.ui-resizable-handle {
+	z-index: 0 !important;
+}
+.loaderContainer {
+	display: inline-block;
+	position: relative;
+}
+.loader {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	pointer-events: none;
+}
