@@ -503,7 +503,7 @@ getFile('/Core/js-yaml.js', eval);
 
 var mainWindow;
 
-openWindow = function (path, document, container) {
+window.openWindow = function (path, document, container) {
 	prepareFile(path, function (contents) {
 		var div = document.createElement('div');
 		div.className = 'window';
