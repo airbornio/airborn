@@ -27,7 +27,7 @@ window.endTransaction = endTransaction;
 
 var sjcl = parent.sjcl;
 var private_hmac = parent.private_hmac;
-var shared_hmac = parent.shared_hmac;
+var S3Prefix = parent.S3Prefix;
 var username = parent.username;
 var password = parent.password;
 var files_key = parent.files_key;
@@ -176,7 +176,7 @@ window.getFile = function(file, options, callback) {
 	}
 	req.addEventListener('readystatechange', cb);
 	if(!requestCache) {
-		req.open('GET', 'object/' + sjcl.codec.hex.fromBits(shared_hmac.mac(username).slice(0, 2)) + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file)));
+		req.open('GET', 'object/' + S3Prefix + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file)));
 		req.send(null);
 	}
 
@@ -329,7 +329,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				putFile(histname, {codec: options.codec}, contents, {edited: now}, function(public_url, histid) {
 						
 						// Copy history file to destination
-						var id = sjcl.codec.hex.fromBits(shared_hmac.mac(username).slice(0, 2)) + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file));
+						var id = S3Prefix + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file));
 						var s3upload = _.extend(Object.create(S3Upload.prototype), {
 								s3_sign_put_url: '/sign_s3_copy_' + histid,
 								s3_object_name: id,
@@ -359,7 +359,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		} else {
 			// Upload file
 			console.log('PUT', file);
-			var id = sjcl.codec.hex.fromBits(shared_hmac.mac(username).slice(0, 2)) + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file));
+			var id = S3Prefix + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file));
 			var s3upload = _.extend(Object.create(S3Upload.prototype), {
 					s3_sign_put_url: '/sign_s3_put',
 					s3_object_name: id,
