@@ -1,4 +1,4 @@
-GET('object/' + S3Prefix + '/' + sjcl.codec.hex.fromBits(private_hmac.mac('/Core/core.js')), function(response) {
+GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/core.js')), function(response) {
 	window.eval(sjcl.decrypt(files_key, response));
 });
 

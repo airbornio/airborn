@@ -27,6 +27,7 @@ window.endTransaction = endTransaction;
 
 var sjcl = parent.sjcl;
 var private_hmac = parent.private_hmac;
+var files_hmac = parent.files_hmac;
 var S3Prefix = parent.S3Prefix;
 var username = parent.username;
 var password = parent.password;
@@ -176,7 +177,8 @@ window.getFile = function(file, options, callback) {
 	}
 	req.addEventListener('readystatechange', cb);
 	if(!requestCache) {
-		req.open('GET', 'object/' + S3Prefix + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file)));
+		var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
+		req.open('GET', 'object/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file)));
 		req.send(null);
 	}
 
@@ -329,7 +331,8 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				putFile(histname, {codec: options.codec}, contents, {edited: now}, function(public_url, histid) {
 						
 						// Copy history file to destination
-						var id = S3Prefix + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file));
+						var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
+						var id = S3Prefix + '/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 						var s3upload = _.extend(Object.create(S3Upload.prototype), {
 								s3_sign_put_url: '/sign_s3_copy_' + histid,
 								s3_object_name: id,
@@ -359,7 +362,8 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		} else {
 			// Upload file
 			console.log('PUT', file);
-			var id = S3Prefix + '/' + sjcl.codec.hex.fromBits(private_hmac.mac(file));
+			var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
+			var id = S3Prefix + '/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 			var s3upload = _.extend(Object.create(S3Upload.prototype), {
 					s3_sign_put_url: '/sign_s3_put',
 					s3_object_name: id,
@@ -377,7 +381,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					}
 			});
 			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
-			s3upload.uploadFile(new Blob([sjcl.encrypt(file.substr(0, 4) === '/key' ? password : files_key, contents)], {type: 'binary/octet-stream'}));
+			s3upload.uploadFile(new Blob([sjcl.encrypt(is_bootstrap_file ? password : files_key, contents)], {type: 'binary/octet-stream'}));
 		}
 	}
 };
