@@ -201,7 +201,7 @@ window.addEventListener('message', function(message) {
 			} else {
 				throw 'unknown action';
 			}
-		} else if (message.data.action.substr(0, 3) === 'fs.') {
+		} else if (message.data.action.substr(0, 3) === 'fs.' || message.data.action.substr(0, 5) === 'apps.') {
 			var realMessageID = message.data.messageID;
 			message.data.messageID = ++messageID;
 			parent.postMessage(message.data, '*');
