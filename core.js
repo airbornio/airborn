@@ -415,7 +415,7 @@ prepareString = function(contents, options, callback, progress) {
 	var i = 0,
 			match, matches = [],
 			rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.+?)(?=["') >])(\2\s*\)?)/,
-			rSchema = /^[a-z]+:/i,
+			rSchema = /^([a-z]+:|\/\/)/i,
 			filesDownloaded = 0;
 	while(match = contents.substr(i).match(rURL)) {
 		if(!rSchema.test(match[3])) {

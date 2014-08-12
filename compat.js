@@ -252,11 +252,11 @@
 			findNewElements();
 		}
 	});
-	var rSchema = /^[a-z]+:/i;
+	var rSchema = /^([a-z]+:|\/\/)/i;
 	function findNewElements() {
 		['src', 'href', 'icon'].forEach(function(attrName) {
 			Array.prototype.forEach.call(document.querySelectorAll(
-				'[' + attrName + ']:not([' + attrName + '^="data:"]):not([' + attrName + '^="http:"]):not([' + attrName + '^="https:"])'
+				'[' + attrName + ']:not([' + attrName + '^="data:"]):not([' + attrName + '^="http:"]):not([' + attrName + '^="https:"]):not([' + attrName + '^="//"])'
 			), function(elm) {
 				var attr = elm.getAttribute(attrName);
 				if(attr && !rSchema.test(attr)) airborn.fs.prepareUrl(attr, {rootParent: root, relativeParent: root}, function(url, err) {
