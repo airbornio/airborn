@@ -67,6 +67,20 @@
 	addAction('fs.prepareUrl');
 	addAction('fs.startTransaction');
 	addAction('fs.endTransaction');
+	
+	navigator.mozApps = {};
+	navigator.mozApps.installPackage = function(args) {
+		var request = new DOMRequest();
+		action('apps.installPackage', args, function(result, err) {
+			if(err) {
+				request.error = err;
+				if(request.onerror) request.onerror();
+			} else {
+				request.result = result;
+				if(request.onsuccess) request.onsuccess();
+			}
+		});
+	};
 
 	var title = document.getElementsByTagName('title')[0];
 	if(title) airborn.wm.setTitle(title.textContent);

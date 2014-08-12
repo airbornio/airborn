@@ -504,6 +504,7 @@ prepareUrl = function(url, options, callback, progress) {
 getFile('/Core/lodash.min.js', eval);
 getFile('/Core/s3upload.js', eval);
 getFile('/Core/js-yaml.js', eval);
+getFile('/Core/3rdparty/jszip/jszip.min.js', eval);
 
 var mainWindow;
 
@@ -538,9 +539,53 @@ setIcon = function(href) {
 	icon.href = href;
 };
 
+function corsReq(url, callback, responseType) {
+	var req = new XMLHttpRequest();
+	if ('withCredentials' in req) {
+		req.open('GET', url, true);
+	} else if (typeof XDomainRequest != 'undefined') {
+		req = new XDomainRequest();
+		req.open('GET', url);
+	} else {
+		throw new Error('CORS not supported.');
+	}
+	req.onload = callback;
+	if(responseType) req.responseType = responseType;
+	req.send();
+}
+
+window.installPackage = function(manifest_url, params, callback) {
+	if(typeof params === 'function') {
+		callback = params;
+		params = {};
+	}
+	corsReq(manifest_url, function() {
+		var manifest = JSON.parse(this.responseText);
+		corsReq(manifest.package_path, function() {
+			var zip = new JSZip(this.response);
+			var keys = Object.keys(zip.files);
+			var uploaded = 0;
+			var total = 0;
+			var target = '/Apps/' + basename(manifest.package_path).replace('-' + manifest.version, '').replace('.zip', '') + '/';
+			keys.forEach(function(path) {
+				var file = zip.files[path];
+				if(!file.options.dir) {
+					total++;
+					laskya.fs.putFile(target + path, {codec: 'arrayBuffer'}, file.asArrayBuffer(), function() {
+						uploaded++;
+						if(uploaded === total) {
+							callback({installState: 'installed'});
+						}
+					});
+				}
+			});
+		}, 'arraybuffer');
+	});
+};
+
 window.addEventListener('message', function(message) {
 	if(message.source === mainWindow) {
-		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'core.setTitle', 'core.setIcon'].indexOf(message.data.action) !== -1) {
+		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'apps.installPackage', 'core.setTitle', 'core.setIcon'].indexOf(message.data.action) !== -1) {
 			window[message.data.action.split('.')[1]].apply(window, message.data.args.concat(function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
 			}, function() {
