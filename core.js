@@ -482,7 +482,7 @@ prepareUrl = function(url, options, callback, progress) {
 		var data;
 		if(!err) {
 		if(1) {
-			if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=' + path);
+			if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 			else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 			else if(extension === 'html') data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
 			else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
