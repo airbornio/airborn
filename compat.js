@@ -23,9 +23,10 @@
 			}, function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
 			});
+		} else if(message.source === top) {
+			console.log(document.getElementsByTagName('iframe').length);
 		} else {
-			console.log(message);
-			throw 'unknown source';
+			console.info('unknown source');
 		}
 	}, false);
 	airborn = laskya = {

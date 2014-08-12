@@ -539,14 +539,25 @@ setIcon = function(href) {
 };
 
 window.addEventListener('message', function(message) {
-	if(message.source === mainWindow && ['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'core.setTitle', 'core.setIcon'].indexOf(message.data.action) !== -1) {
-		window[message.data.action.split('.')[1]].apply(window, message.data.args.concat(function() {
-			message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
-		}, function() {
-			message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
-		}));
+	if(message.source === mainWindow) {
+		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'core.setTitle', 'core.setIcon'].indexOf(message.data.action) !== -1) {
+			window[message.data.action.split('.')[1]].apply(window, message.data.args.concat(function() {
+				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
+			}, function() {
+				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
+			}));
+		} else {
+			throw new TypeError('Unknown action: ' + message.data.action);
+		}
 	} else {
-		throw new TypeError('Unknown action: ' + message.data.action);
+		console.info('Forwarding message.');
+		var src = message.source;
+		var parent = src.parent;
+		while(parent !== mainWindow) {
+			src = parent;
+			parent = src.parent;
+		}
+		src.postMessage({data: message.data, forwardedFrom: message.origin}, '*');
 	}
-}, false);
+});
 //# sourceURL=/Core/core.js
