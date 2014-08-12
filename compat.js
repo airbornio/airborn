@@ -80,6 +80,7 @@
 				if(request.onsuccess) request.onsuccess();
 			}
 		});
+		return request;
 	};
 
 	var title = document.getElementsByTagName('title')[0];
