@@ -571,7 +571,7 @@ window.installPackage = function(manifest_url, params, callback) {
 				var file = zip.files[path];
 				if(!file.options.dir) {
 					total++;
-					laskya.fs.putFile(target + path, {codec: 'arrayBuffer'}, file.asArrayBuffer(), function() {
+					putFile(target + path, {codec: 'arrayBuffer'}, file.asArrayBuffer(), function() {
 						uploaded++;
 						if(uploaded === total) {
 							callback({installState: 'installed'});

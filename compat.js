@@ -69,7 +69,8 @@
 	addAction('fs.endTransaction');
 	
 	navigator.mozApps = {};
-	navigator.mozApps.installPackage = function(args) {
+	navigator.mozApps.installPackage = function() {
+		var args = [].slice.call(arguments);
 		var request = new DOMRequest();
 		action('apps.installPackage', args, function(result, err) {
 			if(err) {
