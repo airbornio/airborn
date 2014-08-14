@@ -583,6 +583,29 @@ window.installPackage = function(manifest_url, params, callback) {
 	});
 };
 
+function update() {
+	corsReq('http://airborn-update-stage.herokuapp.com/current-id', function() {
+		var currentId = this.response;
+		getFile('/Core/version-id', function(contents) {
+			if(currentId !== contents) {
+				corsReq('http://airborn-update-stage.herokuapp.com/current', function(err, data) {
+					var zip = new JSZip(this.response);
+					var keys = Object.keys(zip.folder('airborn').files);
+					var target = '/Core/';
+					keys.forEach(function(path) {
+						var file = zip.files[path];
+						if(!file.options.dir) {
+							putFile(target + path.replace(/^airborn\//, ''), {codec: 'arrayBuffer'}, file.asArrayBuffer());
+						}
+					});
+				}, 'arraybuffer');
+			}
+		});
+	});
+}
+setTimeout(update, 10000); // After ten seconds
+setInterval(update, 3600000); // Each hour
+
 window.addEventListener('message', function(message) {
 	if(message.source === mainWindow) {
 		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'apps.installPackage', 'core.setTitle', 'core.setIcon'].indexOf(message.data.action) !== -1) {
