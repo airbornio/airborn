@@ -364,8 +364,10 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			console.log('PUT', file);
 			var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
 			var id = S3Prefix + '/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
+			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
+			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? password : files_key, contents)], {type: 'binary/octet-stream'});
 			var s3upload = _.extend(Object.create(S3Upload.prototype), {
-					s3_sign_put_url: '/sign_s3_put',
+					s3_sign_put_url: '/sign_s3_put_' + blob.size,
 					s3_object_name: id,
 					onProgress: function (percent, message) {
 							console.log('Upload progress: ' + percent + '% ' + message, file);
@@ -380,8 +382,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 							console.log('error', status);
 					}
 			});
-			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
-			s3upload.uploadFile(new Blob([sjcl.encrypt(is_bootstrap_file ? password : files_key, contents)], {type: 'binary/octet-stream'}));
+			s3upload.uploadFile(blob);
 		}
 	}
 };
