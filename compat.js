@@ -94,6 +94,7 @@
 
 	var requestOpen = XMLHttpRequest.prototype.open;
 	var rSchema = /^[a-z]+:/i;
+	var rArgs = /[?#].*$/;
 	var root;
 	(function() {
 		var href = location.href;
@@ -109,6 +110,7 @@
 			this.overrideMimeType = function() { console.log(this, arguments); codec = 'arrayBuffer'; };
 			this.send = function() {
 				var req = this;
+				url = url.replace(rArgs, '');
 				airborn.fs.getFile(airborn.path.resolve(root, url), {codec: codec}, function(contents, err) {
 					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
 					Object.defineProperty(req, 'status', {get: function() { return !err && 200; }});
@@ -124,6 +126,7 @@
 			this.overrideMimeType = function() { console.log(this, arguments); };
 			this.send = function() {
 				var req = this;
+				url = url.replace(rArgs, '');
 				url = airborn.path.resolve(root, url);
 				airborn.fs.getFile(airborn.path.dirname(url), {codec: 'dir'}, function(contents, err) {
 					var getResponseHeader = req.getResponseHeader;
