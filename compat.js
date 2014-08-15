@@ -107,7 +107,13 @@
 			this.airbornFile = true;
 			this.setRequestHeader = function() { console.log(this, arguments); };
 			var codec;
-			this.overrideMimeType = function() { console.log(this, arguments); codec = 'arrayBuffer'; };
+			this.overrideMimeType = function(mimeType) {
+				console.log(this, arguments);
+				mimeType = mimeType.split(';')[0];
+				if(mimeType === 'text/plain') return;
+				console.log("codec = 'arrayBuffer';");
+				codec = 'arrayBuffer';
+			};
 			this.send = function() {
 				var req = this;
 				url = url.replace(rArgs, '');
@@ -142,8 +148,7 @@
 			};
 		} else if(method === 'GET' && url.substr(0, 5) === 'data:') {
 			this.setRequestHeader = function() { console.log(this, arguments); };
-			var codec;
-			this.overrideMimeType = function() { console.log(this, arguments); console.log('codec = arrayBuffer'); };
+			this.overrideMimeType = function() { console.log(this, arguments); };
 			this.send = function() {
 				var req = this;
 				var parts = url.substr(5).split(',');
@@ -152,7 +157,7 @@
 					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
 					Object.defineProperty(req, 'status', {get: function() { return 200; }});
 					Object.defineProperty(req, 'response', {get: function() { return contents; }});
-					if(!codec) Object.defineProperty(req, 'responseText', {get: function() { return contents; }});
+					Object.defineProperty(req, 'responseText', {get: function() { return contents; }});
 					req.dispatchEvent(new Event('readystatechange'));
 					req.dispatchEvent(new Event('load'));
 				});
