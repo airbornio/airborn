@@ -452,7 +452,17 @@
 		return new DeviceStorage(storageName);
 	};
 	
+	function Storage_() {}
+	Storage_.prototype.getItem = function(name) {
+		return this.hasOwnProperty(name) ? this[name] : undefined;
+	};
+	Storage_.prototype.setItem = function(name, value) {
+		return this[name] = value;
+	};
+	var localStorage = new Storage_();
 	Object.defineProperty(window, 'localStorage', {
-		get: function() { return {}; }
+		get: function() {
+			return localStorage;
+		}
 	});
 })();
