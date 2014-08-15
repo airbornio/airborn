@@ -395,6 +395,7 @@ var mimeTypes = {
 };
 
 resolve = function(from, to, rootParent) {
+	if(to === '') return from;
 	if(to[0] === '/') return resolve(rootParent, to.substr(1));
 	var resolved = from.replace(/[^/]*$/, '') + to;
 	var rParentOrCurrent = /([^./]+\/\.\.\/|\/\.(?=\/))/g;
@@ -415,7 +416,7 @@ prepareFile = function(file, callback, progress) {
 prepareString = function(contents, options, callback, progress) {
 	var i = 0,
 			match, matches = [],
-			rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.+?)(?=["') >])(\2\s*\)?)/,
+			rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.*?)(?=["') >])(\2\s*\)?)/,
 			rSchema = /^([a-z]+:|\/\/)/i,
 			filesDownloaded = 0;
 	while(match = contents.substr(i).match(rURL)) {
