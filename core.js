@@ -336,7 +336,9 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 						var s3upload = _.extend(Object.create(S3Upload.prototype), {
 								s3_sign_put_url: '/sign_s3_copy_' + histid,
 								s3_object_name: id,
+								method: 'PUT',
 								prepareXHR: function(xhr) {
+										xhr.setRequestHeader('x-amz-acl', 'public-read');
 										xhr.setRequestHeader('x-amz-copy-source', '/laskya-cloud/' + histid);
 								},
 								onProgress: function (percent, message) {
@@ -350,7 +352,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 										console.log('error', status);
 								}
 						});
-						s3upload.uploadFile(new Blob([], {type: 'binary/octet-stream'}));
+						s3upload.uploadFile({type: ''});
 						
 				}, progress);
 				filesToPut--;
@@ -366,13 +368,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			var id = S3Prefix + '/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
 			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? password : files_key, contents)], {type: 'binary/octet-stream'});
-			var blobsize = blob.size - 1;
+			var blobsize = blob.size;
 			var s3upload = _.extend(Object.create(S3Upload.prototype), {
-					s3_sign_put_url: '/sign_s3_put_' + blobsize,
+					s3_sign_put_url: '/sign_s3_post_' + blobsize,
 					s3_object_name: id,
-					prepareXHR: function(xhr) {
-							xhr.setRequestHeader('x-amz-content-length-range', blobsize + ',' + blobsize);
-					},
+					method: 'POST',
 					onProgress: function (percent, message) {
 							console.log('Upload progress: ' + percent + '% ' + message, file);
 							var _size = (size === undefined ? 1 : size);

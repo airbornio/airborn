@@ -70,7 +70,7 @@
             this_s3upload.onError('Signing server returned some ugly/empty JSON: "' + this.responseText + '"');
             return false;
           }
-          return callback(result.signed_request.replace(/\+/g, '%2B'), result.url);
+          return callback(result.signed_request.replace(/\+/g, '%2B'), result.fields, result.url);
         } else if (this.readyState === 4 && this.status !== 200) {
           return this_s3upload.onError('Could not contact request signing server. Status = ' + this.status);
         }
@@ -78,15 +78,15 @@
       return xhr.send();
     };
 
-    S3Upload.prototype.uploadToS3 = function(file, url, public_url) {
+    S3Upload.prototype.uploadToS3 = function(file, url, fields, public_url) {
       var this_s3upload, xhr;
       this_s3upload = this;
-      xhr = this.createCORSRequest('PUT', url);
+      xhr = this.createCORSRequest(this.method, url);
       if (!xhr) {
         this.onError('CORS not supported');
       } else {
         xhr.onload = function() {
-          if (xhr.status === 200) {
+          if (xhr.status === 200 || xhr.status === 204) {
             this_s3upload.onProgress(100, 'Upload completed.');
             return this_s3upload.onFinishS3Put(public_url);
           } else {
@@ -96,25 +96,30 @@
         xhr.onerror = function() {
           return this_s3upload.onError('XHR error.');
         };
-        xhr.upload.onprogress = function(e) {
+        /*xhr.upload.onprogress = function(e) {
           var percentLoaded;
           if (e.lengthComputable) {
             percentLoaded = Math.round((e.loaded / e.total) * 100);
             return this_s3upload.onProgress(percentLoaded, percentLoaded === 100 ? 'Finalizing.' : 'Uploading.');
           }
-        };
+        };*/
       }
-      xhr.setRequestHeader('Content-Type', file.type);
-      xhr.setRequestHeader('x-amz-acl', 'public-read');
       if(this.prepareXHR) this.prepareXHR(xhr);
-      return xhr.send(file);
+      if(fields && file) {
+        var data = new FormData();
+        Object.keys(fields).forEach(function(key) {
+          data.append(key, fields[key]);
+        });
+        data.append('file', file);
+      }
+      return xhr.send(data);
     };
 
     S3Upload.prototype.uploadFile = function(file) {
       var this_s3upload;
       this_s3upload = this;
-      return this.executeOnSignedUrl(file, function(signedURL, publicURL) {
-        return this_s3upload.uploadToS3(file, signedURL, publicURL);
+      return this.executeOnSignedUrl(file, function(signedURL, fields, publicURL) {
+        return this_s3upload.uploadToS3(file, signedURL, fields, publicURL);
       });
     };
 
