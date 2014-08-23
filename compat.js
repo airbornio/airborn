@@ -17,7 +17,7 @@
 					listener.apply(airborn, message.data.args);
 				});
 			}
-		} else if([].map.call($('iframe'), function(iframe) { return iframe.contentWindow; }).indexOf(message.source) !== -1) {
+		} else if([].map.call(document.getElementsByTagName('iframe'), function(iframe) { return iframe.contentWindow; }).indexOf(message.source) !== -1) {
 			action(message.data.action, message.data.args, function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
 			}, function() {
@@ -103,24 +103,39 @@
 		root = decodeURIComponent(href.substring(sourceURLIndex, commentEndIndex) + href.substr(commentEndIndex + 8));
 	})();
 	XMLHttpRequest.prototype.open = function(method, url) {
+		if(url.substr(0, 7) === 'data://' && url.indexOf(',') === -1) url = 'editor/' + url.substr(7); // Workaround for URI.js in Firetext
 		if(method === 'GET' && !rSchema.test(url)) {
 			this.airbornFile = true;
 			this.setRequestHeader = function() { console.log(this, arguments); };
 			var codec;
 			this.overrideMimeType = function(mimeType) {
 				console.log(this, arguments);
-				mimeType = mimeType.split(';')[0];
-				if(mimeType === 'text/plain') return;
+				// mimeType is of the form mime/type; charset=utf-8
+				if(mimeType.split('/')[0] === 'text') return;
 				console.log("codec = 'arrayBuffer';");
 				codec = 'arrayBuffer';
 			};
+			var responseType;
+			Object.defineProperty(this, 'responseType', {set: function(_responseType) {
+				console.log(this, arguments);
+				console.log("codec = '" + _responseType + "';");
+				responseType = _responseType;
+			}});
 			this.send = function() {
 				var req = this;
 				url = url.replace(rArgs, '');
-				airborn.fs.getFile(airborn.path.resolve(root, url), {codec: codec}, function(contents, err) {
+				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
+				airborn.fs.getFile(url, {codec: codec}, function(contents, err) {
 					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
 					Object.defineProperty(req, 'status', {get: function() { return !err && 200; }});
-					Object.defineProperty(req, 'response', {get: function() { return contents; }});
+					Object.defineProperty(req, 'response', {get: function() {
+						if(responseType === 'document') {
+							var doc = document.implementation.createHTMLDocument('');
+							doc.documentElement.innerHTML = contents;
+							return doc;
+						}
+						return contents;
+					}});
 					if(!codec) Object.defineProperty(req, 'responseText', {get: function() { return contents; }});
 					req.dispatchEvent(new Event('readystatechange'));
 					req.dispatchEvent(new Event('load'));
@@ -133,7 +148,7 @@
 			this.send = function() {
 				var req = this;
 				url = url.replace(rArgs, '');
-				url = airborn.path.resolve(root, url);
+				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				airborn.fs.getFile(airborn.path.dirname(url), {codec: 'dir'}, function(contents, err) {
 					var getResponseHeader = req.getResponseHeader;
 					req.getResponseHeader = function(header) {
@@ -149,6 +164,12 @@
 		} else if(method === 'GET' && url.substr(0, 5) === 'data:') {
 			this.setRequestHeader = function() { console.log(this, arguments); };
 			this.overrideMimeType = function() { console.log(this, arguments); };
+			var responseType;
+			Object.defineProperty(this, 'responseType', {set: function(_responseType) {
+				console.log(this, arguments);
+				console.log("codec = '" + _responseType + "';");
+				responseType = _responseType;
+			}});
 			this.send = function() {
 				var req = this;
 				var parts = url.substr(5).split(',');
@@ -156,7 +177,14 @@
 				setTimeout(function() {
 					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
 					Object.defineProperty(req, 'status', {get: function() { return 200; }});
-					Object.defineProperty(req, 'response', {get: function() { return contents; }});
+					Object.defineProperty(req, 'response', {get: function() {
+						if(responseType === 'document') {
+							var doc = document.implementation.createHTMLDocument('');
+							doc.documentElement.innerHTML = contents;
+							return doc;
+						}
+						return contents;
+					}});
 					Object.defineProperty(req, 'responseText', {get: function() { return contents; }});
 					req.dispatchEvent(new Event('readystatechange'));
 					req.dispatchEvent(new Event('load'));
@@ -239,6 +267,7 @@
 		},
 		set: function(url) {
 			var script = this;
+			if(rSchema.test(url)) return scriptSrcDescriptor.set.call(script, url);
 			var winloaded = false;
 			function winload(evt) {
 				evt.stopImmediatePropagation();
@@ -314,6 +343,7 @@
 				Object.defineProperty(elm, 'src', {
 					set: function(url) {
 						src = url;
+						if(rSchema.test(url)) return elm.setAttribute('src', url), url;
 						var winloaded = false;
 						function winload(evt) {
 							evt.stopImmediatePropagation();
@@ -365,6 +395,14 @@
 		Object.defineProperty(this, 'default', {value: storageName === 'sdcard'});
 	}
 	DeviceStorage.prototype.onchange = null;
+	DeviceStorage.prototype.available = function() {
+		var request = new DOMRequest();
+		setTimeout(function() {
+			request.result = 'available';
+			if(request.onsuccess) request.onsuccess();
+		});
+		return request;
+	};
 	DeviceStorage.prototype.addNamed = function(file, name) {
 		var path = storageLocations[this.storageName] + name;
 		var request = new DOMRequest();
