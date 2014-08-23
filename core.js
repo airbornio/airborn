@@ -366,9 +366,13 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			var id = S3Prefix + '/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
 			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? password : files_key, contents)], {type: 'binary/octet-stream'});
+			var blobsize = blob.size - 1;
 			var s3upload = _.extend(Object.create(S3Upload.prototype), {
-					s3_sign_put_url: '/sign_s3_put_' + blob.size,
+					s3_sign_put_url: '/sign_s3_put_' + blobsize,
 					s3_object_name: id,
+					prepareXHR: function(xhr) {
+							xhr.setRequestHeader('x-amz-content-length-range', blobsize + ',' + blobsize);
+					},
 					onProgress: function (percent, message) {
 							console.log('Upload progress: ' + percent + '% ' + message, file);
 							var _size = (size === undefined ? 1 : size);
