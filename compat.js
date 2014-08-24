@@ -103,7 +103,7 @@
 		root = decodeURIComponent(href.substring(sourceURLIndex, commentEndIndex) + href.substr(commentEndIndex + 8));
 	})();
 	XMLHttpRequest.prototype.open = function(method, url) {
-		if(url.substr(0, 7) === 'data://' && url.indexOf(',') === -1) url = 'editor/' + url.substr(7); // Workaround for URI.js in Firetext
+		if(url.substr(0, 7) === 'data://' && url.indexOf(',') === -1) url = url.substr(7); // Workaround for URI.js in Firetext
 		if(method === 'GET' && !rSchema.test(url)) {
 			this.airbornFile = true;
 			this.setRequestHeader = function() { console.log(this, arguments); };
