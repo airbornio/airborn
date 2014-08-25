@@ -1,6 +1,7 @@
 (function() {
 	var messageID = 0, messageCallbacks = {};
 	var action = function(action, args, callback, progress) {
+		console.log(action, args);
 		parent.postMessage({messageID: ++messageID, action: action, args: args}, '*');
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) messageCallbacks[messageID].progress = progress;
@@ -92,16 +93,18 @@
 		airborn.wm.focus();
 	}, true);
 
+	function getURLFilename(url) {
+		var startIndex = url.indexOf('filename=');
+		if(startIndex === -1) return url;
+		var filename = url.substr(startIndex + 9); // 'filename='.length == 9
+		var endIndex = filename.indexOf(';');
+		return decodeURIComponent(filename.substr(0, filename.indexOf(';')));
+	}
+	
 	var requestOpen = XMLHttpRequest.prototype.open;
 	var rSchema = /^[a-z]+:/i;
 	var rArgs = /[?#].*$/;
-	var root;
-	(function() {
-		var href = location.href;
-		var sourceURLIndex = href.lastIndexOf('sourceURL%3D') + 12;
-		var commentEndIndex = href.indexOf('%20--%3E', sourceURLIndex);
-		root = decodeURIComponent(href.substring(sourceURLIndex, commentEndIndex) + href.substr(commentEndIndex + 8));
-	})();
+	var root = getURLFilename(location.href);
 	XMLHttpRequest.prototype.open = function(method, url) {
 		if(url.substr(0, 7) === 'data://' && url.indexOf(',') === -1) url = url.substr(7); // Workaround for URI.js in Firetext
 		if(method === 'GET' && !rSchema.test(url)) {
@@ -260,10 +263,7 @@
 	var scriptSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
 	Object.defineProperty(HTMLScriptElement.prototype, 'src', {
 		get: function() {
-			var realSrc = scriptSrcDescriptor.get.call(this);
-			var index = realSrc.lastIndexOf('sourceURL%3D');
-			if(index !== -1) return decodeURIComponent(realSrc.substr(index + 12)); // 'sourceURL%3D'.length == 12
-			return realSrc;
+			return getURLFilename(scriptSrcDescriptor.get.call(this));
 		},
 		set: function(url) {
 			var script = this;
@@ -289,8 +289,15 @@
 	HTMLScriptElement.prototype.getAttribute = function(attrName) {
 		var realAttr = scriptGetAttribute.call(this, attrName);
 		if(realAttr && attrName === 'src') {
-			var index = realAttr.lastIndexOf('sourceURL%3D');
-			if(index !== -1) return decodeURIComponent(realAttr.substr(index + 12)); // 'sourceURL%3D'.length == 12
+			return getURLFilename(realAttr);
+		}
+		return realAttr;
+	};
+	var linkGetAttribute = HTMLLinkElement.prototype.getAttribute;
+	HTMLLinkElement.prototype.getAttribute = function(attrName) {
+		var realAttr = linkGetAttribute.call(this, attrName);
+		if(realAttr && attrName === 'href') {
+			return getURLFilename(realAttr);
 		}
 		return realAttr;
 	};
@@ -329,7 +336,7 @@
 				var realSrc = currentScript.src;
 				Object.defineProperty(currentScript, 'src', {
 					get: function() {
-						return decodeURIComponent(realSrc.split('sourceURL%3D').pop());
+						return getURLFilename(realSrc);
 					}
 				});
 				return currentScript;

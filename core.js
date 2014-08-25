@@ -497,7 +497,7 @@ prepareUrl = function(url, options, callback, progress) {
 			else if(extension === 'html') data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
 			else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
 			else data = ';base64,' + sjcl.codec.base64.fromBits(c);
-			data = 'data:' + mimeTypes[extension] + ';charset=utf-8' + data;
+			data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path + args) + ';charset=utf-8' + data;
 		} else {
 			if(extension === 'js') data = c + '\n//# sourceURL=' + path;
 			else if(extension === 'css') data = c + '\n/*# sourceURL=' + path + ' */';
