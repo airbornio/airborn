@@ -401,6 +401,13 @@
 		Object.defineProperty(this, 'storageName', {value: storageName});
 		Object.defineProperty(this, 'default', {value: storageName === 'sdcard'});
 	}
+	function getDeviceStoragePath(deviceStorage, path) {
+		if(path[0] === '/') {
+			var parts = path.split('/');
+			return storageLocations[parts[1]] + parts.slice(2).join('/');
+		}
+		return storageLocations[this.storageName] + path;
+	}
 	DeviceStorage.prototype.onchange = null;
 	DeviceStorage.prototype.available = function() {
 		var request = new DOMRequest();
@@ -411,7 +418,7 @@
 		return request;
 	};
 	DeviceStorage.prototype.addNamed = function(file, name) {
-		var path = storageLocations[this.storageName] + name;
+		var path = getDeviceStoragePath(this, name);
 		var request = new DOMRequest();
 		airborn.fs.getFile(airborn.path.dirname(path), function(contents) {
 			if(contents && contents.hasOwnProperty(airborn.path.basename(path))) {
@@ -431,7 +438,7 @@
 		return request;
 	};
 	DeviceStorage.prototype.get = function(name) {
-		var path = storageLocations[this.storageName] + name;
+		var path = getDeviceStoragePath(this, name);
 		var request = new DOMRequest();
 		airborn.fs.getFile(path + '.history/', {codec: 'dir'}, function(contents, err) {
 			if(err) {
@@ -446,7 +453,7 @@
 		return request;
 	};
 	DeviceStorage.prototype.enumerate = function(path, options) {
-		path = storageLocations[this.storageName] + (path == null ? '' : path);
+		path = getDeviceStoragePath(this, path == null ? '' : path);
 		var cursor = new DOMCursor();
 		var files = [];
 		(function add(path, done) {
