@@ -1,8 +1,8 @@
 (function() {
 	var messageID = 0, messageCallbacks = {};
-	var action = function(action, args, callback, progress) {
+	var action = function(action, args, callback, progress, transfer) {
 		console.log(action, args);
-		parent.postMessage({messageID: ++messageID, action: action, args: args}, '*');
+		parent.postMessage({messageID: ++messageID, action: action, args: args}, '*', transfer);
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) messageCallbacks[messageID].progress = progress;
 	};
@@ -23,7 +23,9 @@
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
 			}, function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
-			});
+			}, message.data.args.filter(function(arg) {
+				return arg instanceof ArrayBuffer;
+			}));
 		} else if(message.source === top) {
 			console.log(document.getElementsByTagName('iframe').length);
 		} else {
@@ -68,6 +70,36 @@
 	addAction('fs.prepareUrl');
 	addAction('fs.startTransaction');
 	addAction('fs.endTransaction');
+	
+	var _putFile = airborn.fs.putFile;
+	airborn.fs.putFile = function() {
+		var args = [].slice.call(arguments);
+		if(args[1] instanceof Blob) {
+			throw new TypeError('You have to pass putFile(name, {codec: "blob"}, blob).');
+		}
+		if(args[2] instanceof Blob) {
+			if(!args[1] || args[1].codec !== 'blob') {
+				throw new TypeError('You have to pass putFile(name, {codec: "blob"}, blob).');
+			}
+			var blob = args[2];
+			if(typeof args[3] === 'function' || args[3] === undefined) {
+				args[5] = args[4];
+				args[4] = args[3];
+				args[3] = {};
+			}
+			args[3].type = blob.type;
+			var reader = new FileReader();
+			reader.onload = function() {
+				var arrayBuffer = this.result;
+				args[2] = arrayBuffer;
+				args[1].codec = 'arrayBuffer';
+				action('fs.putFile', args.slice(0, 4), args[4], args[5], [arrayBuffer]);
+			};
+			reader.readAsArrayBuffer(blob);
+			return;
+		}
+		_putFile.apply(this, arguments);
+	};
 	
 	navigator.mozApps = {};
 	navigator.mozApps.installPackage = function() {
@@ -425,10 +457,10 @@
 				request.error = new DOMError('FileExists', 'The file already exists.')
 				if(request.onerror) request.onerror();
 			} else {
-				airborn.fs.putFile(path, file, function(err) {
+				airborn.fs.putFile(path, {codec: 'blob'}, file, function(err) {
 					request.readyState = 'done';
 					if(err) {
-						
+						if(request.onerror) request.onerror();
 					} else {
 						if(request.onsuccess) request.onsuccess();
 					}
