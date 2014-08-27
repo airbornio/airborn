@@ -148,9 +148,12 @@ sjcl.codec.arrayBuffer = {
 window.getFileCache = {};
 window.getRequestCache = {};
 window.getFile = function(file, options, callback) {
-	if(typeof options === 'function') {
+	if(typeof options === 'function' || options === undefined) {
 		callback = options;
 		options = {};
+	}
+	if(callback === undefined) {
+		callback = function() {};
 	}
 
 	if(handleFromCache()) return;

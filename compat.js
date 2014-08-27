@@ -1,7 +1,6 @@
 (function() {
 	var messageID = 0, messageCallbacks = {};
 	var action = function(action, args, callback, progress, transfer) {
-		console.log(action, args);
 		parent.postMessage({messageID: ++messageID, action: action, args: args}, '*', transfer);
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) messageCallbacks[messageID].progress = progress;
@@ -10,7 +9,8 @@
 		if(message.source === parent) {
 			if(message.data.inReplyTo) {
 				var callback = messageCallbacks[message.data.inReplyTo];
-				if(message.data.progress) callback = callback.progress;
+				if(callback !== undefined && message.data.progress) callback = callback.progress;
+				if(callback === undefined) return;
 				callback.apply(window, message.data.result);
 				if(!message.data.progress) messageCallbacks[message.data.inReplyTo] = null;
 			} else if(message.data.action) {
@@ -19,13 +19,15 @@
 				});
 			}
 		} else if([].map.call(document.getElementsByTagName('iframe'), function(iframe) { return iframe.contentWindow; }).indexOf(message.source) !== -1) {
-			action(message.data.action, message.data.args, function() {
-				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
-			}, function() {
-				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
-			}, message.data.args.filter(function(arg) {
-				return arg instanceof ArrayBuffer;
-			}));
+			if(message.data.action) {
+				action(message.data.action, message.data.args, function() {
+					message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
+				}, function() {
+					message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
+				}, message.data.args.filter(function(arg) {
+					return arg instanceof ArrayBuffer;
+				}));
+			}
 		} else if(message.source === top) {
 			console.log(document.getElementsByTagName('iframe').length);
 		} else {
