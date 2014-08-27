@@ -440,7 +440,7 @@
 			var parts = path.split('/');
 			return storageLocations[parts[1]] + parts.slice(2).join('/');
 		}
-		return storageLocations[this.storageName] + path;
+		return storageLocations[deviceStorage.storageName] + path;
 	}
 	DeviceStorage.prototype.onchange = null;
 	DeviceStorage.prototype.available = function() {
