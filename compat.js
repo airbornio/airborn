@@ -524,18 +524,28 @@
 	function AsyncFile(options) {
 		for(var i in options) this[i] = options[i];
 	}
-	var readAsDataURL = FileReader.prototype.readAsDataURL;
-	FileReader.prototype.readAsDataURL = function(file) {
-		if(file instanceof AsyncFile) {
-			var reader = this;
-			airborn.fs.getFile(file.snapshotpath || file.path, {codec: 'base64url'}, function(contents) {
-				Object.defineProperty(reader, 'result', {get: function() { return 'data:' + file.type + ';base64,' + contents; }});
-				reader.dispatchEvent(new Event('load'));
-			});
-		} else {
-			readAsDataURL.apply(this, arguments);
-		}
-	};
+	function extendFileReader(methodName, readerFn) {
+		var origMethod = FileReader.prototype[methodName];
+		FileReader.prototype[methodName] = function(file) {
+			if(file instanceof AsyncFile) {
+				var reader = this;
+				readerFn(file, function(result) {
+					Object.defineProperty(reader, 'result', {get: function() { return result; }});
+					reader.dispatchEvent(new Event('load'));
+				});
+			} else {
+				origMethod.apply(this, arguments);
+			}
+		};
+	}
+	extendFileReader('readAsText', function(file, callback) {
+		airborn.fs.getFile(file.snapshotpath || file.path, callback);
+	});
+	extendFileReader('readAsDataURL', function(file, callback) {
+		airborn.fs.getFile(file.snapshotpath || file.path, {codec: 'base64url'}, function(contents) {
+			callback('data:' + file.type + ';base64,' + contents);
+		});
+	});
 	function DOMRequest() {
 		this.readyState = 'pending';
 	}
