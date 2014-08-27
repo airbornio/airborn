@@ -110,10 +110,10 @@
 		action('apps.installPackage', args, function(result, err) {
 			if(err) {
 				request.error = err;
-				if(request.onerror) request.onerror();
+				request.dispatchEvent(new Event('error'));
 			} else {
 				request.result = result;
-				if(request.onsuccess) request.onsuccess();
+				request.dispatchEvent(new Event('success'));
 			}
 		});
 		return request;
@@ -438,7 +438,10 @@
 	function getDeviceStoragePath(deviceStorage, path) {
 		if(path[0] === '/') {
 			var parts = path.split('/');
-			return storageLocations[parts[1]] + parts.slice(2).join('/');
+			if(storageLocations[parts[1]]) {
+				return storageLocations[parts[1]] + parts.slice(2).join('/');
+			}
+			return path;
 		}
 		return storageLocations[deviceStorage.storageName] + path;
 	}
@@ -447,7 +450,7 @@
 		var request = new DOMRequest();
 		setTimeout(function() {
 			request.result = 'available';
-			if(request.onsuccess) request.onsuccess();
+			request.dispatchEvent(new Event('success'));
 		});
 		return request;
 	};
@@ -457,14 +460,14 @@
 		airborn.fs.getFile(airborn.path.dirname(path), function(contents) {
 			if(contents && contents.hasOwnProperty(airborn.path.basename(path))) {
 				request.error = new DOMError('FileExists', 'The file already exists.')
-				if(request.onerror) request.onerror();
+				request.dispatchEvent(new Event('error'));
 			} else {
 				airborn.fs.putFile(path, {codec: 'blob'}, file, function(err) {
 					request.readyState = 'done';
 					if(err) {
-						if(request.onerror) request.onerror();
+						request.dispatchEvent(new Event('error'));
 					} else {
-						if(request.onsuccess) request.onsuccess();
+						request.dispatchEvent(new Event('success'));
 					}
 				});
 			}
@@ -477,17 +480,32 @@
 		airborn.fs.getFile(path + '.history/', {codec: 'dir'}, function(contents, err) {
 			if(err) {
 				request.error = new DOMError('FileNotFound', "The file doesn't exist.");
-				if(request.onerror) request.onerror();
+				request.dispatchEvent(new Event('error'));
 			} else {
 				var key = Object.keys(contents).pop();
-				request.result = new AsyncFile({name: airborn.path.basename(path), type: contents[key].type, snapshotpath: path + '.history/' + key});
-				if(request.onsuccess) request.onsuccess();
+				request.result = new AsyncFile({name: path, type: contents[key].type, snapshotpath: path + '.history/' + key});
+				request.dispatchEvent(new Event('success'));
 			}
 		});
 		return request;
 	};
-	DeviceStorage.prototype.enumerate = function(path, options) {
-		path = getDeviceStoragePath(this, path == null ? '' : path);
+	DeviceStorage.prototype.delete = function(name) {
+		var path = getDeviceStoragePath(this, name);
+		var request = new DOMRequest();
+		var dirname = airborn.path.dirname(path);
+		var basename = airborn.path.basename(path);
+		airborn.fs.getFile(dirname, {codec: 'dir'}, function(contents) {
+			delete contents[basename];
+			airborn.fs.putFile(dirname, {codec: 'dir'}, contents, function() {
+				request.dispatchEvent(new Event('success'));
+			});
+		});
+		return request;
+	};
+	DeviceStorage.prototype.enumerate = function(_prefix, options) {
+		var prefix = getDeviceStoragePath(this, _prefix == null ? '' : _prefix);
+		var prefixLen = prefix.length;
+		var lastDir = prefix.split('/').slice(0, -1).join('/') + '/';
 		var cursor = new DOMCursor();
 		var files = [];
 		(function add(path, done) {
@@ -495,11 +513,13 @@
 				var dirs = 0, dirsdone = -1;
 				if(contents) Object.keys(contents).forEach(function(name) {
 					if(name.substr(-9) === '.history/') return;
+					var filePath = path + name;
+					if(_prefix && filePath.substr(0, prefixLen) !== prefix) return;
 					if(name.substr(-1) === '/') {
 						dirs++;
-						add(path + name, dirdone);
+						add(filePath, dirdone);
 					} else {
-						files.push(name);
+						files.push({name: filePath, type: contents[name].type, path: filePath});
 					}
 				});
 				function dirdone() {
@@ -507,20 +527,52 @@
 				}
 				dirdone();
 			});
-		})(path, function() {
+		})(lastDir, function() {
 			cursor.readyState = 'done';
 			var next = 0;
 			(cursor.continue = function() {
-				this.result = files[next] && new AsyncFile({name: files[next], path: airborn.path.join(path, files[next])});
+				this.result = files[next] && new AsyncFile(files[next]);
 				this.done = !files[next];
 				next++;
+				cursor.dispatchEvent(new Event('success'));
 			}).call(cursor);
-			if(cursor.onsuccess) cursor.onsuccess();
 		});
 		return cursor;
 	};
-	function DOMCursor() {
+	function EventTarget() {
+		var listeners = {};
+		this.addEventListener = function(eventName, fn) {
+			if(!listeners[eventName]) listeners[eventName] = [];
+			listeners[eventName].push(fn);
+		};
+		this.removeEventListener = function(eventName, fn) {
+			if(!listeners[eventName]) return;
+			if(fn) {
+				listeners[eventName] = listeners[eventName].filter(function(elm) { return elm !== fn; });
+			} else {
+				listeners[eventName] = [];
+			}
+		};
+		this.dispatchEvent = function(event) {
+			Object.defineProperty(event, 'target', {value: this});
+			if(listeners[event.type]) {
+				listeners[event.type].forEach(function(fn) {
+					fn.call(this, event);
+				});
+			}
+			if(this['on' + event.type]) {
+				this['on' + event.type](event);
+			}
+			return true;
+		};
+	}
+	function DOMRequest() {
+		EventTarget.call(this);
 		this.readyState = 'pending';
+	}
+	DOMRequest.prototype = new EventTarget();
+	function DOMCursor() {
+		DOMRequest.call(this);
 	}
 	DOMCursor.prototype = new DOMRequest();
 	function AsyncFile(options) {
@@ -548,11 +600,10 @@
 			callback('data:' + file.type + ';base64,' + contents);
 		});
 	});
-	function DOMRequest() {
-		this.readyState = 'pending';
-	}
 	
 	navigator.getDeviceStorage = function(storageName) {
+		if(arguments.length !== 1) throw TypeError('navigator.getDeviceStorage takes exactly one argument: storageName.');
+		if(!storageLocations[storageName]) return null;
 		return new DeviceStorage(storageName);
 	};
 	
