@@ -503,6 +503,8 @@ openWindow = function(path, options, callback) {
 					document.body.appendChild(div);
 					childDivs.push(div);
 					
+					clipResizableHandles.call(div, null, {position: $(div).position()});
+					
 					iframeWin = iframe.contentWindow;
 					childWindows.push(iframeWin);
 					focusTab(tab);
