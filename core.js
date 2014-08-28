@@ -471,12 +471,12 @@ prepareString = function(contents, options, callback, progress) {
 
 var rArgs = /[?#].*$/;
 prepareUrl = function(url, options, callback, progress) {
-	if(url === '') {
-		callback('');
-		return;
-	}
 	var args = (url.match(rArgs) || [''])[0];
 	var url = url.replace(rArgs, '');
+	if(url === '') {
+		callback(args);
+		return;
+	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
 	var path = resolve(options.relativeParent, url, options.rootParent);
 	if(extension == 'html') {
