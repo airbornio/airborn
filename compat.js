@@ -57,6 +57,7 @@
 		};
 	}
 	addAction('wm.focus');
+	addAction('wm.reportClicked');
 	addAction('wm.setTitle');
 	addAction('wm.setIcon');
 	addAction('wm.openFile');
@@ -123,8 +124,9 @@
 	if(title) airborn.wm.setTitle(title.textContent);
 	var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
 	if(icon) airborn.wm.setIcon(icon.href);
-	window.addEventListener('focus', function() {
+	window.addEventListener('mousedown', function() {
 		airborn.wm.focus();
+		airborn.wm.reportClicked();
 	}, true);
 
 	function getURLFilename(url) {

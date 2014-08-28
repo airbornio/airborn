@@ -153,6 +153,8 @@ window.addEventListener('message', function(message) {
 						}
 					});
 				});
+			} else if (message.data.action === 'wm.reportClicked') {
+				$(apps).hide();
 			} else if (message.data.action === 'wm.setTitle') {
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
@@ -434,7 +436,7 @@ openWindow = function(path, options, callback) {
 				if(!options.targetDiv || options.innewtab) {
 					var tabtitlebar = document.createElement('div');
 					tabtitlebar.className = 'tabtitlebar';
-					tabtitlebar.addEventListener('click', function() {
+					tabtitlebar.addEventListener('mousedown', function() {
 						focusTab(tabtitlebar.tab);
 					});
 					tabtitlebar.tab = tab;
@@ -678,7 +680,6 @@ function focusWindow(div) {
 	forceMinimize();
 	window.parent.postMessage({action: 'core.setTitle', args: [$(div).find('.tabtitlebar.focused')[0].textContent.replace('\u00a0', '')]}, '*');
 	//window.parent.postMessage({action: 'core.setIcon', args: [div.getElementsByClassName('icon')[0].src]}, '*');
-	$(apps).hide();
 }
 
 function focusTab(tab) {
