@@ -539,10 +539,6 @@ $(document).on('mouseleave', '.window', function() {
 	updateZIndex();
 });
 
-openWindow('/Apps/clock/', {}, function(win, tab, div) {
-	$(div).css({width: 225, height: 100});
-});
-
 
 function forceMinimize() {
 	var windows = childDivs.filter(function(win) {
