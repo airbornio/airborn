@@ -130,6 +130,13 @@ getFile = function(path, options, callback) {
 	messageCallbacks[messageID] = arguments[arguments.length - 1];
 };
 
+listenForFileChanges = function(fn) {
+	parent.postMessage({messageID: ++messageID, action: 'fs.listenForFileChanges', args: []}, '*');
+	
+	messageCallbacks[messageID] = fn;
+	messageCallbacks[messageID].listener = true;
+};
+
 
 window.addEventListener('message', function(message) {
 	if (message.source === parent) {
@@ -142,7 +149,7 @@ window.addEventListener('message', function(message) {
 		} else {
 			callback.apply(window, message.data.result);
 		}
-		if(!message.data.progress) messageCallbacks[inReplyTo] = null;
+		if(!message.data.progress && !callback.listener) messageCallbacks[inReplyTo] = null;
 	} else if (childWindows.indexOf(message.source) !== -1) {
 		if (message.data.action.substr(0, 3) === 'wm.') {
 			if (message.data.action === 'wm.focus') {

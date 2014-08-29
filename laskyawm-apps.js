@@ -14,23 +14,43 @@ document.body.appendChild(toggleAppsContainer);
 
 var apps = document.createElement('div');
 apps.className = 'apps';
-getFile('/Apps/', {codec: 'dir'}, function(contents) {
-	$.each(contents, function(line, attrs) {
-		if(line.substr(-9) !== '.history/') {
-			var app = document.createElement('div');
-			app.className = 'app';
-			app.textContent = line.substr(0, line.length - 1);
-			app.addEventListener('click', function() {
-				openWindow('/Apps/' + line, {
-					originDiv: $('.window.focused')[0],
-					loaderElm: toggleAppsLoader
-				});
-			});
-			apps.appendChild(app);
-		}
-	});
-});
 document.body.appendChild(apps);
+
+loadApps(function(fragment) {
+	apps.appendChild(fragment);
+});
+
+function loadApps(callback) {
+	var fragment = document.createDocumentFragment();
+	getFile('/Apps/', {codec: 'dir'}, function(contents) {
+		$.each(contents, function(line, attrs) {
+			if(line.substr(-9) !== '.history/') {
+				var app = document.createElement('div');
+				app.className = 'app';
+				app.textContent = line.substr(0, line.length - 1);
+				app.addEventListener('click', function() {
+					openWindow('/Apps/' + line, {
+						originDiv: $('.window.focused')[0],
+						loaderElm: toggleAppsLoader
+					});
+				});
+				fragment.appendChild(app);
+			}
+		});
+		callback(fragment);
+	});
+}
+
+function reload() {
+	loadApps(function(fragment) {
+		apps.innerHTML = '';
+		apps.appendChild(fragment);
+	});
+}
+
+listenForFileChanges(function(path, reason) {
+	if(path === '/Apps/') reload();
+});
 
 document.documentElement.addEventListener('click', function(evt) {
 	if(evt.target !== apps) $(apps).hide();
