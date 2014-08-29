@@ -145,7 +145,8 @@
 	var rSchema = /^[a-z]+:/i;
 	var rArgs = /[?#].*$/;
 	var root = getURLFilename(location.href);
-	XMLHttpRequest.prototype.open = function(method, url) {
+	XMLHttpRequest.prototype.open = function(_method, url) {
+		var method = _method.toUpperCase();
 		if(url.substr(0, 7) === 'data://' && url.indexOf(',') === -1) url = url.substr(7); // Workaround for URI.js in Firetext
 		if(method === 'GET' && !rSchema.test(url)) {
 			this.airbornFile = true;
