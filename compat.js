@@ -3,7 +3,10 @@
 	var action = function(action, args, callback, progress, transfer) {
 		parent.postMessage({messageID: ++messageID, action: action, args: args}, '*', transfer);
 		messageCallbacks[messageID] = callback;
-		if(messageCallbacks[messageID]) messageCallbacks[messageID].progress = progress;
+		if(messageCallbacks[messageID]) {
+			messageCallbacks[messageID].progress = progress;
+			messageCallbacks[messageID].listener = action === 'fs.listenForFileChanges';
+		}
 	};
 	window.addEventListener('message', function(message) {
 		if(message.source === parent) {
@@ -12,7 +15,7 @@
 				if(callback !== undefined && message.data.progress) callback = callback.progress;
 				if(callback === undefined) return;
 				callback.apply(window, message.data.result);
-				if(!message.data.progress) messageCallbacks[message.data.inReplyTo] = null;
+				if(!message.data.progress && !callback.listener) messageCallbacks[message.data.inReplyTo] = null;
 			} else if(message.data.action) {
 				airborn.listeners[message.data.action + 'Request'].forEach(function(listener) {
 					listener.apply(airborn, message.data.args);
@@ -73,6 +76,7 @@
 	addAction('fs.prepareUrl');
 	addAction('fs.startTransaction');
 	addAction('fs.endTransaction');
+	addAction('fs.listenForFileChanges');
 	
 	var _putFile = airborn.fs.putFile;
 	airborn.fs.putFile = function() {
@@ -433,10 +437,59 @@
 		system: '/Core/',
 		videos: '/Videos/'
 	};
+	function EventTarget() {
+		var listeners = {};
+		this.addEventListener = function(eventName, fn) {
+			if(!listeners[eventName]) listeners[eventName] = [];
+			listeners[eventName].push(fn);
+		};
+		this.removeEventListener = function(eventName, fn) {
+			if(!listeners[eventName]) return;
+			if(fn) {
+				listeners[eventName] = listeners[eventName].filter(function(elm) { return elm !== fn; });
+			} else {
+				listeners[eventName] = [];
+			}
+		};
+		this.dispatchEvent = function(event) {
+			Object.defineProperty(event, 'target', {value: this});
+			if(listeners[event.type]) {
+				listeners[event.type].forEach(function(fn) {
+					fn.call(this, event);
+				});
+			}
+			if(this['on' + event.type]) {
+				this['on' + event.type](event);
+			}
+			return true;
+		};
+	}
+	function DOMRequest() {
+		EventTarget.call(this);
+		this.readyState = 'pending';
+	}
+	DOMRequest.prototype = new EventTarget();
+	function DOMCursor() {
+		DOMRequest.call(this);
+	}
+	DOMCursor.prototype = new DOMRequest();
 	function DeviceStorage(storageName) {
+		EventTarget.call(this);
 		Object.defineProperty(this, 'storageName', {value: storageName});
 		Object.defineProperty(this, 'default', {value: storageName === 'sdcard'});
+		var prefix = storageLocations[storageName];
+		var prefixLen = prefix.length;
+		var deviceStorage = this;
+		airborn.fs.listenForFileChanges(function(path, reason) {
+			if(path.substr(0, prefixLen) === prefix && path.substr(-1) !== '/') {
+				var evt = new Event('change');
+				evt.path = path.substr(prefixLen);
+				evt.reason = reason;
+				deviceStorage.dispatchEvent(evt);
+			}
+		});
 	}
+	DeviceStorage.prototype = new EventTarget();
 	function getDeviceStoragePath(deviceStorage, path) {
 		if(path[0] === '/') {
 			var parts = path.split('/');
@@ -541,42 +594,6 @@
 		});
 		return cursor;
 	};
-	function EventTarget() {
-		var listeners = {};
-		this.addEventListener = function(eventName, fn) {
-			if(!listeners[eventName]) listeners[eventName] = [];
-			listeners[eventName].push(fn);
-		};
-		this.removeEventListener = function(eventName, fn) {
-			if(!listeners[eventName]) return;
-			if(fn) {
-				listeners[eventName] = listeners[eventName].filter(function(elm) { return elm !== fn; });
-			} else {
-				listeners[eventName] = [];
-			}
-		};
-		this.dispatchEvent = function(event) {
-			Object.defineProperty(event, 'target', {value: this});
-			if(listeners[event.type]) {
-				listeners[event.type].forEach(function(fn) {
-					fn.call(this, event);
-				});
-			}
-			if(this['on' + event.type]) {
-				this['on' + event.type](event);
-			}
-			return true;
-		};
-	}
-	function DOMRequest() {
-		EventTarget.call(this);
-		this.readyState = 'pending';
-	}
-	DOMRequest.prototype = new EventTarget();
-	function DOMCursor() {
-		DOMRequest.call(this);
-	}
-	DOMCursor.prototype = new DOMRequest();
 	function AsyncFile(options) {
 		for(var i in options) this[i] = options[i];
 	}

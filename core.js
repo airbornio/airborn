@@ -212,6 +212,16 @@ window.getFile = function(file, options, callback) {
 	}
 };
 
+var fileChangeListeners = [];
+function listenForFileChanges(fn) {
+	fileChangeListeners.push(fn);
+}
+function notifyFileChange(path, reason) {
+	fileChangeListeners.forEach(function(fn) {
+		fn(path, reason);
+	});
+}
+
 /*function guid() {
 	var d = new Date().getTime();
 	var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -299,7 +309,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			
 	var now = attrs.edited || window.transactionDate || new Date();
 
-	var size;
+	var size, is_new_file;
 	if(!options.finishingTransaction && file !== '/') {
 		// Add file to parent directories
 		var slashindex = file.lastIndexOf('/', file.length - 2) + 1;
@@ -312,7 +322,8 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				if(!dircontents) dircontents = {};
 				
 				size = basename.substr(-1) === '/' ? undefined : sjcl.bitArray.bitLength(sjcl.codec[options.codec || 'utf8String'].toBits(contents)) / 8;
-				var newattrs = extend({}, dircontents.hasOwnProperty(basename) ? dircontents[basename] : {created: now}, {edited: now, size: size}, attrs);
+				is_new_file = !dircontents.hasOwnProperty(basename);
+				var newattrs = extend({}, is_new_file ? {created: now} : dircontents[basename], {edited: now, size: size}, attrs);
 				if(!dircontents.hasOwnProperty(basename) || !deepEquals(newattrs, dircontents[basename])) {
 						var newdircontents = extend({}, dircontents); // Don't modify getFileCache entry.
 						newdircontents[basename] = newattrs;
@@ -349,6 +360,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 								onFinishS3Put: function (public_url) {
 										//console.log('done', public_url);
 										if(callback) callback();
+										notifyFileChange(file, is_new_file ? 'created' : 'modified');
 								},
 								onError: function (status) {
 										console.log('error', status);
@@ -620,7 +632,7 @@ setInterval(update, 3600000); // Each hour
 
 window.addEventListener('message', function(message) {
 	if(message.source === mainWindow) {
-		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'apps.installPackage', 'core.setTitle', 'core.setIcon'].indexOf(message.data.action) !== -1) {
+		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'fs.listenForFileChanges', 'apps.installPackage', 'core.setTitle', 'core.setIcon'].indexOf(message.data.action) !== -1) {
 			window[message.data.action.split('.')[1]].apply(window, message.data.args.concat(function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
 			}, function() {
