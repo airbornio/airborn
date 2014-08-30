@@ -4,7 +4,6 @@ var toggleApps = document.createElement('button');
 toggleApps.textContent = 'apps';
 toggleApps.addEventListener('click', function(evt) {
 	$(apps).toggle();
-	evt.stopPropagation();
 });
 toggleAppsContainer.appendChild(toggleApps);
 var toggleAppsLoader = document.createElement('div');
@@ -31,7 +30,6 @@ function loadApps(callback) {
 					manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 					var name = manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
 					if(manifest.icons) {
-						console.log(manifest.icons[Object.keys(manifest.icons)[0]]);
 						prepareUrl(manifest.icons[Math.min.apply(Math, Object.keys(manifest.icons))], {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
 							apps[line] = {name: name, path: line, iconUrl: url};
 							maybeCont();
@@ -47,10 +45,8 @@ function loadApps(callback) {
 			if(++done === total) cont();
 		}
 		function cont() {
-			console.log(apps);
 			var keys = Object.keys(apps);
 			keys.alphanumSort();
-			console.log(keys);
 			keys.forEach(function(key) {
 				var props = apps[key];
 				var app = document.createElement('div');
@@ -93,5 +89,5 @@ listenForFileChanges(function(path, reason) {
 });
 
 document.documentElement.addEventListener('click', function(evt) {
-	if(evt.target !== apps) $(apps).hide();
+	if(evt.target !== apps && evt.target !== toggleApps) $(apps).hide();
 });

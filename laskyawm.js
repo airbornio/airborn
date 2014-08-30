@@ -162,6 +162,7 @@ window.addEventListener('message', function(message) {
 				});
 			} else if (message.data.action === 'wm.reportClicked') {
 				$(apps).hide();
+				$(powerMenu).hide();
 			} else if (message.data.action === 'wm.setTitle') {
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
