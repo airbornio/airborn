@@ -28,12 +28,20 @@ function loadApps(callback) {
 				var app = document.createElement('div');
 				app.className = 'app';
 				app.textContent = line.substr(0, line.length - 1);
-				app.addEventListener('click', function() {
+				app.tabIndex = '0';
+				app.addEventListener('click', click);
+				app.addEventListener('keypress', function(evt) {
+					if(evt.which === 13) {
+						click();
+						$(apps).hide();
+					}
+				});
+				function click() {
 					openWindow('/Apps/' + line, {
 						originDiv: $('.window.focused')[0],
 						loaderElm: toggleAppsLoader
 					});
-				});
+				}
 				fragment.appendChild(app);
 			}
 		});

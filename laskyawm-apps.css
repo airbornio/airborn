@@ -9,3 +9,6 @@
 .app {
 	cursor: pointer;
 }
+.app:focus {
+	outline-color: darkgrey;
+}
