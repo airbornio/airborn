@@ -464,15 +464,14 @@ openWindow = function(path, options, callback) {
 					addtab.textContent = '+';
 					addtab.className = 'addtab';
 					addtab.addEventListener('click', function() {
-						openFile('/', {
+						openWindow($(div).find('.tab.focused')[0].path, {
 							targetDiv: div,
 							innewtab: true,
 							loaderElm: addtabLoader,
-							loaderHighlight: false,
-							callback: function(win, tab, div) {
-								var tabbar = $(div).find('.tabbar')[0];
-								tabbar.scrollLeft = tabbar.scrollWidth;
-							}
+							loaderHighlight: false
+						}, function(win, tab, div) {
+							var tabbar = $(div).find('.tabbar')[0];
+							tabbar.scrollLeft = tabbar.scrollWidth;
 						});
 					});
 					addtabContainer.appendChild(addtab);
