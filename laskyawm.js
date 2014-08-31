@@ -410,6 +410,7 @@ openWindow = function(path, options, callback) {
 					minimizeBtn.addEventListener('click', function(evt) {
 						div.classList.toggle('minimized');
 						positionMinimized();
+						forceMinimize();
 						evt.stopPropagation();
 					});
 					titlebarDiv.appendChild(minimizeBtn);
