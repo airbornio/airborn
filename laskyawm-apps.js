@@ -17,13 +17,13 @@ toggleAppsContainer.appendChild(toggleApps);
 var toggleAppsLoader = document.createElement('div');
 toggleAppsLoader.className = 'loader';
 toggleAppsContainer.appendChild(toggleAppsLoader);
-bar.appendChild(toggleAppsContainer);
+document.body.appendChild(toggleAppsContainer);
 
 var apps = document.createElement('div');
 apps.id = 'apps';
 apps.className = 'barMenu';
 apps.textContent = 'Loading…';
-bar.appendChild(apps);
+document.body.appendChild(apps);
 
 loadApps();
 

@@ -9,6 +9,7 @@ body {
 	background-color: #607B8B;
 	cursor: default;
 	font-family: sans-serif;
+	height: 0;
 }
 .window {
 	width: 800px;

@@ -9,7 +9,7 @@ prepareUrl('/Core/power.png', {rootParent: '/'}, function(url) {
 togglePowerMenu.addEventListener('click', function(evt) {
 	$(powerMenu).toggle();
 });
-bar.appendChild(togglePowerMenu);
+document.body.appendChild(togglePowerMenu);
 
 var powerMenu = document.createElement('div');
 powerMenu.id = 'powerMenu';
@@ -21,7 +21,7 @@ logout.addEventListener('click', function(evt) {
 	window.parent.postMessage({action: 'core.logout', args: []}, '*');
 });
 powerMenu.appendChild(logout);
-bar.appendChild(powerMenu);
+document.body.appendChild(powerMenu);
 
 document.documentElement.addEventListener('click', function(evt) {
 	if(evt.target !== powerMenu && evt.target !== togglePowerMenu) $(powerMenu).hide();
