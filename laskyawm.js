@@ -91,6 +91,7 @@ $.ui.plugin.add("draggable", "minimize", {
 			this.removeClass('maximized-' + $(this).attr('data-pos'));
 			$(this).attr('data-pos', $('.hud').attr('data-pos'));
 			this.addClass('maximized maximized-' + $('.hud').attr('data-pos'));
+			clipResizableHandles.call(this, null, {position: $(this).position()});
 		}
 		removeHUD();
 		forceMinimize();
@@ -419,6 +420,7 @@ openWindow = function(path, options, callback) {
 						$(div).removeClass('maximized-' + $(div).attr('data-pos'))
 							.attr('data-pos', 'max')
 							.addClass('maximized maximized-max');
+						clipResizableHandles.call(div, null, {position: $(div).position()});
 						forceMinimize();
 					};
 					maximizeBtn.addEventListener('click', toggleMaximized);
