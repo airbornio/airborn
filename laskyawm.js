@@ -100,7 +100,10 @@ $.ui.plugin.add("draggable", "minimize", {
 
 $.ui.plugin.add("draggable", "forceMinimize", {
 	drag: function() {
-		delete this[0].realLeft;
+		if(this[0].realLeft) {
+			this[0].style.cssText = this[0].style.cssText.replace(/left: .+?;/, 'left: ' + this[0].realLeft + ';');
+			delete this[0].realLeft;
+		}
 		forceMinimize();
 	}
 });
@@ -646,12 +649,13 @@ function updateZIndex(hovered) {
 function positionMinimized() {
 	var full = {};
 	[].slice.call(childDivs).reverse().forEach(function(win, i) {
-		if(win.realLeft !== undefined) {
-			win.style.left = win.realLeft;
-			delete win.realLeft;
-		}
 		if(win.classList.contains('minimized')) {
-			var left = parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
+			var left =
+				win.classList.contains('maximized') ?
+					(win.classList.contains('maximized-max') || win.classList.contains('maximized-left') ? 0 :
+					win.classList.contains('maximized-right') ? Math.floor(window.innerWidth / 2) :
+					console.error('Unknown maximized state')) :
+				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 			var minimizedLeft, moved, pushLeft;
 			if (left < 63) {
 				minimizedLeft = 63;
@@ -671,10 +675,14 @@ function positionMinimized() {
 				minimizedLeft += 28;
 			}
 			if (moved) {
-				win.realLeft = win.style.left;
-				win.style.left = (pushLeft ? window.innerWidth - 350 : minimizedLeft) + 'px';
+				if(!win.realLeft) win.realLeft = win.style.left;
+				win.style.cssText += '; left: ' + (pushLeft ? window.innerWidth - 350 : minimizedLeft) + 'px !important;';
 			}
 			full[minimizedLeft] = win;
+		}
+		if(!moved && win.realLeft) {
+			win.style.cssText = win.style.cssText.replace(/left: .+?;/, 'left: ' + win.realLeft + ';');
+			delete win.realLeft;
 		}
 	});
 }
