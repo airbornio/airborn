@@ -22,16 +22,15 @@ bar.appendChild(toggleAppsContainer);
 var apps = document.createElement('div');
 apps.id = 'apps';
 apps.className = 'barMenu';
+apps.textContent = 'Loading…';
 bar.appendChild(apps);
 
-loadApps(function(fragment) {
-	apps.appendChild(fragment);
-});
+loadApps();
 
-function loadApps(callback) {
+function loadApps() {
 	var fragment = document.createDocumentFragment();
 	getFile('/Apps/', {codec: 'dir'}, function(contents) {
-		var total = 0, done = 0, apps = {};
+		var total = 0, done = 0, allApps = {};
 		Object.keys(contents).forEach(function(line) {
 			if(line.substr(-9) !== '.history/') {
 				total++;
@@ -40,11 +39,11 @@ function loadApps(callback) {
 					var name = manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
 					if(manifest.icons) {
 						prepareUrl(manifest.icons[Math.min.apply(Math, Object.keys(manifest.icons))], {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
-							apps[line] = {name: name, path: line, iconUrl: url};
+							allApps[line] = {name: name, path: line, iconUrl: url};
 							maybeCont();
 						});
 					} else {
-						apps[line] = {name: name, path: line, iconUrl: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='}; // Blank gif
+						allApps[line] = {name: name, path: line, iconUrl: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='}; // Blank gif
 						maybeCont();
 					}
 				});
@@ -54,10 +53,10 @@ function loadApps(callback) {
 			if(++done === total) cont();
 		}
 		function cont() {
-			var keys = Object.keys(apps);
+			var keys = Object.keys(allApps);
 			keys.alphanumSort();
 			keys.forEach(function(key) {
-				var props = apps[key];
+				var props = allApps[key];
 				var app = document.createElement('div');
 				app.className = 'app';
 				app.textContent = props.name;
@@ -81,20 +80,14 @@ function loadApps(callback) {
 				}
 				fragment.appendChild(app);
 			});
-			callback(fragment);
+			apps.innerHTML = '';
+			apps.appendChild(fragment);
 		}
 	});
 }
 
-function reload() {
-	loadApps(function(fragment) {
-		apps.innerHTML = '';
-		apps.appendChild(fragment);
-	});
-}
-
 listenForFileChanges(function(path, reason) {
-	if(path === '/Apps/') reload();
+	if(path === '/Apps/') loadApps();
 });
 
 document.documentElement.addEventListener('click', function(evt) {

@@ -43,6 +43,9 @@
 	top: -22px;
 	pointer-events: none;
 }
+#apps:after {
+	left: 10px;
+}
 #powerMenu:after {
 	right: 7px;
 }
