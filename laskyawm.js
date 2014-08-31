@@ -651,8 +651,8 @@ function positionMinimized() {
 		if(win.classList.contains('minimized')) {
 			var left = parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 			var minimizedLeft, moved, pushLeft;
-			if (left < 50) {
-				minimizedLeft = 50;
+			if (left < 63) {
+				minimizedLeft = 63;
 				moved = true;
 			} else if (left > window.innerWidth - 350) {
 				minimizedLeft = window.innerWidth - 350;

@@ -1,19 +1,28 @@
 var toggleAppsContainer = document.createElement('div');
 toggleAppsContainer.className = 'loaderContainer';
-var toggleApps = document.createElement('button');
-toggleApps.textContent = 'apps';
+var toggleApps = document.createElement('div');
+toggleApps.id = 'toggleApps';
+toggleApps.className = 'barButton';
+toggleApps.textContent = 'Apps';
+toggleApps.tabIndex = '0';
 toggleApps.addEventListener('click', function(evt) {
 	$(apps).toggle();
+});
+toggleApps.addEventListener('keypress', function(evt) {
+	if(evt.which === 13 || evt.which === 32) {
+		$(apps).toggle();
+	}
 });
 toggleAppsContainer.appendChild(toggleApps);
 var toggleAppsLoader = document.createElement('div');
 toggleAppsLoader.className = 'loader';
 toggleAppsContainer.appendChild(toggleAppsLoader);
-document.body.appendChild(toggleAppsContainer);
+bar.appendChild(toggleAppsContainer);
 
 var apps = document.createElement('div');
-apps.className = 'apps';
-document.body.appendChild(apps);
+apps.id = 'apps';
+apps.className = 'barMenu';
+bar.appendChild(apps);
 
 loadApps(function(fragment) {
 	apps.appendChild(fragment);
