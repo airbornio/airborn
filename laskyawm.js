@@ -274,6 +274,7 @@ openWindow = function(path, options, callback) {
 			hideProgress(options);
 			
 			var div = options.targetDiv || document.createElement('div');
+			var iframeWin;
 
 			if(!options.targetDiv) {
 				div.className = 'window';
