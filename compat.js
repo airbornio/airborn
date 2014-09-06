@@ -5,7 +5,7 @@
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) {
 			messageCallbacks[messageID].progress = progress;
-			messageCallbacks[messageID].listener = action === 'fs.listenForFileChanges';
+			messageCallbacks[messageID].listener = action === 'fs.listenForFileChanges' || action.substr(0, 10) === 'fs.prepare';
 		}
 	};
 	window.addEventListener('message', function(message) {

@@ -126,6 +126,7 @@ prepareUrl = function(contents, path, callback, progress) {
 	
 	messageCallbacks[messageID] = callback;
 	messageCallbacks[messageID].progress = progress;
+	messageCallbacks[messageID].listener = true;
 };
 
 getFile = function(path, options, callback) {
@@ -144,6 +145,11 @@ listenForFileChanges = function(fn) {
 
 window.addEventListener('message', function(message) {
 	if (message.source === parent) {
+		if(message.data.action === 'createObjectURL') {
+			var arg = message.data.args[0];
+			parent.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(new Blob([arg.data], {type: arg.type}))]}, '*');
+			return;
+		}
 		var inReplyTo = message.data.inReplyTo; // Callback might change message.data.inReplyTo.
 		var callback = messageCallbacks[inReplyTo];
 		if(!callback) return;
@@ -271,8 +277,6 @@ openWindow = function(path, options, callback) {
 		else csp = 'default-src data:; ' + csp;
 		var root = _path.match('/Apps/.+?/')[0];
 		prepareUrl(launch_path, {rootParent: root, relativeParent: root, csp: csp},	function(url) {
-			hideProgress(options);
-			
 			var div = options.targetDiv || document.createElement('div');
 			var iframeWin;
 
@@ -532,7 +536,11 @@ openWindow = function(path, options, callback) {
 					callback(iframeWin, tab, div);
 			}
 		}, function(done, total) {
-			setProgress(done / total, options);
+			var progress = done / total;
+			setProgress(progress, options);
+			if(progress === 1) {
+				hideProgress(options);
+			}
 		});
 	});
 };

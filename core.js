@@ -429,14 +429,64 @@ basename = function(path) {
 	return path.substr(path.lastIndexOf('/') + 1);
 };
 
-prepareFile = function(file, callback, progress) {
-	getFile(file, function (contents, err) {
-			if(err) return callback('');
-			prepareString(contents, {rootParent: file, relativeParent: file}, callback, progress);
+prepareFile = function(file, options, callback, progress, createObjectURL) {
+	var _options = {};
+	Object.keys(options).forEach(function(key) {
+		_options[key] = options[key];
 	});
+	var is_html = file.substr(-5) === '.html';
+	if(is_html && options.bootstrap !== false) {
+		_options.bootstrap = false;
+		var inline_linenr = +(new Error().stack.match(/[:@](\d+)/) || [])[1] + 2;
+		var data = [
+			'<!DOCTYPE html>',
+			'<html>',
+			'<head>',
+			'	<meta charset="utf-8">',
+			'</head>',
+			'<body>',
+			'Loading…',
+			'<script>',
+			'window.addEventListener("message", function(message) {',
+			'	if(message.data.action === "createObjectURL") {',
+			'		var arg = message.data.args[0];',
+			'		window.top.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(new Blob([arg.data], {type: arg.type}))]}, "*");',
+			'		return;',
+			'	}',
+			'	if(!message.data.progress) {',
+			'		document.write(message.data.result[0]);',
+			'	}',
+			'});',
+			'window.top.postMessage({action: "fs.prepareFile", args: ' + JSON.stringify([file, _options]) + ', key: ' + JSON.stringify(getAPIKey()) + '}, "*");',
+			'</script>',
+			'</body>',
+			'</html>',
+			'<!--# sourceURL = /Core/core.js > inline at line ' + inline_linenr + ' -->'
+		].join('\n');
+		callback(data);
+		
+		// Bogus prepareFile which exists solely for the calls to `progress`.
+		prepareFile(file, _options, function() {}, progress, function(data, callback) { callback(''); });
+	} else if(is_html && (options.compat !== false || options.csp)) {
+		_options.compat = false;
+		prepareFile(file, _options, function(c, err) {
+			prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/'}, function(compat, err) {
+				callback((options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head)/i, compat), err);
+			}, function() {}, createObjectURL);
+		}, progress, createObjectURL);
+		getFile('/Core/compat.js');
+	} else {
+		getFile(file, function (contents, err) {
+			if(err) return callback('');
+			_options.rootParent = _options.relativeParent = file;
+			delete _options.bootstrap;
+			delete _options.compat;
+			prepareString(contents, _options, callback, progress, createObjectURL);
+		});
+	}
 };
 
-prepareString = function(contents, options, callback, progress) {
+prepareString = function(contents, options, callback, progress, createObjectURL) {
 	var i = 0,
 			match, matches = [],
 			rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.*?)(?=["') >])(\2\s*\)?)/,
@@ -467,7 +517,7 @@ prepareString = function(contents, options, callback, progress) {
 				match.progressDone = done;
 				match.progressTotal = total;
 				updateProgress();
-			});
+			}, createObjectURL);
 		});
 	} else {
 		callback(contents);
@@ -487,7 +537,7 @@ prepareString = function(contents, options, callback, progress) {
 };
 
 var rArgs = /[?#].*$/;
-prepareUrl = function(url, options, callback, progress) {
+prepareUrl = function(url, options, callback, progress, createObjectURL) {
 	var args = (url.match(rArgs) || [''])[0];
 	var url = url.replace(rArgs, '');
 	if(url === '') {
@@ -496,37 +546,31 @@ prepareUrl = function(url, options, callback, progress) {
 	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
 	var path = resolve(options.relativeParent, url, options.rootParent);
-	if(extension == 'html') {
-		prepareFile(path, function(c, err) {
-			prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/'}, function(compat, err) {
-				cb((options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head)/i, compat), err);
-			});
-		}, progress);
-		getFile('/Core/compat.js');
-	}
-	else if(extension == 'css') prepareFile(path, cb, progress);
+	if(extension == 'html' || extension == 'css') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat}, cb, progress, createObjectURL);
 	else getFile(path, {codec: extension == 'js' ? undefined : 'sjcl'}, cb);
 
 	function cb (c, err) {
 		var data;
 		if(!err) {
-		if(1) {
+		if(navigator.userAgent.match(/Firefox\/\d+/)) {
 			if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 			else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 			else if(extension === 'html') data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
 			else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
 			else data = ';base64,' + sjcl.codec.base64.fromBits(c);
 			data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path + args) + ';charset=utf-8' + data;
+			callback(data + args);
 		} else {
 			if(extension === 'js') data = c + '\n//# sourceURL=' + path;
 			else if(extension === 'css') data = c + '\n/*# sourceURL=' + path + ' */';
 			else if(extension === 'html') data = c + '\n<!--# sourceURL=' + path + ' -->';
 			else if(typeof c === 'string') data = c;
 			else data = sjcl.codec.arrayBuffer.fromBits(c);
-			data = URL.createObjectURL(window[Math.random()] = new Blob([data], {type: mimeTypes[extension]}));
+			createObjectURL({data: data, type: mimeTypes[extension], name: path + args}, callback);
 		}
+		} else {
+			callback(null, err);
 		}
-		callback(data && data + args, err);
 	}
 };
 
@@ -538,21 +582,21 @@ getFile('/Core/3rdparty/jszip/jszip.min.js', eval);
 var mainWindow;
 
 window.openWindow = function (path, document, container) {
-	prepareFile(path, function (contents) {
+	prepareUrl(path, {compat: false, rootParent: '/'}, function (url) {
 		var div = document.createElement('div');
 		div.className = 'window';
 		var iframe = document.createElement('iframe'); 
 		iframe.sandbox = 'allow-scripts';
-		iframe.src = 'data:text/html,' + encodeURIComponent(contents);
+		iframe.src = url;
 		iframe.scrolling = 'no';
 		div.appendChild(iframe);
 		container.appendChild(div);
 		mainWindow = iframe.contentWindow;
 		iframeWin = iframe.contentWindow;
+	}, function() {}, function(arg, callback) {
+		callback(URL.createObjectURL(new Blob([arg.data], {type: arg.type})));
 	});
 };
-
-openWindow('/Core/laskyawm.html', document, document.body);
 
 var title = document.createElement('title');
 document.head.appendChild(title);
@@ -642,13 +686,31 @@ logout = function() {
 	window.location.reload();
 };
 
+var APIKeys = [];
+function getAPIKey() {
+	var array = new Uint32Array(10);
+	window.crypto.getRandomValues(array);
+	var key = Array.prototype.slice.call(array).toString();
+	APIKeys.push(key);
+	return key;
+}
+function isValidAPIKey(key) {
+	return APIKeys.indexOf(key) !== -1;
+}
+
+var messageID = 0, messageCallbacks = {};
 window.addEventListener('message', function(message) {
-	if(message.source === mainWindow) {
+	if(message.data.inReplyTo) {
+		messageCallbacks[message.data.inReplyTo].apply(this, message.data.result);
+	} else if(message.source === mainWindow || (message.data.key && isValidAPIKey(message.data.key))) {
 		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'fs.listenForFileChanges', 'apps.installPackage', 'core.setTitle', 'core.setIcon', 'core.logout'].indexOf(message.data.action) !== -1) {
 			window[message.data.action.split('.')[1]].apply(window, message.data.args.concat(function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
 			}, function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
+			}, function(data, callback) {
+				message.source.postMessage({action: 'createObjectURL', args: [data], messageID: ++messageID}, '*');
+				messageCallbacks[messageID] = callback;
 			}));
 		} else {
 			throw new TypeError('Unknown action: ' + message.data.action);
