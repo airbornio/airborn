@@ -26,6 +26,7 @@ console.trace(inTransaction, filesToPut, transaction);
 window.endTransaction = endTransaction;
 
 var sjcl = parent.sjcl;
+var private_key = parent.private_key;
 var private_hmac = parent.private_hmac;
 var files_hmac = parent.files_hmac;
 var S3Prefix = parent.S3Prefix;
@@ -197,7 +198,11 @@ window.getFile = function(file, options, callback) {
 				try {
 					var decrypted = sjcl.decrypt(files_key, req.responseText);
 				} catch(e) {
-					var decrypted = sjcl.decrypt(password, req.responseText);
+					try {
+						var decrypted = sjcl.decrypt(private_key, req.responseText);
+					} catch(e) {
+						var decrypted = sjcl.decrypt(password, req.responseText);
+					}
 				}
 				if(options.codec) {
 					sjcl.codec.utf8String.fromBits = fromBits;
@@ -381,7 +386,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
 			var id = S3Prefix + '/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
-			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? password : files_key, contents)], {type: 'binary/octet-stream'});
+			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? private_key : files_key, contents)], {type: 'binary/octet-stream'});
 			var blobsize = blob.size;
 			var s3upload = _.extend(Object.create(S3Upload.prototype), {
 					s3_sign_put_url: '/sign_s3_post_' + blobsize,
