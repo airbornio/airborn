@@ -447,9 +447,9 @@ openWindow = function(path, options, callback) {
 					
 					tabbar = document.createElement('div');
 					tabbar.className = 'tabbar';
-					//tabbar.addEventListener('mousedown', function(evt) {
-					//	evt.stopPropagation();
-					//});
+					tabbar.addEventListener('mousedown', function(evt) {
+						evt.stopPropagation();
+					});
 					setTimeout(function() {
 						// Work around a jquery UI bug where it behaves differently if there are no elements in the sortable div yet.
 						$(tabbar).sortable({axis: 'x', containment: 'parent', distance: 5, tolerance: 'pointer', scrollSpeed: 5, placeholder: {

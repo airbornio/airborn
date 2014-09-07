@@ -92,6 +92,9 @@ body {
 	padding: 0 7px;
 	cursor: default;
 }
+.window .titlebar .tabbar .tabtitlebar:first-child {
+	margin-left: 0;
+}
 .window .titlebar .tabbar .tabtitlebar.focused {
 	background-color: white;
 }
