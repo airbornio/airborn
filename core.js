@@ -435,8 +435,8 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 	Object.keys(options).forEach(function(key) {
 		_options[key] = options[key];
 	});
-	var is_html = file.substr(-5) === '.html';
-	if(is_html && options.bootstrap !== false) {
+	var extension = file.substr(file.lastIndexOf('.') + 1);
+	if(extension === 'html' && options.bootstrap !== false) {
 		_options.bootstrap = false;
 		var inline_linenr = +(new Error().stack.match(/[:@](\d+)/) || [])[1] + 2;
 		var data = [
@@ -468,7 +468,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		
 		// Bogus prepareFile which exists solely for the calls to `progress`.
 		prepareFile(file, _options, function() {}, progress, function(data, callback) { callback(''); });
-	} else if(is_html && (options.compat !== false || options.csp)) {
+	} else if(extension === 'html' && (options.compat !== false || options.csp)) {
 		_options.compat = false;
 		prepareFile(file, _options, function(c, err) {
 			if(err) return callback('');
@@ -477,6 +477,12 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			}, function() {}, createObjectURL);
 		}, progress, createObjectURL);
 		getFile('/Core/compat.js');
+	} else if(extension === 'js' && options.compat !== false) {
+		getFile(file, function(contents, err) {
+			if(err) return callback('');
+			if(navigator.userAgent.match(/Chrome/)) contents = contents.replace(/localStorage/g, 'airborn_localStorage');
+			callback(contents);
+		});
 	} else {
 		getFile(file, function(contents, err) {
 			if(err) return callback('');
@@ -548,8 +554,8 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
 	var path = resolve(options.relativeParent, url, options.rootParent);
-	if(extension === 'html' || extension === 'css') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat}, cb, progress, createObjectURL);
-	else getFile(path, {codec: extension === 'js' ? undefined : 'sjcl'}, cb);
+	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat}, cb, progress, createObjectURL);
+	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
 		var data;
