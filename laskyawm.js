@@ -732,6 +732,10 @@ window.addEventListener('resize', function() {
 	$('.window').each(function(i, win) { clipResizableHandles.call(win, null, {position: $(win).position()}); });
 }, false);
 
+window.addEventListener('scroll', function() {
+	window.scrollTo(0, 0)
+});
+
 extension = function(file) {
 	if(file.substr(-1) === '/') return '/';
 	file = file.substr(file.lastIndexOf('/') + 1);
