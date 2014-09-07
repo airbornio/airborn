@@ -1,3 +1,5 @@
+/*global GET, sjcl, files_hmac, files_key, openWindow */
+
 GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/core.js')), function(response) {
 	window.eval(sjcl.decrypt(files_key, response));
 	openWindow('/Core/laskyawm.html', document, document.body);

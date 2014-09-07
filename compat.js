@@ -1,3 +1,5 @@
+/*global DOMError, airborn: true, laskya: true */
+
 (function() {
 	var messageID = 0, messageCallbacks = {};
 	var action = function(action, args, callback, progress, transfer) {
@@ -68,7 +70,7 @@
 	addAction('wm.showProgress');
 	addAction('wm.setProgress');
 	addAction('wm.hideProgress');
-
+	
 	addAction('fs.getFile');
 	addAction('fs.putFile');
 	addAction('fs.prepareFile');
@@ -123,7 +125,7 @@
 		});
 		return request;
 	};
-
+	
 	var title = document.getElementsByTagName('title')[0];
 	if(title) airborn.wm.setTitle(title.textContent);
 	var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
@@ -132,21 +134,21 @@
 		airborn.wm.focus();
 		airborn.wm.reportClicked();
 	}, true);
-
+	
 	function getURLFilename(url) {
 		var startIndex = url.indexOf('filename=');
 		if(startIndex === -1) return url;
 		var filename = url.substr(startIndex + 9); // 'filename='.length == 9
-		var endIndex = filename.indexOf(';');
 		return decodeURIComponent(filename.substr(0, filename.indexOf(';')));
 	}
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
-	var rSchema = /^[a-z]+:/i;
+	var rSchema = /^([a-z]+:|\/\/)/i;
 	var rArgs = /[?#].*$/;
 	var root = getURLFilename(location.href);
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
+		var responseType;
 		if(url.substr(0, 7) === 'data://' && url.indexOf(',') === -1) url = url.substr(7); // Workaround for URI.js in Firetext
 		if(method === 'GET' && !rSchema.test(url)) {
 			this.airbornFile = true;
@@ -159,7 +161,6 @@
 				console.log("codec = 'arrayBuffer';");
 				codec = 'arrayBuffer';
 			};
-			var responseType;
 			Object.defineProperty(this, 'responseType', {set: function(_responseType) {
 				console.log(this, arguments);
 				console.log("codec = '" + _responseType + "';");
@@ -208,7 +209,6 @@
 		} else if(method === 'GET' && url.substr(0, 5) === 'data:') {
 			this.setRequestHeader = function() { console.log(this, arguments); };
 			this.overrideMimeType = function() { console.log(this, arguments); };
-			var responseType;
 			Object.defineProperty(this, 'responseType', {set: function(_responseType) {
 				console.log(this, arguments);
 				console.log("codec = '" + _responseType + "';");
@@ -258,7 +258,7 @@
 			requestOpen.apply(this, arguments);
 		}
 	};
-
+	
 	airborn.path = {
 		dirname: function(path) {
 			return path.substr(0, path.replace(/\/+$/, '').lastIndexOf('/') + 1);
@@ -284,7 +284,7 @@
 			return resolved;
 		}
 	};
-
+	
 	/*document.createElement = (function(createElement) {
 		return function(tagName) {
 			if(tagName.toLowerCase() === 'script') {
@@ -343,7 +343,6 @@
 		return realAttr;
 	};
 	var elementInnerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-	var rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.+?)(?=["')])(\2\s*\)?)/;
 	Object.defineProperty(Element.prototype, 'innerHTML', {
 		get: function() {
 			return elementInnerHTMLDescriptor.get.call(this);
@@ -353,7 +352,6 @@
 			findNewElements();
 		}
 	});
-	var rSchema = /^([a-z]+:|\/\/)/i;
 	function findNewElements() {
 		['src', 'href', 'icon'].forEach(function(attrName) {
 			Array.prototype.forEach.call(document.querySelectorAll(
@@ -429,7 +427,7 @@
 			return elm;
 		};
 	}
-
+	
 	var storageLocations = {
 		apps: '/Apps/',
 		music: '/Music/',
@@ -515,7 +513,7 @@
 		var request = new DOMRequest();
 		airborn.fs.getFile(airborn.path.dirname(path), function(contents) {
 			if(contents && contents.hasOwnProperty(airborn.path.basename(path))) {
-				request.error = new DOMError('FileExists', 'The file already exists.')
+				request.error = new DOMError('FileExists', 'The file already exists.');
 				request.dispatchEvent(new Event('error'));
 			} else {
 				airborn.fs.putFile(path, {codec: 'blob'}, file, function(err) {
@@ -558,7 +556,7 @@
 		});
 		return request;
 	};
-	DeviceStorage.prototype.enumerate = function(_prefix, options) {
+	DeviceStorage.prototype.enumerate = function(_prefix) {
 		var prefix = getDeviceStoragePath(this, _prefix == null ? '' : _prefix);
 		var prefixLen = prefix.length;
 		var lastDir = prefix.split('/').slice(0, -1).join('/') + '/';
@@ -596,7 +594,10 @@
 		return cursor;
 	};
 	function AsyncFile(options) {
-		for(var i in options) this[i] = options[i];
+		var _this = this;
+		Object.keys(options).forEach(function(key) {
+			_this[key] = options[key];
+		});
 	}
 	function extendFileReader(methodName, readerFn) {
 		var origMethod = FileReader.prototype[methodName];
@@ -622,7 +623,7 @@
 	});
 	
 	navigator.getDeviceStorage = function(storageName) {
-		if(arguments.length !== 1) throw TypeError('navigator.getDeviceStorage takes exactly one argument: storageName.');
+		if(arguments.length !== 1) throw new TypeError('navigator.getDeviceStorage takes exactly one argument: storageName.');
 		if(!storageLocations[storageName]) return null;
 		return new DeviceStorage(storageName);
 	};
@@ -632,7 +633,7 @@
 		return this.hasOwnProperty(name) ? this[name] : undefined;
 	};
 	Storage_.prototype.setItem = function(name, value) {
-		return this[name] = value;
+		return (this[name] = value);
 	};
 	var localStorage = new Storage_();
 	Object.defineProperty(window, 'localStorage', {

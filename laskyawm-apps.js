@@ -1,3 +1,7 @@
+/*global $, getFile, prepareUrl, openWindow, listenForFileChanges */
+
+var apps;
+
 var toggleAppsContainer = document.createElement('div');
 toggleAppsContainer.className = 'loaderContainer';
 var toggleApps = document.createElement('div');
@@ -5,7 +9,7 @@ toggleApps.id = 'toggleApps';
 toggleApps.className = 'barButton';
 toggleApps.textContent = 'Apps';
 toggleApps.tabIndex = '0';
-toggleApps.addEventListener('click', function(evt) {
+toggleApps.addEventListener('click', function() {
 	$(apps).toggle();
 });
 toggleApps.addEventListener('keypress', function(evt) {
@@ -19,7 +23,7 @@ toggleAppsLoader.className = 'loader';
 toggleAppsContainer.appendChild(toggleAppsLoader);
 document.body.appendChild(toggleAppsContainer);
 
-var apps = document.createElement('div');
+apps = document.createElement('div');
 apps.id = 'apps';
 apps.className = 'barMenu';
 apps.textContent = 'Loading…';
@@ -86,7 +90,7 @@ function loadApps() {
 	});
 }
 
-listenForFileChanges(function(path, reason) {
+listenForFileChanges(function(path) {
 	if(path === '/Apps/') loadApps();
 });
 

@@ -1,26 +1,31 @@
+/*global _, $, apps, powerMenu, getFile: true, prepareUrl: true, listenForFileChanges: true, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
+
+var childDivs = [];
+var childWindows = [];
+
 function addCustomIframeFix(plugin) {
-	$.ui.plugin.add(plugin, "customIframeFix", {
-		start: function(event, ui) {
-			$("iframe").each(function() {
+	$.ui.plugin.add(plugin, 'customIframeFix', {
+		start: function() {
+			$('iframe').each(function() {
 				$(this).after(
 					$('<div class="ui-' + plugin + '-iframeFix"></div>')
 					.css({
 						width: '100%', height: 'calc(100% - 25px)',
-						position: "absolute", top: 25,opacity: "0.001"
+						position: 'absolute', top: 25,opacity: '0.001'
 					})
 				);
 			});
 		},
-		stop: function(event, ui) {
-			$("div.ui-" + plugin + "-iframeFix").each(function() {
+		stop: function() {
+			$('div.ui-' + plugin + '-iframeFix').each(function() {
 				this.parentNode.removeChild(this);
 			}); //Remove frame helpers
 		}
 	});
 }
 
-addCustomIframeFix("draggable");
-addCustomIframeFix("resizable");
+addCustomIframeFix('draggable');
+addCustomIframeFix('resizable');
 
 function clipResizableHandles(event, ui) {
 	var overflowx = ui.position.left + (ui.size ? ui.size.width : $(this).width()) - window.innerWidth;
@@ -33,16 +38,16 @@ function clipResizableHandles(event, ui) {
 		if(overflowy > 0) $(this).css('bottom', overflowy);
 		else $(this).css('bottom', '');
 	});
-};
+}
 function addClipResizableHandles(plugin, evt) {
 	var obj = {};
-	obj[evt] = clipResizableHandles
+	obj[evt] = clipResizableHandles;
 	
-	$.ui.plugin.add(plugin, "clipResizableHandles", obj);
+	$.ui.plugin.add(plugin, 'clipResizableHandles', obj);
 }
 
-addClipResizableHandles("draggable", "drag");
-addClipResizableHandles("resizable", "resize");
+addClipResizableHandles('draggable', 'drag');
+addClipResizableHandles('resizable', 'resize');
 
 
 function addHUD(pos) {
@@ -56,22 +61,22 @@ function removeHUD() {
 }
 
 
-$.ui.plugin.add("draggable", "minimize", {
-	drag: function(event, ui) {
-		if (event.pageY < 5) {
+$.ui.plugin.add('draggable', 'minimize', {
+	drag: function(event) {
+		if(event.pageY < 5) {
 			removeHUD();
 			this.removeClass('maximized');
 			this.addClass('minimized');
-		} else if (event.pageY < 25 && !this.hasClass('minimized')) {
+		} else if(event.pageY < 25 && !this.hasClass('minimized')) {
 			addHUD('max');
 		} else {
-			if (event.pageY > 25 && this.hasClass('minimized')) {
+			if(event.pageY > 25 && this.hasClass('minimized')) {
 				this.removeClass('minimized');
 			}
-			if (event.pageY > 50) {
+			if(event.pageY > 50) {
 				if(event.pageX < 20) {
 					addHUD('left');
-				} else if (event.pageX > window.innerWidth - 20) {
+				} else if(event.pageX > window.innerWidth - 20) {
 					addHUD('right');
 				} else {
 					removeHUD();
@@ -80,13 +85,13 @@ $.ui.plugin.add("draggable", "minimize", {
 			}
 		}
 	},
-	stop: function(event, ui) {
+	stop: function(event) {
 		// event.toElement is the element that was responsible
 		// for triggering this event. The handle, in case of a draggable.
 		$(event.toElement).one('click', function(e) {
 			e.stopImmediatePropagation();
 		});
-
+		
 		if($('.hud').length) {
 			this.removeClass('maximized-' + $(this).attr('data-pos'));
 			$(this).attr('data-pos', $('.hud').attr('data-pos'));
@@ -98,7 +103,7 @@ $.ui.plugin.add("draggable", "minimize", {
 	}
 });
 
-$.ui.plugin.add("draggable", "forceMinimize", {
+$.ui.plugin.add('draggable', 'forceMinimize', {
 	drag: function() {
 		if(this[0].realLeft) {
 			this[0].style.cssText = this[0].style.cssText.replace(/left: .+?;/, 'left: ' + this[0].realLeft + ';');
@@ -107,12 +112,12 @@ $.ui.plugin.add("draggable", "forceMinimize", {
 		forceMinimize();
 	}
 });
-$.ui.plugin.add("resizable", "forceMinimize", {
+$.ui.plugin.add('resizable', 'forceMinimize', {
 	resize: forceMinimize
 });
-$.ui.plugin.add("resizable", "unmaximize", {
+$.ui.plugin.add('resizable', 'unmaximize', {
 	start: function() {
-		if (this.hasClass('maximized')) {
+		if(this.hasClass('maximized')) {
 			this.css(this.css(['top', 'left', 'width', 'height']));
 			this.removeClass('maximized');
 		}
@@ -121,15 +126,15 @@ $.ui.plugin.add("resizable", "unmaximize", {
 
 var messageID = 0, messageCallbacks = {};
 
-prepareUrl = function(contents, path, callback, progress) {
-	parent.postMessage({messageID: ++messageID, action: 'fs.prepareUrl', args: [contents, path]}, '*');
+prepareUrl = function(url, options, callback, progress) {
+	parent.postMessage({messageID: ++messageID, action: 'fs.prepareUrl', args: [url, options]}, '*');
 	
 	messageCallbacks[messageID] = callback;
 	messageCallbacks[messageID].progress = progress;
 	messageCallbacks[messageID].listener = true;
 };
 
-getFile = function(path, options, callback) {
+getFile = function() {
 	parent.postMessage({messageID: ++messageID, action: 'fs.getFile', args: (typeof arguments[arguments.length -1] === 'function' ? [].slice.call(arguments, 0, -1) : [].slice.call(arguments))}, '*');
 	
 	messageCallbacks[messageID] = arguments[arguments.length - 1];
@@ -144,7 +149,7 @@ listenForFileChanges = function(fn) {
 
 
 window.addEventListener('message', function(message) {
-	if (message.source === parent) {
+	if(message.source === parent) {
 		if(message.data.action === 'createObjectURL') {
 			var arg = message.data.args[0];
 			parent.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(new Blob([arg.data], {type: arg.type}))]}, '*');
@@ -160,9 +165,10 @@ window.addEventListener('message', function(message) {
 			callback.apply(window, message.data.result);
 		}
 		if(!message.data.progress && !callback.listener) messageCallbacks[inReplyTo] = null;
-	} else if (childWindows.indexOf(message.source) !== -1) {
-		if (message.data.action.substr(0, 3) === 'wm.') {
-			if (message.data.action === 'wm.focus') {
+	} else if(childWindows.indexOf(message.source) !== -1) {
+		if(message.data.action.substr(0, 3) === 'wm.') {
+			var options;
+			if(message.data.action === 'wm.focus') {
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
@@ -170,10 +176,10 @@ window.addEventListener('message', function(message) {
 						}
 					});
 				});
-			} else if (message.data.action === 'wm.reportClicked') {
+			} else if(message.data.action === 'wm.reportClicked') {
 				$(apps).hide();
 				$(powerMenu).hide();
-			} else if (message.data.action === 'wm.setTitle') {
+			} else if(message.data.action === 'wm.setTitle') {
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
@@ -183,7 +189,7 @@ window.addEventListener('message', function(message) {
 						}
 					});
 				});
-			} else if (message.data.action === 'wm.setIcon') {
+			} else if(message.data.action === 'wm.setIcon') {
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
@@ -193,8 +199,8 @@ window.addEventListener('message', function(message) {
 						}
 					});
 				});
-			} else if (message.data.action === 'wm.openFile' || message.data.action === 'wm.openWindow') {
-				var options = {};
+			} else if(message.data.action === 'wm.openFile' || message.data.action === 'wm.openWindow') {
+				options = {};
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
@@ -208,8 +214,8 @@ window.addEventListener('message', function(message) {
 					});
 				});
 				window[message.data.action.substr(3)].apply(window, message.data.args.concat(options));
-			} else if (message.data.action === 'wm.showProgress' || message.data.action === 'wm.setProgress' || message.data.action === 'wm.hideProgress') {
-				var options = {};
+			} else if(message.data.action === 'wm.showProgress' || message.data.action === 'wm.setProgress' || message.data.action === 'wm.hideProgress') {
+				options = {};
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
@@ -221,7 +227,7 @@ window.addEventListener('message', function(message) {
 			} else {
 				throw 'unknown action';
 			}
-		} else if (message.data.action.substr(0, 3) === 'fs.' || message.data.action.substr(0, 5) === 'apps.') {
+		} else if(message.data.action.substr(0, 3) === 'fs.' || message.data.action.substr(0, 5) === 'apps.') {
 			var realMessageID = message.data.messageID;
 			message.data.messageID = ++messageID;
 			parent.postMessage(message.data, '*');
@@ -240,7 +246,7 @@ window.addEventListener('message', function(message) {
 showProgress = function(options) {
 	if(!options.loaderElm) return;
 	options.loaderElm.progressFrac = 0;
-	setProgress(.1, options);
+	setProgress(0.1, options);
 };
 setProgress = function(frac, options) {
 	if(!options.loaderElm) return;
@@ -259,39 +265,42 @@ hideProgress = function(options) {
 	} else {
 		$(options.loaderElm).css({width: ''});
 	}
-}
-
-var childDivs = [];
-var childWindows = [];
+};
 
 openWindow = function(path, options, callback) {
 	showProgress(options);
 	getFile(path + 'manifest.webapp', function(manifest) {
 		manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
-
+		
 		var launch_path = manifest.launch_path ? manifest.launch_path.replace(/^\//, '') : path.match(/[^/]+(?=\/$)/)[0] + '.html';
 		var _path = path + launch_path;
-
+		
 		var csp = manifest.csp || "default-src *; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'";
 		if(csp.indexOf('-src ') !== -1) csp = csp.replace(/-src /g, '-src data: ');
 		else csp = 'default-src data:; ' + csp;
 		var root = _path.match('/Apps/.+?/')[0];
-		prepareUrl(launch_path, {rootParent: root, relativeParent: root, csp: csp},	function(url) {
+		prepareUrl(launch_path, {rootParent: root, relativeParent: root, csp: csp}, function(url) {
 			var div = options.targetDiv || document.createElement('div');
 			var iframeWin;
-
+			
+			var tabs, tab;
 			if(!options.targetDiv) {
 				div.className = 'window';
+				var left, top;
 				if(options.originDiv) {
-					var left = parseInt(options.originDiv.style.left) || 0;
-					var top = parseInt(options.originDiv.style.top) || 25;
+					left = parseInt(options.originDiv.style.left) || 0;
+					top = parseInt(options.originDiv.style.top) || 25;
 				} else {
-					var left = 0, top = 25;
+					left = 0;
+					top = 25;
 				}
 				var positions = childDivs.map(function(div) {
 					return (parseInt(div.style.left) || 0) + ',' + (parseInt(div.style.top) || 25);
 				});
-				while(positions.indexOf(left + ',' + top) !== -1) left += 25, top += 25;
+				while(positions.indexOf(left + ',' + top) !== -1) {
+					left += 25;
+					top += 25;
+				}
 				div.style.left = left + 'px';
 				div.style.top = top + 'px';
 				$(div).draggable({customIframeFix: true, containment: [-Infinity, 25, Infinity, Infinity], snap: 'html, .window', scroll: false, minimize: true, forceMinimize: true, cursor: 'move', clipResizableHandles: true});
@@ -300,16 +309,16 @@ openWindow = function(path, options, callback) {
 				titlebarDiv.className = 'titlebar';
 				div.appendChild(titlebarDiv);
 						
-				var tabs = document.createElement('div');
+				tabs = document.createElement('div');
 				tabs.className = 'tabs';
 				div.appendChild(tabs);
 			} else {
 				tabs = $(div).find('.tabs')[0];
 				if(!options.innewtab) tab = $(div).find(options.targetTab)[0];
 			}
-
+			
 			if(!options.targetDiv || options.innewtab) {
-				var tab = document.createElement('div');
+				tab = document.createElement('div');
 				tab.className = 'tab';
 				tabs.appendChild(tab);
 				
@@ -325,7 +334,7 @@ openWindow = function(path, options, callback) {
 					var char;
 					if(evt.which == null)
 						char = String.fromCharCode(evt.keyCode);	// old IE
-					else if(evt.which != 0 && evt.charCode != 0)
+					else if(evt.which !== 0 && evt.charCode !== 0)
 						char = String.fromCharCode(evt.which);		// All others
 					else
 						return;
@@ -366,7 +375,7 @@ openWindow = function(path, options, callback) {
 				locationContainer.appendChild(locationLoader);
 				locationbar.appendChild(locationContainer);
 			}
-
+			
 			if(options.targetDiv) {
 				if(options.innewtab) {
 					cont();
@@ -384,7 +393,7 @@ openWindow = function(path, options, callback) {
 			} else {
 				cont();
 			}
-
+			
 			function cont() {
 				var iframe = document.createElement('iframe');
 				iframe.sandbox = 'allow-scripts';
@@ -393,10 +402,21 @@ openWindow = function(path, options, callback) {
 				tab.appendChild(iframe);
 				tab.path = path;
 				
+				var tabbar;
+				var toggleMaximized = function() {
+					if($(div).hasClass('maximized'))
+						$(div).removeClass('maximized');
+					else
+						$(div).removeClass('maximized-' + $(div).attr('data-pos'))
+							.attr('data-pos', 'max')
+							.addClass('maximized maximized-max');
+					clipResizableHandles.call(div, null, {position: $(div).position()});
+					forceMinimize();
+				};
 				if(!options.targetDiv) {
 					var closeBtn = document.createElement('button');
 					closeBtn.className = 'close';
-					closeBtn.addEventListener('click', function(evt) {
+					closeBtn.addEventListener('click', function() {
 						iframe.src = 'about:blank';
 						iframe.onload = function() {
 							document.body.removeChild(div);
@@ -422,20 +442,10 @@ openWindow = function(path, options, callback) {
 					
 					var maximizeBtn = document.createElement('button');
 					maximizeBtn.className = 'maximize';
-					var toggleMaximized = function() {
-						if($(div).hasClass('maximized'))
-						$(div).removeClass('maximized');
-						else
-						$(div).removeClass('maximized-' + $(div).attr('data-pos'))
-							.attr('data-pos', 'max')
-							.addClass('maximized maximized-max');
-						clipResizableHandles.call(div, null, {position: $(div).position()});
-						forceMinimize();
-					};
 					maximizeBtn.addEventListener('click', toggleMaximized);
 					titlebarDiv.appendChild(maximizeBtn);
 					
-					var tabbar = document.createElement('div');
+					tabbar = document.createElement('div');
 					tabbar.className = 'tabbar';
 					//tabbar.addEventListener('mousedown', function(evt) {
 					//	evt.stopPropagation();
@@ -451,7 +461,7 @@ openWindow = function(path, options, callback) {
 				} else {
 					tabbar = $(div).find('.tabbar')[0];
 				}
-
+				
 				if(!options.targetDiv || options.innewtab) {
 					var tabtitlebar = document.createElement('div');
 					tabtitlebar.className = 'tabtitlebar';
@@ -467,7 +477,7 @@ openWindow = function(path, options, callback) {
 					title.innerHTML = '&nbsp;';
 					tabtitlebar.appendChild(title);
 				}
-
+				
 				if(!options.targetDiv) {
 					var addtabContainer = document.createElement('div');
 					addtabContainer.className = 'loaderContainer';
@@ -495,6 +505,10 @@ openWindow = function(path, options, callback) {
 					icon.className = 'icon';
 					titlebarDiv.appendChild(icon);
 					
+					var focus = function() {
+						focusWindow(div);
+						$(div).find('iframe').blur().focus();
+					};
 					div.addEventListener('mousedown', function() {
 						focus();
 						var nohover = function(evt) { evt.stopImmediatePropagation(); };
@@ -502,12 +516,9 @@ openWindow = function(path, options, callback) {
 						setTimeout(function() { $('.window').off('mouseenter', nohover); }, 10);
 					});
 					//iframe.addEventListener('focus', focus);
-					function focus() {
-						focusWindow(div);
-						$(div).find('iframe').blur().focus();
-					}
+					
 					$(div).click(function() {
-						if (!div.classList.contains('ui-draggable-dragging')) {
+						if(!div.classList.contains('ui-draggable-dragging')) {
 							div.classList.remove('minimized');
 							focusWindow(div);
 						}
@@ -531,7 +542,7 @@ openWindow = function(path, options, callback) {
 				} else {
 					iframeWin = iframe.contentWindow;
 				}
-
+				
 				if(callback)
 					callback(iframeWin, tab, div);
 			}
@@ -558,34 +569,34 @@ $(document).on('mouseleave', '.window', function() {
 function forceMinimize() {
 	var windows = childDivs.filter(function(win) {
 		return !win.classList.contains('minimized') || win.classList.contains('force-minimized');
-	}).map(function(win, i) {
+	}).map(function(win) {
 		if(win.classList.contains('maximized')) {
-		if(win.classList.contains('maximized-max'))
-			return {
-				x1: 0,
-				y1: 25,
-				x2: window.innerWidth,
-				y2: window.innerHeight,
-				div: win
-			};
-		else if(win.classList.contains('maximized-left'))
-			return {
-				x1: 0,
-				y1: 25,
-				x2: window.innerWidth / 2,
-				y2: window.innerHeight,
-				div: win
-			};
-		else if(win.classList.contains('maximized-right'))
-			return {
-				x1: window.innerWidth / 2,
-				y1: 25,
-				x2: window.innerWidth,
-				y2: window.innerHeight,
-				div: win
-			};
+			if(win.classList.contains('maximized-max'))
+				return {
+					x1: 0,
+					y1: 25,
+					x2: window.innerWidth,
+					y2: window.innerHeight,
+					div: win
+				};
+			else if(win.classList.contains('maximized-left'))
+				return {
+					x1: 0,
+					y1: 25,
+					x2: window.innerWidth / 2,
+					y2: window.innerHeight,
+					div: win
+				};
+			else if(win.classList.contains('maximized-right'))
+				return {
+					x1: window.innerWidth / 2,
+					y1: 25,
+					x2: window.innerWidth,
+					y2: window.innerHeight,
+					div: win
+				};
 		}
-
+		
 		var $win = $(win);
 		var minimized = win.classList.contains('minimized');
 		var left = parseFloat(win.realLeft !== undefined ? win.realLeft : minimized ? win.style.left : $win.css('left')) || 0;
@@ -614,7 +625,7 @@ function forceMinimize() {
 		if(area === 0) {
 			win.div.classList.add('force-minimized');
 			win.div.classList.add('minimized');
-		} else if (win.div.classList.contains('force-minimized')) {
+		} else if(win.div.classList.contains('force-minimized')) {
 			win.div.classList.remove('force-minimized');
 			win.div.classList.remove('minimized');
 		}
@@ -658,7 +669,8 @@ function updateZIndex(hovered) {
 
 function positionMinimized() {
 	var full = {};
-	[].slice.call(childDivs).reverse().forEach(function(win, i) {
+	[].slice.call(childDivs).reverse().forEach(function(win) {
+		var moved;
 		if(win.classList.contains('minimized')) {
 			var left =
 				win.classList.contains('maximized') ?
@@ -666,11 +678,11 @@ function positionMinimized() {
 					win.classList.contains('maximized-right') ? Math.floor(window.innerWidth / 2) :
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
-			var minimizedLeft, moved, pushLeft;
-			if (left < 63) {
+			var minimizedLeft, pushLeft;
+			if(left < 63) {
 				minimizedLeft = 63;
 				moved = true;
-			} else if (left > window.innerWidth - 350) {
+			} else if(left > window.innerWidth - 350) {
 				minimizedLeft = window.innerWidth - 350;
 				moved = true;
 				pushLeft = true;
@@ -678,13 +690,13 @@ function positionMinimized() {
 				minimizedLeft = left;
 				moved = false;
 			}
-			for (; full[minimizedLeft]; moved = true) {
-				if (pushLeft) {
+			for(; full[minimizedLeft]; moved = true) {
+				if(pushLeft) {
 					full[minimizedLeft].style.left = parseInt(full[minimizedLeft].style.left) - 28 + 'px';
 				}
 				minimizedLeft += 28;
 			}
-			if (moved) {
+			if(moved) {
 				if(!win.realLeft) win.realLeft = win.style.left;
 				win.style.cssText += '; left: ' + (pushLeft ? window.innerWidth - 350 : minimizedLeft) + 'px !important;';
 			}
@@ -717,7 +729,7 @@ function focusTab(tab) {
 	focusWindow($window[0]);
 }
 
-window.addEventListener("resize", function() {
+window.addEventListener('resize', function() {
 	forceMinimize();
 	$('.window').each(function(i, win) { clipResizableHandles.call(win, null, {position: $(win).position()}); });
 }, false);
@@ -732,16 +744,18 @@ openFile = function(path, action) {
 	console.log('Prefetching', path);
 	getFile(path); // Start downloading the file as soon as possible.
 	var options = arguments[arguments.length - 1];
+	var args;
 	if(_.isObject(options)) {
-		var args = [].slice.call(arguments, 0, -1);
+		args = [].slice.call(arguments, 0, -1);
 	} else {
-		var args = [].slice.call(arguments);
+		args = [].slice.call(arguments);
 		options = {};
 	}
 	showProgress(options);
 	getFile('/Core/filetypes', function(contents) {
+		var apppath;
 		if(action[0] === '/') {
-			var apppath = action;
+			apppath = action;
 		} else {
 			var filetypes = {};
 			contents.split('\n').forEach(function(line) {
@@ -757,7 +771,7 @@ openFile = function(path, action) {
 			});
 			var prefs = filetypes[extension(path)] || filetypes['*'];
 			var pref = (prefs[action] || prefs[prefs.default] || prefs[filetypes['*'].default] || prefs.edit || prefs.view)[0];
-			var apppath = '/Apps/' + pref + '/';
+			apppath = '/Apps/' + pref + '/';
 		}
 		if(options.targetTab && options.targetTab.path === apppath) {
 			cb($(options.targetTab).find('iframe')[0].contentWindow, options.targetTab, options.targetDiv);
@@ -777,11 +791,12 @@ openFile = function(path, action) {
 	}
 };
 
+/* jshint ignore:start *//* jscs: disable */
 Array.prototype.alphanumSort = function(caseInsensitive) {
 	for (var z = 0, t; t = this[z]; z++) {
 		this[z] = [];
 		var x = 0, y = -1, n = 0, i, j;
-
+		
 		while (i = (j = t.charAt(x++)).charCodeAt(0)) {
 			var m = (i == 46 || (i >=48 && i <= 57));
 			if (m !== n) {
@@ -791,7 +806,7 @@ Array.prototype.alphanumSort = function(caseInsensitive) {
 			this[z][y] += j;
 		}
 	}
-
+	
 	this.sort(function(a, b) {
 		for (var x = 0, aa, bb; (aa = a[x]) && (bb = b[x]); x++) {
 			if (caseInsensitive) {
@@ -807,7 +822,8 @@ Array.prototype.alphanumSort = function(caseInsensitive) {
 		}
 		return a.length - b.length;
 	});
-
+	
 	for (var z = 0; z < this.length; z++)
 	this[z] = this[z].join("");
-}
+};
+/* jshint ignore:end *//* jscs: enable */

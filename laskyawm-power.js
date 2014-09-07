@@ -1,3 +1,7 @@
+/*global $, prepareUrl */
+
+var powerMenu;
+
 var togglePowerMenu = document.createElement('input');
 togglePowerMenu.id = 'togglePowerMenu';
 togglePowerMenu.className = 'barButton';
@@ -6,18 +10,18 @@ togglePowerMenu.alt = 'Log Out…';
 prepareUrl('/Core/power.png', {rootParent: '/'}, function(url) {
 	togglePowerMenu.src = url;
 });
-togglePowerMenu.addEventListener('click', function(evt) {
+togglePowerMenu.addEventListener('click', function() {
 	$(powerMenu).toggle();
 });
 document.body.appendChild(togglePowerMenu);
 
-var powerMenu = document.createElement('div');
+powerMenu = document.createElement('div');
 powerMenu.id = 'powerMenu';
 powerMenu.className = 'barMenu';
 var logout = document.createElement('div');
 logout.tabIndex = '0';
 logout.textContent = 'Log Out';
-logout.addEventListener('click', function(evt) {
+logout.addEventListener('click', function() {
 	window.parent.postMessage({action: 'core.logout', args: []}, '*');
 });
 powerMenu.appendChild(logout);
