@@ -587,6 +587,7 @@ window.openWindow = function(path, document, container) {
 	prepareUrl(path, {compat: false, rootParent: '/'}, function(url) {
 		var div = document.createElement('div');
 		div.className = 'window';
+		div.style.overflow = 'hidden';
 		var iframe = document.createElement('iframe'); 
 		iframe.sandbox = 'allow-scripts';
 		iframe.src = url;
