@@ -129,7 +129,20 @@
 	var title = document.getElementsByTagName('title')[0];
 	if(title) airborn.wm.setTitle(title.textContent);
 	var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
-	if(icon) airborn.wm.setIcon(icon.href);
+	if(icon) {
+		var img = document.createElement('img');
+		img.src = icon.href;
+		img.addEventListener('load', function() {
+			var canvas = document.createElement('canvas');
+			canvas.width = canvas.height = 16;
+			
+			var ctx = canvas.getContext('2d');
+			ctx.drawImage(img, 0, 0, 16, 16);
+			
+			airborn.wm.setIcon(canvas.toDataURL('image/png'));
+		});
+	}
+	
 	window.addEventListener('mousedown', function() {
 		airborn.wm.focus();
 		airborn.wm.reportClicked();
@@ -145,7 +158,8 @@
 	var requestOpen = XMLHttpRequest.prototype.open;
 	var rSchema = /^([a-z]+:|\/\/)/i;
 	var rArgs = /[?#].*$/;
-	var root = getURLFilename(location.href);
+	var root = window.root;
+	delete window.root;
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;
@@ -355,7 +369,7 @@
 	function findNewElements() {
 		['src', 'href', 'icon'].forEach(function(attrName) {
 			Array.prototype.forEach.call(document.querySelectorAll(
-				'[' + attrName + ']:not([' + attrName + '^="data:"]):not([' + attrName + '^="http:"]):not([' + attrName + '^="https:"]):not([' + attrName + '^="//"])'
+				'[' + attrName + ']:not([' + attrName + '^="blob:"]):not([' + attrName + '^="data:"]):not([' + attrName + '^="http:"]):not([' + attrName + '^="https:"]):not([' + attrName + '^="//"])'
 			), function(elm) {
 				var attr = elm.getAttribute(attrName);
 				if(attr && !rSchema.test(attr)) airborn.fs.prepareUrl(attr, {rootParent: root, relativeParent: root}, function(url, err) {

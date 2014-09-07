@@ -780,8 +780,10 @@ openFile = function(path, action) {
 			return;
 		}
 		openWindow(apppath, options, function(win, tab, div) {
-			$(div).find('iframe').one('load', function() {
-				cb(win, tab, div);
+			$(div).find('iframe').one('load', function() { // App bootstrapper.
+				$(div).find('iframe').one('load', function() { // The actual app.
+					cb(win, tab, div);
+				});
 			});
 		});
 	});
