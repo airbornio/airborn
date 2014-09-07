@@ -612,13 +612,21 @@ function forceMinimize() {
 		};
 	}).reverse();
 	
-	windows.forEach(function(win, i) {
+	for(var i = 0, len = windows.length; i < len; i++) {
+		var win = windows[i];
 		for(var amount = 0, sign = 1, area = 0; amount <= i; amount++, sign *= -1) {
 			for(var b = 0; b < Math.pow(2, i); b++) {
 				if(b.toString(2).replace(/0/g, '').length === amount) {
-					area += sign * I.apply(this, windows.filter(function(w, i) {
-						return Math.pow(2, i) & b;
-					}).concat([win]));
+					var x1 = win.x1, y1 = win.y1, x2 = win.x2, y2 = win.y2;
+					for(var j = 0; j < len; j++) {
+						if(Math.pow(2, j) & b) {
+							if(windows[j].x1 > x1) x1 = windows[j].x1;
+							if(windows[j].y1 > y1) y1 = windows[j].y1;
+							if(windows[j].x2 < x2) x2 = windows[j].x2;
+							if(windows[j].y2 < y2) y2 = windows[j].y2;
+						}
+					}
+					area += sign * O(x1, y1, x2, y2);
 				}
 			}
 		}
@@ -629,23 +637,13 @@ function forceMinimize() {
 			win.div.classList.remove('force-minimized');
 			win.div.classList.remove('minimized');
 		}
-	});
+	}
 	
 	positionMinimized();
 }
 
-function I() {
-	var i = {
-		x1: Math.max.apply(Math, _.pluck(arguments, 'x1')),
-		y1: Math.max.apply(Math, _.pluck(arguments, 'y1')),
-		x2: Math.min.apply(Math, _.pluck(arguments, 'x2')),
-		y2: Math.min.apply(Math, _.pluck(arguments, 'y2'))
-	};
-	return O(i);
-}
-
-function O(a) {
-	return Math.max(0, a.x2 - a.x1) * Math.max(0, a.y2 - a.y1);
+function O(x1, y1, x2, y2) {
+	return Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
 }
 
 
