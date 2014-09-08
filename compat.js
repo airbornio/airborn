@@ -148,7 +148,12 @@
 		airborn.wm.reportClicked();
 	}, true);
 	
+	var filenames = document.filenames;
+	delete document.filenames;
 	function getURLFilename(url) {
+		if(filenames.hasOwnProperty(url)) {
+			return filenames[url];
+		}
 		var startIndex = url.indexOf('filename=');
 		if(startIndex === -1) return url;
 		var filename = url.substr(startIndex + 9); // 'filename='.length == 9
@@ -158,8 +163,8 @@
 	var requestOpen = XMLHttpRequest.prototype.open;
 	var rSchema = /^([a-z]+:|\/\/)/i;
 	var rArgs = /[?#].*$/;
-	var root = window.root;
-	delete window.root;
+	var root = document.root;
+	delete document.root;
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;

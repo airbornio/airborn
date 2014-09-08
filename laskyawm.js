@@ -151,8 +151,13 @@ listenForFileChanges = function(fn) {
 window.addEventListener('message', function(message) {
 	if(message.source === parent) {
 		if(message.data.action === 'createObjectURL') {
-			var arg = message.data.args[0];
-			parent.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(new Blob([arg.data], {type: arg.type}))]}, '*');
+			var arg = message.data.args[0], object;
+			try {
+				object = new File([arg.data], arg.name, {type: arg.type});
+			} catch(e) {
+				object = new Blob([arg.data], {type: arg.type});
+			}
+			parent.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(object)]}, '*');
 			return;
 		}
 		var inReplyTo = message.data.inReplyTo; // Callback might change message.data.inReplyTo.

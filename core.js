@@ -448,10 +448,19 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'<body>',
 			'Loading…',
 			'<script>',
+			'document.root = ' + JSON.stringify(file) + ';',
+			'document.filenames = {};',
 			'window.addEventListener("message", function(message) {',
 			'	if(message.data.action === "createObjectURL") {',
-			'		var arg = message.data.args[0];',
-			'		window.top.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(new Blob([arg.data], {type: arg.type}))]}, "*");',
+			'		var arg = message.data.args[0], object;',
+			'		try {',
+			'			object = new File([arg.data], arg.name, {type: arg.type});',
+			'		} catch(e) {',
+			'			object = new Blob([arg.data], {type: arg.type});',
+			'		}',
+			'		var url = URL.createObjectURL(object);',
+			'		document.filenames[url] = arg.name;',
+			'		window.top.postMessage({inReplyTo: message.data.messageID, result: [url]}, "*");',
 			'		return;',
 			'	}',
 			'	if(!message.data.progress) {',
@@ -474,7 +483,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		_options.compat = false;
 		prepareFile(file, _options, function(c, err) {
 			if(err) return callback('');
-			prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/', root: file}, function(compat, err) {
+			prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/'}, function(compat, err) {
 				callback((options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head)/i, compat), err);
 			}, function() {}, createObjectURL);
 		}, progress, createObjectURL);
@@ -483,7 +492,6 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		getFile(file, function(contents, err) {
 			if(err) return callback('');
 			if(options.compat !== false) {
-				if(file === '/Core/compat.js') contents = 'var root = ' + JSON.stringify(options.root) + ';' + contents;
 				if(navigator.userAgent.match(/Chrome/)) contents = contents.replace(/localStorage/g, 'airborn_localStorage');
 			}
 			callback(contents);
@@ -559,7 +567,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
 	var path = resolve(options.relativeParent, url, options.rootParent);
-	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, root: options.root}, cb, progress, createObjectURL);
+	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
@@ -607,7 +615,13 @@ window.openWindow = function(path, document, container) {
 		container.appendChild(div);
 		mainWindow = iframe.contentWindow;
 	}, function() {}, function(arg, callback) {
-		callback(URL.createObjectURL(new Blob([arg.data], {type: arg.type})));
+		var object;
+		try {
+			object = new File([arg.data], arg.name, {type: arg.type});
+		} catch(e) {
+			object = new Blob([arg.data], {type: arg.type});
+		}
+		callback(URL.createObjectURL(object));
 	});
 };
 
