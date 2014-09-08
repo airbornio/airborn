@@ -168,7 +168,7 @@
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;
-		if(url.substr(0, 7) === 'data://' && url.indexOf(',') === -1) url = url.substr(7); // Workaround for URI.js in Firetext
+		if((url.substr(0, 7) === 'data://' && url.indexOf(',') === -1) || url.substr(0, 7) === 'blob://') url = url.substr(7); // Workaround for URI.js in Firetext
 		if(method === 'GET' && !rSchema.test(url)) {
 			this.airbornFile = true;
 			this.setRequestHeader = function() { console.log(this, arguments); };
