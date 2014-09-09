@@ -31,7 +31,6 @@ var sjcl = parent.sjcl;
 var private_key = parent.private_key;
 var private_hmac = parent.private_hmac;
 var files_hmac = parent.files_hmac;
-var S3Prefix = parent.S3Prefix;
 var password = parent.password;
 var files_key = parent.files_key;
 
@@ -351,29 +350,25 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		filesToPut++;
 		getFile(file + '.history/', {codec: 'dir'}, function(history) {
 			var histname = file + '.history/v' + (history ? Math.max.apply(Math, Object.keys(history).map(function(name) { return parseInt(name.substr(1), 10); })) + 1 : 1) + file.match(/(\/|\.\w+)?$/)[0];
-			putFile(histname, {codec: options.codec}, contents, {edited: now}, function(histid) {
+			putFile(histname, {codec: options.codec}, contents, {edited: now}, function(histid, blob) {
 				
 				// Copy history file to destination
 				var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
-				var id = S3Prefix + '/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
-				var s3upload = _.extend(Object.create(S3Upload.prototype), {
-					s3_sign_put_url: '/sign_s3_copy_' + histid,
-					s3_object_name: id,
-					method: 'PUT',
-					prepareXHR: function(xhr) {
-						xhr.setRequestHeader('x-amz-acl', 'public-read');
-						xhr.setRequestHeader('x-amz-copy-source', '/laskya-cloud/' + histid);
-					},
-					onProgress: function() {}, // (percent, message)
-					onFinishS3Put: function() { // (public_url)
+				var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
+				var req = new XMLHttpRequest();
+				req.open('PUT', '/object/' + id);
+				req.addEventListener('load', function(evt) {
+					if(this.status === 200) {
 						if(callback) callback();
 						notifyFileChange(file, is_new_file ? 'created' : 'modified');
-					},
-					onError: function(status) {
-						console.log('error', status);
+					} else {
+						console.log('error', this);
 					}
 				});
-				s3upload.uploadFile({type: ''});
+				req.addEventListener('error', function() {
+					console.log('error', this);
+				});
+				req.send(blob);
 				
 			}, progress);
 			filesToPut--;
@@ -386,27 +381,27 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			// Upload file
 			console.log('PUT', file);
 			var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
-			var id = S3Prefix + '/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
+			var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
 			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? private_key : files_key, contents)], {type: 'binary/octet-stream'});
-			var blobsize = blob.size;
-			var s3upload = _.extend(Object.create(S3Upload.prototype), {
-				s3_sign_put_url: '/sign_s3_post_' + blobsize,
-				s3_object_name: id,
-				method: 'POST',
-				onProgress: function(percent, message) {
-					console.log('Upload progress: ' + percent + '% ' + message, file);
-					var _size = (size === undefined ? 1 : size);
-					if(progress) progress(percent / 100 * _size, _size);
-				},
-				onFinishS3Put: function() { // (public_url)
-					if(callback) callback(id);
-				},
-				onError: function(status) {
-					console.log('error', status);
+			var req = new XMLHttpRequest();
+			req.open('PUT', '/object/' + id);
+			req.addEventListener('load', function(evt) {
+				if(this.status === 200) {
+					if(callback) callback(id, blob);
+				} else {
+					console.log('error', this);
 				}
 			});
-			s3upload.uploadFile(blob);
+			req.addEventListener('progress', function(evt) {
+				if(evt.lengthComputable) {
+					if(progress) progress(evt.loaded, evt.total);
+				}
+			});
+			req.addEventListener('error', function() {
+				console.log('error', this);
+			});
+			req.send(blob);
 		}
 	}
 };
@@ -596,7 +591,6 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 };
 
 getFile('/Core/lodash.min.js', eval);
-getFile('/Core/s3upload.js', eval);
 getFile('/Core/js-yaml.js', eval);
 getFile('/Core/3rdparty/jszip/jszip.min.js', eval);
 
