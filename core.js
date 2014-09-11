@@ -42,6 +42,12 @@ sjcl.codec.raw = sjcl.codec.sjcl = {
 };
 
 var utf8String_fromBits = sjcl.codec.utf8String.fromBits; // `sjcl.codec.utf8String.fromBits` will get overwritten in our getFile hackery.
+sjcl.codec.json = sjcl.codec.prettyjson = {
+	fromBits: function(bits) { return JSON.parse(utf8String_fromBits(bits)); },
+	toBits: function(obj) { return sjcl.codec.utf8String.toBits(JSON.stringify(obj)); }
+};
+sjcl.codec.prettyjson.toBits = function(obj) { return sjcl.codec.utf8String.toBits(JSON.stringify(obj, null, '\t')); };
+
 var currentFilename;
 sjcl.codec.dir = sjcl.codec.yaml = {
 	fromBits: function(bits) { return jsyaml.safeLoad(utf8String_fromBits(bits), {filename: currentFilename}); },
@@ -598,7 +604,7 @@ getFile('/Core/3rdparty/jszip/jszip.min.js', eval);
 
 var mainWindow;
 
-window.openWindow = function(path, document, container) {
+window.openWindow = function(path, callback) {
 	prepareUrl(path, {compat: false, rootParent: '/'}, function(url) {
 		var div = document.createElement('div');
 		div.className = 'window';
@@ -608,8 +614,9 @@ window.openWindow = function(path, document, container) {
 		iframe.src = url;
 		iframe.scrolling = 'no';
 		div.appendChild(iframe);
-		container.appendChild(div);
+		document.body.appendChild(div);
 		mainWindow = iframe.contentWindow;
+		callback(iframe);
 	}, function() {}, function(arg, callback) {
 		var object;
 		try {
@@ -683,17 +690,21 @@ function update() {
 		var currentId = this.response;
 		getFile('/Core/version-id', function(contents) {
 			if(currentId !== contents) {
-				corsReq('http://airborn-update-stage.herokuapp.com/current', function() {
-					var zip = new JSZip(this.response);
-					var keys = Object.keys(zip.folder('airborn').files);
-					var target = '/Core/';
-					keys.forEach(function(path) {
-						var file = zip.files[path];
-						if(!file.options.dir) {
-							putFile(target + path.replace(/^airborn\//, ''), {codec: 'arrayBuffer'}, file.asArrayBuffer());
-						}
-					});
-				}, 'arraybuffer');
+				if((settings && settings.core && settings.core.notifyOfUpdates === false) || confirm(
+					'There is an update for Airborn. Do you want to install it now? You can continue using Aiborn while and after updating. The update will apply next time you open Airborn.\nIf you click Cancel, you will be asked again in 1 hour or next time you open Airborn.'
+				)) {
+					corsReq('http://airborn-update-stage.herokuapp.com/current', function() {
+						var zip = new JSZip(this.response);
+						var keys = Object.keys(zip.folder('airborn').files);
+						var target = '/Core/';
+						keys.forEach(function(path) {
+							var file = zip.files[path];
+							if(!file.options.dir) {
+								putFile(target + path.replace(/^airborn\//, ''), {codec: 'arrayBuffer'}, file.asArrayBuffer());
+							}
+						});
+					}, 'arraybuffer');
+				}
 			}
 		});
 	});
@@ -713,6 +724,12 @@ function getServerMessages() {
 		}
 	});
 	req.send();
+}
+
+function loadSettings() {
+	getFile('/settings', {codec: 'json'}, function(settings) {
+		window.settings = settings;
+	});
 }
 
 window.logout = function() {

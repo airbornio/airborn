@@ -5,12 +5,19 @@ GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/core.js')), functi
 	
 	setTitle('');
 	
-	openWindow('/Core/laskyawm.html', document, document.body);
-	
-	setTimeout(update, 10000); // After ten seconds
-	setInterval(update, 3600000); // Each hour
-	
-	getServerMessages();
+	openWindow('/Core/laskyawm.html', function(iframe) {
+		iframe.addEventListener('load', function firstLoad() {
+			iframe.removeEventListener('load', firstLoad);
+			iframe.addEventListener('load', function secondLoad() {
+				iframe.removeEventListener('load', secondLoad);
+				
+				getServerMessages();
+				
+				update();
+				setInterval(update, 3600000); // Each hour
+			});
+		});
+	});
 	
 	var messageID = 0, messageCallbacks = {};
 	window.addEventListener('message', function(message) {
@@ -40,6 +47,8 @@ GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/core.js')), functi
 			src.postMessage({data: message.data, forwardedFrom: message.origin}, '*');
 		}
 	});
+	
+	loadSettings();
 });
 
 document.getElementById('container').style.display = 'none';
