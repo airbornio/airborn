@@ -1,5 +1,7 @@
 /*global _, jsyaml, XDomainRequest, S3Upload, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, setTitle: true, resolve: true, basename: true, deepEquals: true */
 
+var core_version = 2;
+
 var inTransaction = false;
 var transaction = null;
 var transactionDate;
@@ -699,6 +701,23 @@ function update() {
 }
 setTimeout(update, 10000); // After ten seconds
 setInterval(update, 3600000); // Each hour
+
+function getServerMessages() {
+	var req = new XMLHttpRequest();
+	req.open('GET', '/messages');
+	req.responseType = 'json';
+	req.addEventListener('load', function() {
+		if(this.status === 200) {
+			this.response.forEach(function(message) {
+				if(message.min_core_version && message.min_core_version > core_version) return;
+				if(message.max_core_version && message.max_core_version < core_version) return;
+				alert(message.text);
+			});
+		}
+	});
+	req.send();
+}
+getServerMessages();
 
 window.logout = function() {
 	sessionStorage.clear();
