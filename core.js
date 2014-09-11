@@ -1,6 +1,8 @@
-/*global _, jsyaml, XDomainRequest, S3Upload, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, setTitle: true, resolve: true, basename: true, deepEquals: true */
+/*global _, jsyaml, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
 
 var core_version = 2;
+
+var settings = {};
 
 var inTransaction = false;
 var transaction = null;
@@ -365,7 +367,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 				var req = new XMLHttpRequest();
 				req.open('PUT', '/object/' + id);
-				req.addEventListener('load', function(evt) {
+				req.addEventListener('load', function() {
 					if(this.status === 200) {
 						if(callback) callback();
 						notifyFileChange(file, is_new_file ? 'created' : 'modified');
@@ -394,7 +396,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? private_key : files_key, contents)], {type: 'binary/octet-stream'});
 			var req = new XMLHttpRequest();
 			req.open('PUT', '/object/' + id);
-			req.addEventListener('load', function(evt) {
+			req.addEventListener('load', function() {
 				if(this.status === 200) {
 					if(callback) callback(id, blob);
 				} else {
@@ -685,12 +687,12 @@ window.installPackage = function(manifest_url, params, callback) {
 	});
 };
 
-function update() {
+window.update = function() {
 	corsReq('http://airborn-update-stage.herokuapp.com/current-id', function() {
 		var currentId = this.response;
 		getFile('/Core/version-id', function(contents) {
 			if(currentId !== contents) {
-				if((settings && settings.core && settings.core.notifyOfUpdates === false) || confirm(
+				if((settings.core && settings.core.notifyOfUpdates === false) || confirm(
 					'There is an update for Airborn. Do you want to install it now? You can continue using Aiborn while and after updating. The update will apply next time you open Airborn.\nIf you click Cancel, you will be asked again in 1 hour or next time you open Airborn.'
 				)) {
 					corsReq('http://airborn-update-stage.herokuapp.com/current', function() {
@@ -708,9 +710,9 @@ function update() {
 			}
 		});
 	});
-}
+};
 
-function getServerMessages() {
+window.getServerMessages = function() {
 	var req = new XMLHttpRequest();
 	req.open('GET', '/messages');
 	req.responseType = 'json';
@@ -724,13 +726,13 @@ function getServerMessages() {
 		}
 	});
 	req.send();
-}
+};
 
-function loadSettings() {
-	getFile('/settings', {codec: 'json'}, function(settings) {
-		window.settings = settings;
+window.loadSettings = function() {
+	getFile('/settings', {codec: 'json'}, function(_settings) {
+		settings = _settings;
 	});
-}
+};
 
 window.logout = function() {
 	sessionStorage.clear();
@@ -747,7 +749,7 @@ function getAPIKey() {
 	APIKeys.push(key);
 	return key;
 }
-function isValidAPIKey(key) {
+window.isValidAPIKey = function(key) {
 	return APIKeys.indexOf(key) !== -1;
-}
+};
 //# sourceURL=/Core/core.js
