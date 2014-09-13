@@ -326,59 +326,6 @@ openWindow = function(path, options, callback) {
 				tab = document.createElement('div');
 				tab.className = 'tab';
 				tabs.appendChild(tab);
-				
-				var locationbar = document.createElement('div');
-				locationbar.className = 'locationbar';
-				tab.appendChild(locationbar);
-				
-				var locationContainer = document.createElement('div');
-				locationContainer.className = 'loaderContainer';
-				var location = document.createElement('input');
-				location.addEventListener('keypress', function(evt) {
-					if(evt.which === 13) return; // Chrome 34 on enter.
-					var char;
-					if(evt.which == null)
-						char = String.fromCharCode(evt.keyCode);	// old IE
-					else if(evt.which !== 0 && evt.charCode !== 0)
-						char = String.fromCharCode(evt.which);		// All others
-					else
-						return;
-					var value = this.value.substr(0, this.selectionStart) + char + this.value.substr(this.selectionEnd);
-					var filedir = value.substr(0, value.lastIndexOf('/') + 1);
-					getFile(filedir, {codec: 'dir'}, function(contents) {
-						if(location.selectionStart !== location.value.length) return;
-						var slashIndex = location.value.lastIndexOf('/') + 1;
-						if(filedir === location.value.substr(0, slashIndex)) {
-							var filebase = location.value.substr(slashIndex);
-							var filebaselen = filebase.length;
-							if(!filebaselen) return;
-							var matches = [];
-							_.each(contents, function(attrs, name) {
-								if(name.substr(0, filebaselen) === filebase) matches.push(name);
-							});
-							matches.alphanumSort();
-							if(!matches[0]) return;
-							location.value = filedir + matches[0];
-							location.setSelectionRange(filedir.length + filebaselen, filedir.length + matches[0].length);
-						}
-					});
-				});
-				location.addEventListener('keyup', function(evt) {
-					if(evt.keyCode === 13) {
-						openFile.apply(this, location.value.split(' ').concat({
-							targetDiv: div,
-							targetTab: tab,
-							fromLocationBar: true,
-							loaderElm: locationLoader
-						}));
-						location.setSelectionRange(this.value.length, this.value.length);
-					}
-				});
-				locationContainer.appendChild(location);
-				var locationLoader = document.createElement('div');
-				locationLoader.className = 'loader';
-				locationContainer.appendChild(locationLoader);
-				locationbar.appendChild(locationContainer);
 			}
 			
 			if(options.targetDiv) {

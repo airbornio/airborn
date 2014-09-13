@@ -108,7 +108,7 @@ body {
 	height: 16px;
 }
 .window .tabs {
-	height: calc(100% - 50px);
+	height: calc(100% - 25px);
 }
 .window .tab {
 	height: 100%;
@@ -118,19 +118,6 @@ body {
 .window .tab.focused {
 	display: block;
 }
-.window .locationbar {
-	background: white;
-	height: 25px;
-}
-.window .locationbar .loaderContainer {
-	width: 100%;
-	height: 100%;
-	position: absolute;
-	left: 0;
-}
-.window .locationbar input {
-	width: 100%;
-}
 .window iframe {
 	width: 100%;
 	height: 100%;
@@ -139,7 +126,6 @@ body {
 	border-bottom-right-radius: 7px;
 	background-color: white;
 	position: absolute;
-	top: 25px;
 	left: 0;
 }
 .hud {
