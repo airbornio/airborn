@@ -692,9 +692,9 @@ window.update = function() {
 		var currentId = this.response;
 		getFile('/Core/version-id', function(contents) {
 			if(currentId !== contents) {
-				if((settings.core && settings.core.notifyOfUpdates === false) || confirm(
+				if((settings.core && settings.core.notifyOfUpdates === false) || (document.hasFocus() && confirm(
 					'There is an update for Airborn. Do you want to install it now? You can continue using Aiborn while and after updating. The update will apply next time you open Airborn.\nIf you click Cancel, you will be asked again in 1 hour or next time you open Airborn.'
-				)) {
+				))) {
 					corsReq('http://airborn-update-stage.herokuapp.com/current', function() {
 						var zip = new JSZip(this.response);
 						var keys = Object.keys(zip.folder('airborn').files);
