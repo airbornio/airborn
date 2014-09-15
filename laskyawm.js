@@ -105,15 +105,20 @@ $.ui.plugin.add('draggable', 'minimize', {
 
 $.ui.plugin.add('draggable', 'forceMinimize', {
 	drag: function() {
-		if(this[0].realLeft) {
-			this[0].style.cssText = this[0].style.cssText.replace(/left: .+?;/, 'left: ' + this[0].realLeft + ';');
-			delete this[0].realLeft;
-		}
-		forceMinimize();
+		var _this = this;
+		setTimeout(function() {
+			if(_this[0].realLeft) {
+				_this[0].style.cssText = _this[0].style.cssText.replace(/left: .+?;/, 'left: ' + _this[0].realLeft + ';');
+				delete _this[0].realLeft;
+			}
+			forceMinimize();
+		});
 	}
 });
 $.ui.plugin.add('resizable', 'forceMinimize', {
-	resize: forceMinimize
+	resize: function() {
+		setTimeout(forceMinimize);
+	}
 });
 $.ui.plugin.add('resizable', 'unmaximize', {
 	start: function() {
