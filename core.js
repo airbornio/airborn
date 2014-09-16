@@ -26,6 +26,9 @@ function endTransaction() {
 	transaction = null;
 	Object.keys(_transaction).forEach(function(path) {
 		_transaction[path][1].finishingTransaction = true;
+		if(/\/\.history\//.test(_transaction[path][0])) {
+			window.getFileCache[_transaction[path][0]] = {codec: _transaction[path][1].codec, contents: _transaction[path][2], ts: Date.now()};
+		}
 		putFile.apply(window, _transaction[path]);
 	});
 }
@@ -354,8 +357,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		});
 	}
 	
-	if(!/\.history\//.test(file)) {
+	if(!/\/\.history\//.test(file)) {
 		window.getFileCache[file] = {codec: options.codec, contents: contents, ts: Date.now()};
+	}
+	
+	if(!/\.history\//.test(file)) {
 		// Add to file history
 		filesToPut++;
 		getFile(file + '.history/', {codec: 'dir'}, function(history) {
