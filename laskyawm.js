@@ -171,15 +171,11 @@ window.addEventListener('message', function(message) {
 			parent.postMessage({inReplyTo: message.data.messageID, result: ['data:' + arg.type + ';charset=utf-8,' + encodeURIComponent(arg.data)]}, '*');
 			return;
 		}
-		var inReplyTo = message.data.inReplyTo; // Callback might change message.data.inReplyTo.
+		var inReplyTo = message.data.inReplyTo;
 		var callback = messageCallbacks[inReplyTo];
 		if(!callback) return;
 		if(message.data.progress) callback = callback.progress;
-		if(callback.raw) {
-			callback(message);
-		} else {
-			callback.apply(window, message.data.result);
-		}
+		callback.apply(window, message.data.result);
 		if(!message.data.progress && !callback.listener) messageCallbacks[inReplyTo] = null;
 	} else if(childWindows.indexOf(message.source) !== -1) {
 		if(message.data.action.substr(0, 3) === 'wm.') {
@@ -243,16 +239,6 @@ window.addEventListener('message', function(message) {
 			} else {
 				throw 'unknown action';
 			}
-		} else if(message.data.action.substr(0, 3) === 'fs.' || message.data.action.substr(0, 5) === 'apps.') {
-			var realMessageID = message.data.messageID;
-			message.data.messageID = ++messageID;
-			parent.postMessage(message.data, '*');
-			messageCallbacks[messageID] = function(reply) {
-				reply.data.inReplyTo = realMessageID;
-				message.source.postMessage(reply.data, '*');
-			};
-			messageCallbacks[messageID].raw = true;
-			messageCallbacks[messageID].progress = messageCallbacks[messageID];
 		} else {
 			throw 'unknown action';
 		}

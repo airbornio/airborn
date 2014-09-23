@@ -2,8 +2,10 @@
 
 (function() {
 	var messageID = 0, messageCallbacks = {};
+	var apikey = document.apikey;
+	delete document.apikey;
 	var action = function(action, args, callback, progress, transfer) {
-		parent.postMessage({messageID: ++messageID, action: action, args: args}, '*', transfer);
+		(action.substr(0, 3) === 'wm.' ? parent : window['top']).postMessage({messageID: ++messageID, action: action, args: args, apikey: apikey}, '*', transfer);
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) {
 			messageCallbacks[messageID].progress = progress;
@@ -11,7 +13,7 @@
 		}
 	};
 	window.addEventListener('message', function(message) {
-		if(message.source === parent) {
+		if(message.source === window['top'] || message.source === parent) {
 			if(message.data.inReplyTo) {
 				var callback = messageCallbacks[message.data.inReplyTo];
 				if(callback !== undefined && message.data.progress) callback = callback.progress;
@@ -19,6 +21,16 @@
 				callback.apply(window, message.data.result);
 				if(!message.data.progress && !callback.listener) messageCallbacks[message.data.inReplyTo] = null;
 			} else if(message.data.action) {
+				if(message.data.action === 'createObjectURL') {
+					var arg = message.data.args[0], object;
+					try {
+						object = new File([arg.data], arg.name, {type: arg.type});
+					} catch(e) {
+						object = new Blob([arg.data], {type: arg.type});
+					}
+					message.source.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(object)]}, '*');
+					return;
+				}
 				airborn.listeners[message.data.action + 'Request'].forEach(function(listener) {
 					listener.apply(airborn, message.data.args);
 				});
@@ -33,8 +45,6 @@
 					return arg instanceof ArrayBuffer;
 				}));
 			}
-		} else if(message.source === top) {
-			console.log(document.getElementsByTagName('iframe').length);
 		} else {
 			console.info('unknown source');
 		}
