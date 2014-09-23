@@ -160,14 +160,16 @@
 	
 	var filenames = document.filenames;
 	delete document.filenames;
+	var rArgs = /[?#].*$/;
 	function getURLFilename(url) {
 		if(filenames.hasOwnProperty(url)) {
 			return filenames[url];
 		}
 		var startIndex = url.indexOf('filename=');
 		if(startIndex === -1) return url;
+		var args = (url.match(rArgs) || [''])[0];
 		var filename = url.substr(startIndex + 9); // 'filename='.length == 9
-		return decodeURIComponent(filename.substr(0, filename.indexOf(';')));
+		return decodeURIComponent(filename.substr(0, filename.indexOf(';'))) + args;
 	}
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
@@ -353,6 +355,12 @@
 				//script.textContent = contents + '\n//# sourceURL=' + path;
 				//window.eval(contents); script.dispatchEvent(new Event('load'));
 			});
+		}
+	});
+	var aHrefDescriptor = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'href');
+	Object.defineProperty(HTMLAnchorElement.prototype, 'href', {
+		get: function() {
+			return getURLFilename(aHrefDescriptor.get.call(this));
 		}
 	});
 	var scriptGetAttribute = HTMLScriptElement.prototype.getAttribute;
@@ -682,26 +690,33 @@
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
 	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this.cookie }, set: function(value) { return this.cookie = value }});
 	
-	var locationurl = root;
-	Object.defineProperty(window, 'airborn_location', {get: function() {
-		var url = new URL('airborn:' + root);
+	function createLocationUrl(url) {
+		var urlobj = new URL('airborn:' + root);
 		return {
-			hash: url.hash,
+			hash: urlobj.hash,
 			host: '',
 			hostname: '',
-			href: locationurl,
+			href: url,
 			origin: '',
-			pathname: url.pathname,
+			pathname: urlobj.pathname,
 			port: '',
 			protocol: '',
-			search:  url.search
+			search:  urlobj.search
 		};
+	}
+	var locationurl = createLocationUrl(root);
+	Object.defineProperty(window, 'airborn_location', {get: function() {
+		return locationurl;
 	}});
 	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this.location }, set: function(value) { return this.location = value }});
 	
 	History.prototype.pushState = History.prototype.replaceState = function(state, title, url) {
-		locationurl = url;
+		locationurl = createLocationUrl(url);
 	};
+	window.addEventListener('hashchange', function() {
+		locationurl.hash = window['location'].hash;
+		locationurl.href = locationurl.pathname + locationurl.search + locationurl.hash;
+	});
 	
 	Object.defineProperty(window, 'airborn_top', { value: (function() {
 		var top = window;

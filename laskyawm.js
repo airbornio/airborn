@@ -168,7 +168,7 @@ window.addEventListener('message', function(message) {
 				parent.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(object)]}, '*');
 				return;
 			}
-			parent.postMessage({inReplyTo: message.data.messageID, result: ['data:' + arg.type + ';charset=utf-8,' + encodeURIComponent(arg.data)]}, '*');
+			parent.postMessage({inReplyTo: message.data.messageID, result: ['data:' + arg.type + ';filename=' + encodeURIComponent(arg.name) + ';charset=utf-8,' + encodeURIComponent(arg.data)]}, '*');
 			return;
 		}
 		var inReplyTo = message.data.inReplyTo;

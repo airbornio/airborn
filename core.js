@@ -568,6 +568,7 @@ window.prepareString = function(contents, options, callback, progress, createObj
 	if(matches.length) {
 		matches.forEach(function(match) { // We don't process matches immediately for when getFile calls callback immediately.
 			prepareUrl(match[3], options, function(data, err) {
+				if(options.webworker) data = data.replace(/'/g, "\\'");
 				if(!err) match[5] = data;
 				filesDownloaded++;
 				updateProgress();
