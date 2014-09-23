@@ -672,21 +672,26 @@
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
 	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this.cookie }, set: function(value) { return this.cookie = value }});
 	
-	Object.defineProperty(window, 'airborn_location', {value: (function() {
+	var locationurl = root;
+	Object.defineProperty(window, 'airborn_location', {get: function() {
 		var url = new URL('airborn:' + root);
 		return {
 			hash: url.hash,
 			host: '',
 			hostname: '',
-			href: root,
+			href: locationurl,
 			origin: '',
 			pathname: url.pathname,
 			port: '',
 			protocol: '',
-			search: url.search
+			search:  url.search
 		};
-	})()});
+	}});
 	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this.location }, set: function(value) { return this.location = value }});
+	
+	History.prototype.pushState = History.prototype.replaceState = function(state, title, url) {
+		locationurl = url;
+	};
 	
 	Object.defineProperty(window, 'airborn_top', { value: (function() {
 		var top = window;
@@ -703,8 +708,8 @@
 	var _Worker = window.Worker;
 	window.Worker = function(url) {
 		var worker = new Worker_();
-		airborn.fs.prepareUrl(url, function(url) {
-			var _worker = _Worker(url);
+		airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
+			var _worker = new _Worker(url);
 			console.log(worker);
 			_worker.addEventListener('message', worker.dispatchEvent.bind(worker));
 		});

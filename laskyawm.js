@@ -159,12 +159,16 @@ window.addEventListener('message', function(message) {
 	if(message.source === parent) {
 		if(message.data.action === 'createObjectURL') {
 			var arg = message.data.args[0], object;
-			try {
-				object = new File([arg.data], arg.name, {type: arg.type});
-			} catch(e) {
-				object = new Blob([arg.data], {type: arg.type});
+			if(arg.data instanceof ArrayBuffer) {
+				try {
+					object = new File([arg.data], arg.name, {type: arg.type});
+				} catch(e) {
+					object = new Blob([arg.data], {type: arg.type});
+				}
+				parent.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(object)]}, '*');
+				return;
 			}
-			parent.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(object)]}, '*');
+			parent.postMessage({inReplyTo: message.data.messageID, result: ['data:' + arg.type + ';charset=utf-8,' + encodeURIComponent(arg.data)]}, '*');
 			return;
 		}
 		var inReplyTo = message.data.inReplyTo; // Callback might change message.data.inReplyTo.
