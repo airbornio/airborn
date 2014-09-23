@@ -503,11 +503,17 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 	} else if(extension === 'js') {
 		getFile(file, function(contents, err) {
 			if(err) return callback('');
-			if(options.compat !== false) {
+			if(options.compat !== false && !options.webworker) {
 				console.log('Parsing', file);
 				var renames = {cookie: 'airborn_cookie', location: 'airborn_location', top: 'airborn_top'};
 				if(navigator.userAgent.match(/Chrome/)) renames.localStorage = 'airborn_localStorage';
 				contents = renameGlobalVariables(contents, renames);
+			}
+			if(options.webworker) {
+				_options.relativeParent = file;
+				_options.rootParent = file.match(/\/Apps\/.+?\//)[0];
+				prepareString(contents, _options, callback, progress, createObjectURL);
+				return;
 			}
 			callback(contents);
 		});
@@ -525,18 +531,40 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 window.prepareString = function(contents, options, callback, progress, createObjectURL) {
 	var i = 0,
 		match, matches = [],
-		rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.*?)(?=["') >])(\2\s*\)?)/,
 		rSchema = /^([a-z]+:|\/\/)/i,
 		filesDownloaded = 0;
-	while((match = contents.substr(i).match(rURL))) {
-		if(!rSchema.test(match[3])) {
-			matches.push(match);
+	if(options.webworker) {
+		var rImportScripts = /importScripts\s*\([\s\S]*?\)/;
+		while((match = contents.substr(i).match(rImportScripts))) {
+			var j = 0,
+				subject = match[0],
+				rURL = /((["']))(.*?)(\2)()/;
+			i += match.index;
+			match.pos = i;
+			while((match = subject.substr(j).match(rURL))) {
+				if(!rSchema.test(match[3])) {
+					matches.push(match);
+				}
+				
+				j += match.index;
+				match.pos = i + j;
+				j++;
+			}
+			i++;
 		}
-		
-		i += match.index;
-		match.pos = i;
-		i++;
+	} else {
+		var rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.*?)(?=["') >])(\2\s*\)?)/;
+		while((match = contents.substr(i).match(rURL))) {
+			if(!rSchema.test(match[3])) {
+				matches.push(match);
+			}
+			
+			i += match.index;
+			match.pos = i;
+			i++;
+		}
 	}
+	
 	if(matches.length) {
 		matches.forEach(function(match) { // We don't process matches immediately for when getFile calls callback immediately.
 			prepareUrl(match[3], options, function(data, err) {
@@ -582,7 +610,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
 	var path = resolve(options.relativeParent, url, options.rootParent);
-	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat}, cb, progress, createObjectURL);
+	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {

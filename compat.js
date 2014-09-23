@@ -718,7 +718,7 @@
 	var _Worker = window.Worker;
 	window.Worker = function(url) {
 		var worker = new Worker_();
-		airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
+		airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root, webworker: true}, function(url) {
 			var _worker = new _Worker(url);
 			console.log(worker);
 			_worker.addEventListener('message', worker.dispatchEvent.bind(worker));
