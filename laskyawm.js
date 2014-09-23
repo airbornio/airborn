@@ -1,5 +1,7 @@
 /*global _, $, apps, powerMenu, getFile: true, prepareUrl: true, listenForFileChanges: true, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
+Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top'] }, set: function(value) { return this['top'] = value }});
+
 var childDivs = [];
 var childWindows = [];
 

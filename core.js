@@ -503,7 +503,10 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		getFile(file, function(contents, err) {
 			if(err) return callback('');
 			if(options.compat !== false) {
-				if(navigator.userAgent.match(/Chrome/)) contents = contents.replace(/localStorage/g, 'airborn_localStorage');
+				console.log('Parsing', file);
+				var renames = {cookie: 'airborn_cookie', location: 'airborn_location', top: 'airborn_top'};
+				if(navigator.userAgent.match(/Chrome/)) renames.localStorage = 'airborn_localStorage';
+				contents = renameGlobalVariables(contents, renames);
 			}
 			callback(contents);
 		});
@@ -609,6 +612,8 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 getFile('/Core/lodash.min.js', eval);
 getFile('/Core/js-yaml.js', eval);
 getFile('/Core/3rdparty/jszip/jszip.min.js', eval);
+getFile('/Core/3rdparty/esprima.js', eval);
+getFile('/Core/3rdparty/estraverse.js', eval);
 
 var mainWindow;
 
@@ -758,4 +763,90 @@ function getAPIKey() {
 window.isValidAPIKey = function(key) {
 	return APIKeys.indexOf(key) !== -1;
 };
+
+// From: http://tobyho.com/2013/12/02/fun-with-esprima/
+function renameGlobalVariables(source, variables) {
+	if(typeof esprima === 'undefined' || typeof estraverse === 'undefined') return source;
+	try {
+		var ast = esprima.parse(source, {range: true});
+	} catch(e) {
+		return source;
+	}
+	var scopeChain = [];
+	var identifiers = [];
+	var replaces = [];
+	estraverse.traverse(ast, {
+		enter: enter,
+		leave: leave
+	});
+	replaces.sort(function(a, b) {
+		return b.range[0] - a.range[0];
+	});
+	for(var i = 0; i < replaces.length; i++) {
+		source = source.substr(0, replaces[i].range[0]) + variables[replaces[i].name] + source.substr(replaces[i].range[1]);
+	}
+	return source;
+	
+	function enter(node) {
+		if(createsNewScope(node)) {
+			if(node.type === 'FunctionDeclaration') {
+				scopeChain[scopeChain.length - 1].push(node.id.name);
+			}
+			if(node.type === 'FunctionExpression') {
+				scopeChain.push(node.params.map(function(node) { return node.name; }));
+				if(node.rest) {
+					scopeChain[scopeChain.length - 1].push(node.rest.name);
+				}
+			} else {
+				scopeChain.push([]);
+			}
+		}
+		if(node.type === 'VariableDeclarator') {
+			var currentScope = scopeChain[scopeChain.length - 1];
+			currentScope.push(node.id.name);
+		}
+		if(node.type === 'Identifier') {
+			identifiers.push(node);
+		}
+		if(node.type === 'ObjectExpression') {
+			this.skip();
+		}
+		if(node.type === 'MemberExpression') {
+			if(!node.computed) {
+				node.property.isProperty = true;
+				return node;
+			}
+		}
+	}
+	function leave(node) {
+		if(createsNewScope(node)){
+			renameGlobals(identifiers, scopeChain);
+			scopeChain.pop();
+			identifiers = [];
+		}
+	}
+	function isVarDefined(varname, scopeChain) {
+		for(var i = 0; i < scopeChain.length; i++){
+			var scope = scopeChain[i];
+			if(scope.indexOf(varname) !== -1) {
+				return true;
+			}
+		}
+		return false;
+	}
+	function renameGlobals(identifiers, scopeChain) {
+		for(var i = 0; i < identifiers.length; i++){
+			var identifier = identifiers[i];
+			var varname = identifier.name;
+			if(variables.hasOwnProperty(varname) && (identifier.isProperty || !isVarDefined(varname, scopeChain))) {
+				replaces.push(identifier);
+			}
+		}
+	}
+	function createsNewScope(node){
+		return node.type === 'FunctionDeclaration' ||
+			node.type === 'FunctionExpression' ||
+			node.type === 'Program';
+	}
+}
 //# sourceURL=/Core/core.js

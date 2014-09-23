@@ -655,9 +655,59 @@
 		return (this[name] = value);
 	};
 	var localStorage = new Storage_();
-	Object.defineProperty(window, 'localStorage', {
-		get: function() {
-			return localStorage;
-		}
-	});
+	try {
+		Object.defineProperty(window, 'localStorage', {
+			get: function() {
+				return localStorage;
+			}
+		});
+	} catch(e) {
+		Object.defineProperty(window, 'airborn_localStorage', {
+			get: function() {
+				return localStorage;
+			}
+		});
+	}
+	
+	Object.defineProperty(document, 'airborn_cookie', {value: ''});
+	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this.cookie }, set: function(value) { return this.cookie = value }});
+	
+	Object.defineProperty(window, 'airborn_location', {value: (function() {
+		var url = new URL('airborn:' + root);
+		return {
+			hash: url.hash,
+			host: '',
+			hostname: '',
+			href: root,
+			origin: '',
+			pathname: url.pathname,
+			port: '',
+			protocol: '',
+			search: url.search
+		};
+	})()});
+	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this.location }, set: function(value) { return this.location = value }});
+	
+	Object.defineProperty(window, 'airborn_top', { value: (function() {
+		var top = window;
+		while(top.parent.parent.parent.parent !== top.parent.parent.parent) top = top.parent;
+		return top;
+	})() });
+	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this.top }, set: function(value) { return this.top = value }});
+	
+	function Worker_() {}
+		Worker_.prototype = new EventTarget();
+		Worker_.prototype.postMessage = function() {
+		console.log('postMessage', this, arguments);
+	}
+	var _Worker = window.Worker;
+	window.Worker = function(url) {
+		var worker = new Worker_();
+		airborn.fs.prepareUrl(url, function(url) {
+			var _worker = _Worker(url);
+			console.log(worker);
+			_worker.addEventListener('message', worker.dispatchEvent.bind(worker));
+		});
+		return worker;
+	};
 })();
