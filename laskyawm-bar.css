@@ -11,8 +11,10 @@
 	font-weight: bold;
 }
 #toggleApps {
-	margin: 3px 10px;
+	margin: 3px 0;
 	height: 19px;
+	width: 100px;
+	text-align: center;
 }
 #togglePowerMenu {
 	float: right;
@@ -46,7 +48,7 @@
 	pointer-events: none;
 }
 #apps:after {
-	left: 10px;
+	left: 12px;
 }
 #powerMenu:after {
 	right: 7px;
@@ -58,4 +60,30 @@
 	width: 16px;
 	height: 16px;
 	margin-right: 5px;
+}
+
+/*
+rgba(96, 123, 139, 1)	Background
+rgba(86, 110, 124, 1)	Sidebar color we want
+rgba(76,  97, 109, .5)	Sidebar css color below
+*/
+#sidebar {
+	width: 100px;
+	overflow: auto;
+	background: rgba(76, 97, 109, .5);
+	direction: rtl; /* Move scrollbar to the left. */
+	position: absolute;
+	z-index: 900;
+}
+#sidebar .app {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-align: center;
+	cursor: pointer;
+	padding: 5px;
+	direction: ltr;
+	color: #E6E6E6;
+}
+#sidebar .app img {
+	width: 64px;
 }

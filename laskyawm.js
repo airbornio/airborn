@@ -2,6 +2,9 @@
 
 Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top'] }, set: function(value) { return this['top'] = value }});
 
+var workspace_start_top = 25;
+var workspace_start_left = 100;
+
 var childDivs = [];
 var childWindows = [];
 
@@ -69,14 +72,14 @@ $.ui.plugin.add('draggable', 'minimize', {
 			removeHUD();
 			this.removeClass('maximized');
 			this.addClass('minimized');
-		} else if(event.pageY < 25 && !this.hasClass('minimized')) {
+		} else if(event.pageY < workspace_start_top && !this.hasClass('minimized')) {
 			addHUD('max');
 		} else {
-			if(event.pageY > 25 && this.hasClass('minimized')) {
+			if(event.pageY > workspace_start_top && this.hasClass('minimized')) {
 				this.removeClass('minimized');
 			}
-			if(event.pageY > 50) {
-				if(event.pageX < 20) {
+			if(event.pageY > 2 * workspace_start_top) {
+				if(event.pageX < workspace_start_left + 20) {
 					addHUD('left');
 				} else if(event.pageX > window.innerWidth - 20) {
 					addHUD('right');
@@ -290,14 +293,14 @@ openWindow = function(path, options, callback) {
 				div.className = 'window';
 				var left, top;
 				if(options.originDiv) {
-					left = parseInt(options.originDiv.style.left) || 0;
-					top = parseInt(options.originDiv.style.top) || 25;
+					left = parseInt(options.originDiv.style.left) || workspace_start_left;
+					top = parseInt(options.originDiv.style.top) || workspace_start_top;
 				} else {
-					left = 0;
-					top = 25;
+					left = workspace_start_left;
+					top = workspace_start_top;
 				}
 				var positions = childDivs.map(function(div) {
-					return (parseInt(div.style.left) || 0) + ',' + (parseInt(div.style.top) || 25);
+					return (parseInt(div.style.left) || workspace_start_left) + ',' + (parseInt(div.style.top) || workspace_start_top);
 				});
 				while(positions.indexOf(left + ',' + top) !== -1) {
 					left += 25;
@@ -305,7 +308,7 @@ openWindow = function(path, options, callback) {
 				}
 				div.style.left = left + 'px';
 				div.style.top = top + 'px';
-				$(div).draggable({customIframeFix: true, containment: [-Infinity, 25, Infinity, Infinity], snap: 'html, .window', scroll: false, minimize: true, forceMinimize: true, cursor: 'move', clipResizableHandles: true});
+				$(div).draggable({customIframeFix: true, containment: [-Infinity, workspace_start_top, Infinity, Infinity], snap: 'html, .window', scroll: false, minimize: true, forceMinimize: true, cursor: 'move', clipResizableHandles: true});
 				
 				var titlebarDiv = document.createElement('div');
 				titlebarDiv.className = 'titlebar';
@@ -522,24 +525,24 @@ function forceMinimize() {
 		if(win.classList.contains('maximized')) {
 			if(win.classList.contains('maximized-max'))
 				return {
-					x1: 0,
-					y1: 25,
+					x1: workspace_start_left,
+					y1: workspace_start_top,
 					x2: window.innerWidth,
 					y2: window.innerHeight,
 					div: win
 				};
 			else if(win.classList.contains('maximized-left'))
 				return {
-					x1: 0,
-					y1: 25,
-					x2: window.innerWidth / 2,
+					x1: workspace_start_left,
+					y1: workspace_start_top,
+					x2: Math.ceil((window.innerWidth + workspace_start_left) / 2),
 					y2: window.innerHeight,
 					div: win
 				};
 			else if(win.classList.contains('maximized-right'))
 				return {
-					x1: window.innerWidth / 2,
-					y1: 25,
+					x1: Math.ceil((window.innerWidth + workspace_start_left) / 2),
+					y1: workspace_start_top,
 					x2: window.innerWidth,
 					y2: window.innerHeight,
 					div: win
@@ -548,15 +551,15 @@ function forceMinimize() {
 		
 		var $win = $(win);
 		var minimized = win.classList.contains('minimized');
-		var left = parseFloat(win.realLeft !== undefined ? win.realLeft : minimized ? win.style.left : $win.css('left')) || 0;
-		var top = parseFloat(minimized ? win.style.top : $win.css('top')) || 25;
+		var left = parseFloat(win.realLeft !== undefined ? win.realLeft : minimized ? win.style.left : $win.css('left')) || workspace_start_left;
+		var top = parseFloat(minimized ? win.style.top : $win.css('top')) || workspace_start_top;
 		var width = parseFloat(minimized ? win.style.width : $win.css('width')) || 800;
 		var height = parseFloat(minimized ? win.style.height : $win.css('height')) || 600;
 		return {
-			x1: Math.max(0, Math.min(window.innerWidth, left)),
-			y1: Math.max(25, Math.min(window.innerHeight, top)),
-			x2: Math.max(0, Math.min(window.innerWidth, left + width)),
-			y2: Math.max(25, Math.min(window.innerHeight, top + height)),
+			x1: Math.max(workspace_start_left, Math.min(window.innerWidth, left)),
+			y1: Math.max(workspace_start_top, Math.min(window.innerHeight, top)),
+			x2: Math.max(workspace_start_left, Math.min(window.innerWidth, left + width)),
+			y2: Math.max(workspace_start_top, Math.min(window.innerHeight, top + height)),
 			div: win
 		};
 	}).reverse();
@@ -621,13 +624,13 @@ function positionMinimized() {
 		if(win.classList.contains('minimized')) {
 			var left =
 				win.classList.contains('maximized') ?
-					(win.classList.contains('maximized-max') || win.classList.contains('maximized-left') ? 0 :
-					win.classList.contains('maximized-right') ? Math.floor(window.innerWidth / 2) :
+					(win.classList.contains('maximized-max') || win.classList.contains('maximized-left') ? workspace_start_left :
+					win.classList.contains('maximized-right') ? Math.floor((window.innerWidth + workspace_start_left) / 2) :
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 			var minimizedLeft, pushLeft;
-			if(left < 63) {
-				minimizedLeft = 63;
+			if(left < 150) {
+				minimizedLeft = 150;
 				moved = true;
 			} else if(left > window.innerWidth - 350) {
 				minimizedLeft = window.innerWidth - 350;

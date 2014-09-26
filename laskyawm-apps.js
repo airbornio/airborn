@@ -29,7 +29,41 @@ apps.className = 'barMenu';
 apps.textContent = 'Loading…';
 document.body.appendChild(apps);
 
+var sidebar = document.createElement('div');
+sidebar.id = 'sidebar';
+document.body.appendChild(sidebar);
+
 loadApps();
+
+document.body.addEventListener('click', function(evt) {
+	var app = evt.target;
+	if(!app) return;
+	while(app.className !== 'app') {
+		app = app.parentElement;
+		if(!app || app.parentElement === app) return;
+	}
+	openWindow(app.title, {
+		originDiv: $('.window.focused')[0],
+		loaderElm: toggleAppsLoader
+	});
+});
+document.body.addEventListener('keypress', function(evt) {
+	if(evt.which !== 13) return;
+	var app = evt.target;
+	if(!app) return;
+	while(app.className !== 'app') {
+		app = app.parentElement;
+		if(!app || app.parentElement === app) return;
+	}
+	app.click();
+	$(apps).hide();
+});
+
+function updateSidebarHeight() {
+	sidebar.style.height = window.innerHeight - 25;
+}
+updateSidebarHeight();
+window.addEventListener('resize', updateSidebarHeight);
 
 function loadApps() {
 	var fragment = document.createDocumentFragment();
@@ -41,8 +75,9 @@ function loadApps() {
 				getFile('/Apps/' + line + 'manifest.webapp', function(manifest) {
 					manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 					var name = manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
-					if(manifest.icons) {
-						prepareUrl(manifest.icons[Math.min.apply(Math, Object.keys(manifest.icons))], {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
+					var icon = manifest.icons && (manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
+					if(icon) {
+						prepareUrl(icon, {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
 							allApps[line] = {name: name, path: line, iconUrl: url};
 							maybeCont();
 						});
@@ -63,29 +98,18 @@ function loadApps() {
 				var props = allApps[key];
 				var app = document.createElement('div');
 				app.className = 'app';
-				app.textContent = props.name;
+				app.textContent = props.name.replace(/ /g, '\u00a0');
 				var icon = document.createElement('img');
 				icon.src = props.iconUrl;
 				app.insertBefore(icon, app.firstChild);
 				app.tabIndex = '0';
 				app.title = '/Apps/' + props.path;
-				app.addEventListener('click', click);
-				app.addEventListener('keypress', function(evt) {
-					if(evt.which === 13) {
-						click();
-						$(apps).hide();
-					}
-				});
-				function click() {
-					openWindow('/Apps/' + props.path, {
-						originDiv: $('.window.focused')[0],
-						loaderElm: toggleAppsLoader
-					});
-				}
 				fragment.appendChild(app);
 			});
 			apps.innerHTML = '';
-			apps.appendChild(fragment);
+			apps.appendChild(fragment.cloneNode(true));
+			sidebar.innerHTML = '';
+			sidebar.appendChild(fragment);
 		}
 	});
 }
