@@ -15,8 +15,8 @@ function addCustomIframeFix(plugin) {
 				$(this).after(
 					$('<div class="ui-' + plugin + '-iframeFix"></div>')
 					.css({
-						width: '100%', height: 'calc(100% - 25px)',
-						position: 'absolute', top: 25,opacity: '0.001'
+						width: '100%', height: '100%',
+						position: 'absolute', opacity: '0.001'
 					})
 				);
 			});
