@@ -697,7 +697,7 @@
 			host: '',
 			hostname: '',
 			href: url,
-			origin: '',
+			origin: 'null',
 			pathname: urlobj.pathname,
 			port: '',
 			protocol: '',
