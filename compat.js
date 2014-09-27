@@ -162,14 +162,17 @@
 	delete document.filenames;
 	var rArgs = /[?#].*$/;
 	function getURLFilename(url) {
+		var filename;
 		if(filenames.hasOwnProperty(url)) {
-			return filenames[url];
+			filename = filenames[url];
+		} else {
+			var startIndex = url.indexOf('filename=');
+			if(startIndex === -1) return url;
+			var args = (url.match(rArgs) || [''])[0];
+			filename = url.substr(startIndex + 9); // 'filename='.length == 9
+			filename = decodeURIComponent(filename.substr(0, filename.indexOf(';'))) + args;
 		}
-		var startIndex = url.indexOf('filename=');
-		if(startIndex === -1) return url;
-		var args = (url.match(rArgs) || [''])[0];
-		var filename = url.substr(startIndex + 9); // 'filename='.length == 9
-		return decodeURIComponent(filename.substr(0, filename.indexOf(';'))) + args;
+		return filename.replace(/^\/Apps\/[^/]+/, '');
 	}
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
@@ -691,7 +694,7 @@
 	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this['cookie'] }, set: function(value) { return this['cookie'] = value }});
 	
 	function createLocationUrl(url) {
-		var urlobj = new URL('airborn:' + root);
+		var urlobj = new URL('airborn:' + url);
 		return {
 			hash: urlobj.hash,
 			host: '',
@@ -704,7 +707,7 @@
 			search:  urlobj.search
 		};
 	}
-	var locationurl = createLocationUrl(root);
+	var locationurl = createLocationUrl(root.replace(/^\/Apps\/[^/]+/, ''));
 	Object.defineProperty(window, 'airborn_location', {get: function() {
 		return locationurl;
 	}});
