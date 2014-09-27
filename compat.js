@@ -688,7 +688,7 @@
 	}
 	
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
-	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this.cookie }, set: function(value) { return this.cookie = value }});
+	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this['cookie'] }, set: function(value) { return this['cookie'] = value }});
 	
 	function createLocationUrl(url) {
 		var urlobj = new URL('airborn:' + root);
@@ -708,7 +708,7 @@
 	Object.defineProperty(window, 'airborn_location', {get: function() {
 		return locationurl;
 	}});
-	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this.location }, set: function(value) { return this.location = value }});
+	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this['location'] }, set: function(value) { return this['location'] = value }});
 	
 	History.prototype.pushState = History.prototype.replaceState = function(state, title, url) {
 		locationurl = createLocationUrl(url);
@@ -723,7 +723,7 @@
 		while(top.parent.parent.parent.parent !== top.parent.parent.parent) top = top.parent;
 		return top;
 	})() });
-	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this.top }, set: function(value) { return this.top = value }});
+	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top'] }, set: function(value) { return this['top'] = value }});
 	
 	function Worker_() {}
 		Worker_.prototype = new EventTarget();

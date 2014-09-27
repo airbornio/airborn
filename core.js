@@ -822,7 +822,7 @@ function renameGlobalVariables(source, variables) {
 			if(node.type === 'FunctionDeclaration') {
 				scopeChain[scopeChain.length - 1].push(node.id.name);
 			}
-			if(node.type === 'FunctionExpression') {
+			if(node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
 				scopeChain.push(node.params.map(function(node) { return node.name; }));
 				if(node.rest) {
 					scopeChain[scopeChain.length - 1].push(node.rest.name);
@@ -839,7 +839,10 @@ function renameGlobalVariables(source, variables) {
 			identifiers.push(node);
 		}
 		if(node.type === 'ObjectExpression') {
-			this.skip();
+			node.properties.forEach(function(property) {
+				property.key.isObjectKey = true;
+			});
+			return node;
 		}
 		if(node.type === 'MemberExpression') {
 			if(!node.computed) {
@@ -868,7 +871,7 @@ function renameGlobalVariables(source, variables) {
 		for(var i = 0; i < identifiers.length; i++){
 			var identifier = identifiers[i];
 			var varname = identifier.name;
-			if(variables.hasOwnProperty(varname) && (identifier.isProperty || !isVarDefined(varname, scopeChain))) {
+			if(!identifier.isObjectKey && variables.hasOwnProperty(varname) && (identifier.isProperty || !isVarDefined(varname, scopeChain))) {
 				replaces.push(identifier);
 			}
 		}
