@@ -571,13 +571,13 @@
 	DeviceStorage.prototype.get = function(name) {
 		var path = getDeviceStoragePath(this, name);
 		var request = new DOMRequest();
-		airborn.fs.getFile(path + '.history/', {codec: 'dir'}, function(contents, err) {
-			if(err) {
+		airborn.fs.getFile(airborn.path.dirname(path), {codec: 'dir'}, function(contents) {
+			if(!contents || !contents.hasOwnProperty(airborn.path.basename(path))) {
 				request.error = new DOMError('FileNotFound', "The file doesn't exist.");
 				request.dispatchEvent(new Event('error'));
 			} else {
 				var key = Object.keys(contents).pop();
-				request.result = new AsyncFile({name: path, type: contents[key].type, snapshotpath: path + '.history/' + key});
+				request.result = new AsyncFile({name: path, type: contents[key].type, path: path});
 				request.dispatchEvent(new Event('success'));
 			}
 		});
@@ -654,10 +654,10 @@
 		};
 	}
 	extendFileReader('readAsText', function(file, callback) {
-		airborn.fs.getFile(file.snapshotpath || file.path, callback);
+		airborn.fs.getFile(file.path, callback);
 	});
 	extendFileReader('readAsDataURL', function(file, callback) {
-		airborn.fs.getFile(file.snapshotpath || file.path, {codec: 'base64url'}, function(contents) {
+		airborn.fs.getFile(file.path, {codec: 'base64url'}, function(contents) {
 			callback('data:' + file.type + ';base64,' + contents);
 		});
 	});

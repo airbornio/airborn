@@ -40,6 +40,7 @@ var private_hmac = parent.private_hmac;
 var files_hmac = parent.files_hmac;
 var password = parent.password;
 var files_key = parent.files_key;
+var account_info = parent.account_info;
 
 sjcl.codec.raw = sjcl.codec.sjcl = {
 	fromBits: function(bits) { return bits; },
@@ -174,6 +175,7 @@ window.getFile = function(file, options, callback) {
 	
 	if(handleFromCache()) return;
 	function handleFromCache() {
+		if(options.cache === false) return;
 		var cache = window.getFileCache[file];
 		if(cache) {// && Date.now() - cache.ts < 2000) {
 			if((options.codec || 'utf8String') === (cache.codec || 'utf8String')) {
@@ -225,7 +227,7 @@ window.getFile = function(file, options, callback) {
 				if(options.codec) {
 					sjcl.codec.utf8String.fromBits = fromBits;
 				}
-				window.getFileCache[file] = {codec: options.codec, contents: decrypted, ts: Date.now()};
+				if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: decrypted, ts: Date.now()};
 				callback(decrypted);
 			} else {
 				console.error('GET', file);
@@ -332,6 +334,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		}
 	}
 	
+	var upload_history = account_info.tier >= 5;
 	var now = attrs.edited || window.transactionDate || new Date();
 	
 	var size, is_new_file;
@@ -346,11 +349,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			
 			size = basename.substr(-1) === '/' ? undefined : sjcl.bitArray.bitLength(sjcl.codec[options.codec || 'utf8String'].toBits(contents)) / 8;
 			is_new_file = !dircontents.hasOwnProperty(basename);
-			var newattrs = extend({}, is_new_file ? {created: now} : dircontents[basename], {edited: now, size: size}, attrs);
+			var newattrs = extend({}, is_new_file ? {created: now} : dircontents[basename], {edited: upload_history ? now : undefined, size: upload_history ? size : undefined}, attrs);
 			if(!dircontents.hasOwnProperty(basename) || !deepEquals(newattrs, dircontents[basename])) {
 				var newdircontents = extend({}, dircontents); // Don't modify getFileCache entry.
 				newdircontents[basename] = newattrs;
-				putFile(dirname, {codec: 'dir'}, newdircontents, {edited: now});
+				putFile(dirname, {codec: 'dir'}, newdircontents, {edited: upload_history ? now : undefined});
 			}
 			filesToPut--;
 			if(transaction && !inTransaction && !filesToPut) window.endTransaction();
@@ -361,10 +364,22 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		window.getFileCache[file] = {codec: options.codec, contents: contents, ts: Date.now()};
 	}
 	
-	if(!/\.history\//.test(file)) {
+	if(!/\.history\//.test(file) && upload_history) {
 		// Add to file history
 		filesToPut++;
 		getFile(file + '.history/', {codec: 'dir'}, function(history) {
+			if(!history && !is_new_file) {
+				// User switched tier
+				filesToPut++;
+				getFile(file, {codec: 'raw', cache: false}, function(old, err) {
+					if(!err) {
+						putFile(file + '.history/v0' + file.match(/(\/|\.\w+)?$/)[0], {codec: 'raw'}, old, {created: undefined, edited: undefined});
+					}
+					filesToPut--;
+					if(transaction && !inTransaction && !filesToPut) window.endTransaction();
+				});
+			}
+			
 			var histname = file + '.history/v' + (history ? Math.max.apply(Math, Object.keys(history).map(function(name) { return parseInt(name.substr(1), 10); })) + 1 : 1) + file.match(/(\/|\.\w+)?$/)[0];
 			putFile(histname, {codec: options.codec}, contents, {edited: now}, function(histid, blob) {
 				
@@ -375,8 +390,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				req.open('PUT', '/object/' + id);
 				req.addEventListener('load', function() {
 					if(this.status === 200) {
-						if(callback) callback();
-						notifyFileChange(file, is_new_file ? 'created' : 'modified');
+						cont();
 					} else {
 						console.log('error', this);
 					}
@@ -404,7 +418,13 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			req.open('PUT', '/object/' + id);
 			req.addEventListener('load', function() {
 				if(this.status === 200) {
-					if(callback) callback(id, blob);
+					if(upload_history) {
+						// We were uploading a *.history/* file
+						if(callback) callback(id, blob);
+					} else {
+						// We were uploading a normal file
+						cont();
+					}
 				} else {
 					console.log('error', this);
 				}
@@ -419,6 +439,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			});
 			req.send(blob);
 		}
+	}
+	
+	function cont() {
+		if(callback) callback();
+		notifyFileChange(file, is_new_file ? 'created' : 'modified');
 	}
 };
 
