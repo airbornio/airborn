@@ -366,6 +366,11 @@
 			return getURLFilename(aHrefDescriptor.get.call(this));
 		}
 	});
+	Object.defineProperty(HTMLAnchorElement.prototype, 'pathname', {
+		get: function() {
+			return new URL('file://' + this.href).pathname;
+		}
+	});
 	var scriptGetAttribute = HTMLScriptElement.prototype.getAttribute;
 	HTMLScriptElement.prototype.getAttribute = function(attrName) {
 		var realAttr = scriptGetAttribute.call(this, attrName);
@@ -693,13 +698,13 @@
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
 	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this['cookie'] }, set: function(value) { return this['cookie'] = value }});
 	
-	function createLocationUrl(url) {
-		var urlobj = new URL('airborn:' + url);
+	function createLocationUrl(url, base) {
+		var urlobj = new URL(url, 'file://' + (base || ''));
 		return {
 			hash: urlobj.hash,
 			host: '',
 			hostname: '',
-			href: url,
+			href: urlobj.href.substr(7),
 			origin: 'null',
 			pathname: urlobj.pathname,
 			port: '',
@@ -714,7 +719,7 @@
 	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this['location'] }, set: function(value) { return this['location'] = value }});
 	
 	History.prototype.pushState = History.prototype.replaceState = function(state, title, url) {
-		locationurl = createLocationUrl(url);
+		locationurl = createLocationUrl(url, locationurl.href);
 	};
 	window.addEventListener('hashchange', function() {
 		locationurl.hash = window['location'].hash;
