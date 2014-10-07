@@ -734,8 +734,8 @@
 	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top'] }, set: function(value) { return this['top'] = value }});
 	
 	function Worker_() {}
-		Worker_.prototype = new EventTarget();
-		Worker_.prototype.postMessage = function() {
+	Worker_.prototype = new EventTarget();
+	Worker_.prototype.postMessage = function() {
 		console.log('postMessage', this, arguments);
 	}
 	var _Worker = window.Worker;
