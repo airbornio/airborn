@@ -504,6 +504,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'		document.open();',
 			'		document.write(message.data.result[0]);',
 			'		document.close();',
+			'		if(navigator.userAgent.indexOf("Firefox") !== -1) history.replaceState({}, "", ""); // Make refresh iframe work in Firefox',
 			'	}',
 			'});',
 			'window.top.postMessage({action: "fs.prepareFile", args: ' + JSON.stringify([file, _options]) + ', apikey: document.apikey}, "*");',
