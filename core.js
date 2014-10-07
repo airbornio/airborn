@@ -61,7 +61,7 @@ sjcl.codec.dir = sjcl.codec.yaml = {
 };
 sjcl.codec.dir.fromBits = function(bits) {
 	var utf8 = utf8String_fromBits(bits);
-	if(!/^.+: {.*}$/m.test(utf8)) {
+	if(utf8 !== '{}' && !/^.+: {.*}$/m.test(utf8)) {
 		var obj = {};
 		utf8.split('\n').forEach(function(line) {
 			if(line) obj[line] = {};
