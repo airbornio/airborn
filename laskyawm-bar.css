@@ -11,15 +11,15 @@
 	font-weight: bold;
 }
 #toggleApps {
-	margin: 3px 0;
-	height: 19px;
+	padding: 3px 0;
+	height: 25px;
 	width: 100px;
 	text-align: center;
+	display: inline-block;
 }
 #togglePowerMenu {
 	float: right;
-	margin-top: 4px;
-	margin-right: 10px;
+	padding: 4px 10px 5px;
 }
 .barMenu {
 	display: none;

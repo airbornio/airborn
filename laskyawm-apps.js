@@ -2,8 +2,6 @@
 
 var apps;
 
-var toggleAppsContainer = document.createElement('div');
-toggleAppsContainer.className = 'loaderContainer';
 var toggleApps = document.createElement('div');
 toggleApps.id = 'toggleApps';
 toggleApps.className = 'barButton';
@@ -17,11 +15,7 @@ toggleApps.addEventListener('keypress', function(evt) {
 		$(apps).toggle();
 	}
 });
-toggleAppsContainer.appendChild(toggleApps);
-var toggleAppsLoader = document.createElement('div');
-toggleAppsLoader.className = 'loader';
-toggleAppsContainer.appendChild(toggleAppsLoader);
-document.body.appendChild(toggleAppsContainer);
+document.body.appendChild(toggleApps);
 
 apps = document.createElement('div');
 apps.id = 'apps';
@@ -43,8 +37,7 @@ document.body.addEventListener('click', function(evt) {
 		if(!app || app.parentElement === app) return;
 	}
 	openWindow(app.title, {
-		originDiv: $('.window.focused')[0],
-		loaderElm: toggleAppsLoader
+		originDiv: $('.window.focused')[0]
 	});
 });
 document.body.addEventListener('keypress', function(evt) {

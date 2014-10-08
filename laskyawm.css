@@ -92,6 +92,8 @@ body {
 	line-height: 23px;
 	padding: 0 7px;
 	cursor: default;
+	overflow: hidden;
+	position: relative;
 }
 .window .titlebar .tabbar .tabtitlebar:first-child {
 	margin-left: 0;
@@ -182,10 +184,6 @@ body {
 }
 .ui-resizable-handle {
 	z-index: 0 !important;
-}
-.loaderContainer {
-	display: inline-block;
-	position: relative;
 }
 .loader {
 	position: absolute;

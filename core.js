@@ -482,8 +482,8 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'	<meta charset="utf-8">',
 			'</head>',
 			'<body>',
-			'Loading…',
 			'<script>',
+			'if(window.parent === window.top) document.write("Loading…");',
 			'document.root = ' + JSON.stringify(file) + ';',
 			'document.filenames = {};',
 			'document.apikey = ' + JSON.stringify(getAPIKey()) + ';',
@@ -500,23 +500,24 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'		window.top.postMessage({inReplyTo: message.data.messageID, result: [url]}, "*");',
 			'		return;',
 			'	}',
-			'	if(!message.data.progress) {',
+			'	if(message.data.progress) {',
+			'		if(window.parent !== window.top) window.parent.postMessage({action: "wm.setProgress", args: [message.data.result[0] / message.data.result[1]]}, "*");',
+			'	} else {',
 			'		document.open();',
 			'		document.write(message.data.result[0]);',
 			'		document.close();',
 			'		if(navigator.userAgent.indexOf("Firefox") !== -1) history.replaceState({}, "", ""); // Make refresh iframe work in Firefox',
+			'		if(window.parent !== window.top) window.parent.postMessage({action: "wm.hideProgress", args: []}, "*");',
 			'	}',
 			'});',
 			'window.top.postMessage({action: "fs.prepareFile", args: ' + JSON.stringify([file, _options]) + ', apikey: document.apikey}, "*");',
+			'if(window.parent !== window.top) window.parent.postMessage({action: "wm.showProgress", args: []}, "*");',
 			'</script>',
 			'</body>',
 			'</html>',
 			'<!--# sourceURL = /Core/core.js > inline at line ' + inline_linenr + ' -->'
 		].join('\n');
 		callback(data);
-		
-		// Bogus prepareFile which exists solely for the calls to `progress`.
-		prepareFile(file, _options, function() {}, progress, function(data, callback) { callback(''); });
 	} else if(extension === 'html' && (options.compat !== false || options.csp)) {
 		_options.compat = false;
 		prepareFile(file, _options, function(c, err) {

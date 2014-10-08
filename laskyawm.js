@@ -222,7 +222,7 @@ window.addEventListener('message', function(message) {
 							if(message.data.args[1] === 'replace') {
 								options.targetDiv = div;
 								options.targetTab = tab;
-								options.loaderElm = $(tab).find('.loader')[0];
+								if(message.data.action === 'wm.openFile') options.loaderElm = $(tab.tabtitlebar).find('.loader')[0];
 							}
 							options.originDiv = div;
 						}
@@ -234,7 +234,7 @@ window.addEventListener('message', function(message) {
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
-							options.loaderElm = $(tab).find('.loader')[0];
+							options.loaderElm = $(tab.tabtitlebar).find('.loader')[0];
 						}
 					});
 				});
@@ -256,7 +256,7 @@ showProgress = function(options) {
 setProgress = function(frac, options) {
 	if(!options.loaderElm) return;
 	if(options.loaderElm.progressFrac >= frac) return;
-	options.loaderElm.style.backgroundColor = 'rgba(173, 216, 230, .6)';
+	options.loaderElm.style.backgroundColor = 'rgba(77, 164, 213, .5)';
 	options.loaderElm.style.width = frac * 100 + '%';
 	options.loaderElm.progressFrac = frac;
 };
@@ -426,32 +426,28 @@ openWindow = function(path, options, callback) {
 					
 					var title = document.createElement('span');
 					title.className = 'title';
-					title.innerHTML = '&nbsp;';
+					title.textContent = 'Loading…'; // This element needs at least a nbsp
 					tabtitlebar.appendChild(title);
+					
+					var titleloader = document.createElement('div');
+					titleloader.className = 'loader';
+					tabtitlebar.appendChild(titleloader);
 				}
 				
 				if(!options.targetDiv) {
-					var addtabContainer = document.createElement('div');
-					addtabContainer.className = 'loaderContainer';
 					var addtab = document.createElement('div');
 					addtab.textContent = '+';
 					addtab.className = 'addtab';
 					addtab.addEventListener('click', function() {
 						openWindow($(div).find('.tab.focused')[0].path, {
 							targetDiv: div,
-							innewtab: true,
-							loaderElm: addtabLoader,
-							loaderHighlight: false
+							innewtab: true
 						}, function(win, tab, div) {
 							var tabbar = $(div).find('.tabbar')[0];
 							tabbar.scrollLeft = tabbar.scrollWidth;
 						});
 					});
-					addtabContainer.appendChild(addtab);
-					var addtabLoader = document.createElement('div');
-					addtabLoader.className = 'loader';
-					addtabContainer.appendChild(addtabLoader);
-					titlebarDiv.appendChild(addtabContainer);
+					titlebarDiv.appendChild(addtab);
 					
 					var icon = document.createElement('img');
 					icon.className = 'icon';
