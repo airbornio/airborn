@@ -558,7 +558,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 window.prepareString = function(contents, options, callback, progress, createObjectURL) {
 	var i = 0,
 		match, matches = [],
-		rSchema = /^([a-z]+:|\/\/)/i,
+		rSchema = /^[a-z]+:/i,
 		filesDownloaded = 0;
 	if(options.webworker) {
 		var rImportScripts = /importScripts\s*\([\s\S]*?\)/;
@@ -634,6 +634,10 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	url = url.replace(rArgs, '');
 	if(url === '') {
 		callback(args);
+		return;
+	}
+	if(url.substr(0, 2) === '//') {
+		callback('https:' + url + args);
 		return;
 	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
