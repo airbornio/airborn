@@ -115,11 +115,12 @@ body {
 }
 .window .tab {
 	height: 100%;
-	display: none;
-	position: relative;
+	left: -100000px;
+	position: absolute;
 }
 .window .tab.focused {
-	display: block;
+	left: 0;
+	position: relative;
 }
 .window iframe {
 	width: 100%;
