@@ -136,8 +136,21 @@
 		return request;
 	};
 	
-	var title = document.getElementsByTagName('title')[0];
+	var title = document.querySelector('head > title');
 	if(title) airborn.wm.setTitle(title.textContent);
+	document.addEventListener('DOMContentLoaded', function() {
+		var title = document.querySelector('head > title');
+		if(title) {
+			airborn.wm.setTitle(title.textContent);
+			var observer = new window[window.MutationObserver ? 'MutationObserver' : 'WebKitMutationObserver'](function(mutations) {
+				mutations.forEach(function(mutation) {
+					airborn.wm.setTitle(mutation.target.textContent);
+				});
+			});
+			observer.observe(title, {subtree: true, characterData: true, childList: true});
+		}
+	});
+	
 	var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
 	if(icon) {
 		var img = document.createElement('img');
