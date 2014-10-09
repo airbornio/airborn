@@ -335,6 +335,14 @@
 			});
 		}
 	});
+	var preventWindowLoad = 0, windowLoadPrevented = 0;
+	window.addEventListener('load', function(evt) {
+		if(preventWindowLoad) {
+			evt.stopImmediatePropagation();
+			preventWindowLoad--;
+			windowLoadPrevented++;
+		}
+	});
 	var scriptSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
 	Object.defineProperty(HTMLScriptElement.prototype, 'src', {
 		get: function() {
@@ -343,17 +351,11 @@
 		set: function(url) {
 			var script = this;
 			if(rSchema.test(url)) return scriptSrcDescriptor.set.call(script, url);
-			var winloaded = false;
-			function winload(evt) {
-				evt.stopImmediatePropagation();
-				winloaded = true;
-				window.removeEventListener('load', winload);
-			}
-			window.addEventListener('load', winload);
+			preventWindowLoad++;
 			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
 				scriptSrcDescriptor.set.call(script, url);
 				script.addEventListener('load', function() {
-					if(winloaded) window.dispatchEvent(new Event('load'));
+					if(windowLoadPrevented--) window.dispatchEvent(new Event('load'));
 				});
 				//script.textContent = contents + '\n//# sourceURL=' + path;
 				//window.eval(contents); script.dispatchEvent(new Event('load'));
