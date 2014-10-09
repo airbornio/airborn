@@ -284,7 +284,7 @@ openWindow = function(path, options, callback) {
 		if(csp.indexOf('-src ') !== -1) csp = csp.replace(/-src /g, '-src data: ');
 		else csp = 'default-src data:; ' + csp;
 		var root = _path.match('/Apps/.+?/')[0];
-		prepareUrl(launch_path, {rootParent: root, relativeParent: root, csp: csp}, function(url) {
+		prepareUrl(launch_path, {rootParent: root, relativeParent: root, csp: csp, appData: root.replace('Apps', 'AppData')}, function(url) {
 			var div = options.targetDiv || document.createElement('div');
 			var iframeWin;
 			

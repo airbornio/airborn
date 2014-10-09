@@ -672,14 +672,20 @@
 		return new DeviceStorage(storageName);
 	};
 	
-	function Storage_() {}
+	function Storage_(data) {
+		var _this = this;
+		Object.keys(data).forEach(function(key) {
+			_this[key] = data[key];
+		});
+	}
 	Storage_.prototype.getItem = function(name) {
 		return this.hasOwnProperty(name) ? this[name] : undefined;
 	};
 	Storage_.prototype.setItem = function(name, value) {
 		return (this[name] = value);
 	};
-	var localStorage = new Storage_();
+	var localStorage = new Storage_(document.airborn_localStorage);
+	delete document.airborn_localStorage;
 	try {
 		Object.defineProperty(window, 'localStorage', {
 			get: function() {

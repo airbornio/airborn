@@ -466,6 +466,21 @@ function basename(path) {
 	return path.substr(path.lastIndexOf('/') + 1);
 }
 
+function parallel(fns, callback) {
+	var todo = fns.length,
+		results = new Array(todo),
+		error;
+	fns.forEach(function(fn, i) {
+		fns[i](function(data, err) {
+			results[i] = data;
+			error = err;
+			if(!--todo) {
+				callback.apply(this, results.concat(error));
+			}
+		});
+	});
+}
+
 window.prepareFile = function(file, options, callback, progress, createObjectURL) {
 	var _options = {};
 	Object.keys(options).forEach(function(key) {
@@ -520,13 +535,22 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		callback(data);
 	} else if(extension === 'html' && (options.compat !== false || options.csp)) {
 		_options.compat = false;
-		prepareFile(file, _options, function(c, err) {
+		parallel([
+			function(cb) {
+				prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/'}, cb, function() {}, createObjectURL);
+			},
+			function(cb) {
+				prepareFile(file, _options, cb, progress, createObjectURL);
+			},
+			function(cb) {
+				getFile(options.appData + 'localStorage', function(localStorage) {
+					cb(localStorage || '{}');
+				});
+			}
+		], function(compat, c, localStorage, err) {
 			if(err) return callback('');
-			prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/'}, function(compat, err) {
-				callback((options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head)/i, compat), err);
-			}, function() {}, createObjectURL);
-		}, progress, createObjectURL);
-		getFile('/Core/compat.js');
+			callback((options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head)/i, '<script>document.airborn_localStorage = ' + localStorage + ';</script>' + compat));
+		});
 	} else if(extension === 'js') {
 		getFile(file, function(contents, err) {
 			if(err) return callback('');
@@ -643,7 +667,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
 	var path = resolve(options.relativeParent, url, options.rootParent);
-	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker}, cb, progress, createObjectURL);
+	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
