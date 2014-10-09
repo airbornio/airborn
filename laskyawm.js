@@ -371,10 +371,12 @@ openWindow = function(path, options, callback) {
 					closeBtn.addEventListener('click', function() {
 						iframe.src = 'about:blank';
 						iframe.onload = function() {
-							document.body.removeChild(div);
-							childDivs.splice(childDivs.indexOf(div), 1);
-							childWindows.splice(childWindows.indexOf(iframeWin), 1);
-							forceMinimize();
+							setTimeout(function() { // Fix infinite spinning indicator in Firefox.
+								document.body.removeChild(div);
+								childDivs.splice(childDivs.indexOf(div), 1);
+								childWindows.splice(childWindows.indexOf(iframeWin), 1);
+								forceMinimize();
+							});
 						};
 					});
 					closeBtn.addEventListener('mousedown', function(evt) {
