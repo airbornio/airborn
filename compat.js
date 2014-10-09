@@ -1,4 +1,4 @@
-/*global DOMError, airborn: true, laskya: true */
+/*global File, History, DOMError, airborn: true, laskya: true */
 
 (function() {
 	var messageID = 0, messageCallbacks = {};
@@ -177,7 +177,6 @@
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
 	var rSchema = /^[a-z]+:/i;
-	var rArgs = /[?#].*$/;
 	var root = document.root;
 	delete document.root;
 	XMLHttpRequest.prototype.open = function(_method, url) {
@@ -696,7 +695,7 @@
 	}
 	
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
-	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this['cookie'] }, set: function(value) { return this['cookie'] = value }});
+	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this['cookie']; }, set: function(value) { this['cookie'] = value; }});
 	
 	function createLocationUrl(url, base) {
 		var urlobj = new URL(url, 'file://' + (base || ''));
@@ -709,14 +708,14 @@
 			pathname: urlobj.pathname,
 			port: '',
 			protocol: '',
-			search:  urlobj.search
+			search: urlobj.search
 		};
 	}
 	var locationurl = createLocationUrl(root.replace(/^\/Apps\/[^/]+/, ''));
 	Object.defineProperty(window, 'airborn_location', {get: function() {
 		return locationurl;
 	}});
-	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this['location'] }, set: function(value) { return this['location'] = value }});
+	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this['location']; }, set: function(value) { this['location'] = value; }});
 	
 	History.prototype.pushState = History.prototype.replaceState = function(state, title, url) {
 		locationurl = createLocationUrl(url, locationurl.href);
@@ -726,25 +725,27 @@
 		locationurl.href = locationurl.pathname + locationurl.search + locationurl.hash;
 	});
 	
-	Object.defineProperty(window, 'airborn_top', { value: (function() {
-		var top = window;
-		while(top.parent.parent.parent.parent !== top.parent.parent.parent) top = top.parent;
-		return top;
-	})() });
-	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top'] }, set: function(value) { return this['top'] = value }});
+	Object.defineProperty(window, 'airborn_top', {
+		value: (function() {
+			var top = window;
+			while(top.parent.parent.parent.parent !== top.parent.parent.parent) top = top.parent;
+			return top;
+		})()
+	});
+	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top']; }, set: function(value) { this['top'] = value; }});
 	
-	function Worker_() {}
-	Worker_.prototype = new EventTarget();
-	var _Worker = window.Worker;
+	function MockWorker() {}
+	MockWorker.prototype = new EventTarget();
+	var RealWorker = window.Worker;
 	window.Worker = function(url) {
-		var worker = new Worker_();
+		var mockWorker = new MockWorker();
 		airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root, webworker: true}, function(url) {
-			var _worker = new _Worker(url);
-			_worker.addEventListener('message', worker.dispatchEvent.bind(worker));
-			worker.postMessage = function() {
-				_worker.postMessage.apply(_worker, arguments);
+			var realWorker = new RealWorker(url);
+			realWorker.addEventListener('message', mockWorker.dispatchEvent.bind(mockWorker));
+			mockWorker.postMessage = function() {
+				realWorker.postMessage.apply(realWorker, arguments);
 			};
 		});
-		return worker;
+		return mockWorker;
 	};
 })();

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+jshint $(git diff --cached --name-only | egrep '.js$') --verbose &&
+jscs   $(git diff --cached --name-only | egrep '.js$') &&
+exit 0
+
+exit 1

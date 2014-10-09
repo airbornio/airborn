@@ -1,4 +1,4 @@
-/*global _, jsyaml, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
+/*global _, jsyaml, esprima, estraverse, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
 
 var core_version = 2;
 
@@ -558,14 +558,15 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 window.prepareString = function(contents, options, callback, progress, createObjectURL) {
 	var i = 0,
 		match, matches = [],
+		rURL,
 		rSchema = /^[a-z]+:/i,
 		filesDownloaded = 0;
 	if(options.webworker) {
 		var rImportScripts = /importScripts\s*\([\s\S]*?\)/;
 		while((match = contents.substr(i).match(rImportScripts))) {
 			var j = 0,
-				subject = match[0],
-				rURL = /((["']))(.*?)(\2)()/;
+				subject = match[0];
+			rURL = /((["']))(.*?)(\2)()/;
 			i += match.index;
 			match.pos = i;
 			while((match = subject.substr(j).match(rURL))) {
@@ -580,7 +581,7 @@ window.prepareString = function(contents, options, callback, progress, createObj
 			i++;
 		}
 	} else {
-		var rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.*?)(?=["') >])(\2\s*\)?)/;
+		rURL = /((?:(?:src|href|icon)\s*=|url\()\s*(["']?))(.*?)(?=["') >])(\2\s*\)?)/;
 		while((match = contents.substr(i).match(rURL))) {
 			if(!rSchema.test(match[3])) {
 				matches.push(match);
@@ -828,8 +829,9 @@ window.isValidAPIKey = function(key) {
 // From: http://tobyho.com/2013/12/02/fun-with-esprima/
 function renameGlobalVariables(source, variables) {
 	if(typeof esprima === 'undefined' || typeof estraverse === 'undefined') return source;
+	var ast;
 	try {
-		var ast = esprima.parse(source, {range: true});
+		ast = esprima.parse(source, {range: true});
 	} catch(e) {
 		return source;
 	}
@@ -883,14 +885,14 @@ function renameGlobalVariables(source, variables) {
 		}
 	}
 	function leave(node) {
-		if(createsNewScope(node)){
+		if(createsNewScope(node)) {
 			renameGlobals(identifiers, scopeChain);
 			scopeChain.pop();
 			identifiers = [];
 		}
 	}
 	function isVarDefined(varname, scopeChain) {
-		for(var i = 0; i < scopeChain.length; i++){
+		for(var i = 0; i < scopeChain.length; i++) {
 			var scope = scopeChain[i];
 			if(scope.indexOf(varname) !== -1) {
 				return true;
@@ -899,7 +901,7 @@ function renameGlobalVariables(source, variables) {
 		return false;
 	}
 	function renameGlobals(identifiers, scopeChain) {
-		for(var i = 0; i < identifiers.length; i++){
+		for(var i = 0; i < identifiers.length; i++) {
 			var identifier = identifiers[i];
 			var varname = identifier.name;
 			if(!identifier.isObjectKey && variables.hasOwnProperty(varname) && (identifier.isProperty || !isVarDefined(varname, scopeChain))) {
@@ -907,7 +909,7 @@ function renameGlobalVariables(source, variables) {
 			}
 		}
 	}
-	function createsNewScope(node){
+	function createsNewScope(node) {
 		return node.type === 'FunctionDeclaration' ||
 			node.type === 'FunctionExpression' ||
 			node.type === 'Program';
