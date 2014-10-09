@@ -179,6 +179,7 @@
 	var rSchema = /^[a-z]+:/i;
 	var root = document.root;
 	delete document.root;
+	var appData = root.match(/\/Apps\/.+?\//)[0].replace('Apps', 'AppData');
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;
@@ -682,7 +683,8 @@
 		return this.hasOwnProperty(name) ? this[name] : undefined;
 	};
 	Storage_.prototype.setItem = function(name, value) {
-		return (this[name] = value);
+		this[name] = value;
+		flushStorage();
 	};
 	var localStorage = new Storage_(document.airborn_localStorage);
 	delete document.airborn_localStorage;
@@ -699,6 +701,16 @@
 			}
 		});
 	}
+	var localStorageJSON = JSON.stringify(localStorage);
+	function flushStorage() {
+		var json = JSON.stringify(localStorage);
+		if(json !== localStorageJSON) {
+			airborn.fs.putFile(appData + 'localStorage', json);
+			localStorageJSON = json;
+		}
+	}
+	setInterval(flushStorage, 300);
+	window.addEventListener('unload', flushStorage); // Doesn't work on browser tab close or in Firefox
 	
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
 	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this['cookie']; }, set: function(value) { this['cookie'] = value; }});
