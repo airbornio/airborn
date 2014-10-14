@@ -887,6 +887,9 @@ window.installPackage = function(manifest_url, params, callback) {
 			var uploaded = 0;
 			var total = 0;
 			var target = '/Apps/' + basename(manifest.package_path).replace('-' + manifest.version, '').replace('.zip', '') + '/';
+			getFile(target, {codec: 'dir'}, function(contents) {
+				putFile(target, {codec: 'dir'}, contents || {}, {x: {marketplace: extend({}, params, {manifest_url: manifest_url})}});
+			});
 			keys.forEach(function(path) {
 				var file = zip.files[path];
 				if(!file.options.dir) {
