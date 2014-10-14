@@ -894,12 +894,19 @@ window.installPackage = function(manifest_url, params, callback) {
 				var file = zip.files[path];
 				if(!file.options.dir) {
 					total++;
-					putFile(target + path, {codec: 'arrayBuffer'}, file.asArrayBuffer(), function() {
-						uploaded++;
-						if(uploaded === total) {
-							callback({installState: 'installed'});
+					putFile(
+						target + path,
+						{codec: 'arrayBuffer'},
+						file.asArrayBuffer(),
+						{from: 'origin'}, // Don't merge to facilitate
+										  // "Reinstall" functionality.
+						function() {
+							uploaded++;
+							if(uploaded === total) {
+								callback({installState: 'installed'});
+							}
 						}
-					});
+					);
 				}
 			});
 		}, 'arraybuffer');
@@ -921,7 +928,7 @@ window.update = function() {
 						keys.forEach(function(path) {
 							var file = zip.files[path];
 							if(!file.options.dir) {
-								putFile(target + path.replace(/^airborn\//, ''), {codec: 'arrayBuffer'}, file.asArrayBuffer());
+								putFile(target + path.replace(/^airborn\//, ''), {codec: 'arrayBuffer'}, file.asArrayBuffer(), {from: 'origin', parentFrom: 'origin'});
 							}
 						});
 					}, 'arraybuffer');
