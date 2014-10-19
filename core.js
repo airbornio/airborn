@@ -689,7 +689,8 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 	} else {
 		getFile(file, function(contents, err) {
 			if(err) return callback('');
-			_options.rootParent = _options.relativeParent = file;
+			_options.rootParent = _options.rootParent || file;
+			_options.relativeParent = file;
 			delete _options.bootstrap;
 			delete _options.compat;
 			prepareString(contents, _options, callback, progress, createObjectURL);
@@ -785,7 +786,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
 	var path = resolve(options.relativeParent, url, options.rootParent);
-	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData}, cb, progress, createObjectURL);
+	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
