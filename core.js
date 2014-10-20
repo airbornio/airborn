@@ -214,21 +214,29 @@ window.getFile = function(file, options, callback) {
 					sjcl.codec.utf8String.fromBits = sjcl.codec[options.codec].fromBits;
 				}
 				currentFilename = file;
-				var decrypted;
+				var decrypted, error;
 				try {
 					decrypted = sjcl.decrypt(files_key, req.responseText);
 				} catch(e) {
 					try {
 						decrypted = sjcl.decrypt(private_key, req.responseText);
 					} catch(e2) {
-						decrypted = sjcl.decrypt(password, req.responseText);
+						try {
+							decrypted = sjcl.decrypt(password, req.responseText);
+						} catch(e3) {
+							error = {status: 0, statusText: e3.message};
+						}
 					}
 				}
 				if(options.codec) {
 					sjcl.codec.utf8String.fromBits = fromBits;
 				}
-				if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: decrypted, ts: Date.now()};
-				callback(decrypted);
+				if(error) {
+					callback(null, error);
+				} else {
+					if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: decrypted, ts: Date.now()};
+					callback(decrypted);
+				}
 			} else {
 				console.error('GET', file);
 				callback(null, {status: req.status, statusText: req.statusText});
