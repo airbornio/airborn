@@ -503,22 +503,27 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					}
 				}
 			}
-			putFile(histname, {codec: options.codec}, contents, {edited: now, parentNames: parentNames}, function(histid, blob) {
+			putFile(histname, {codec: options.codec}, contents, {edited: now, parentNames: parentNames}, function(err, histid, blob) {
+				
+				if(err) {
+					cont(err);
+					return;
+				}
 				
 				// Copy history file to destination
 				var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
 				var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 				var req = new XMLHttpRequest();
 				req.open('PUT', '/object/' + id);
-				req.addEventListener('load', function() {
-					if(this.status === 200) {
-						cont();
-					} else {
-						console.log('error', this);
+				req.addEventListener('readystatechange', function() {
+					if(this.readyState === 4) {
+						if(this.status === 200) {
+							cont();
+						} else {
+							console.log('error', this);
+							cont({status: this.status, statusText: this.statusText});
+						}
 					}
-				});
-				req.addEventListener('error', function() {
-					console.log('error', this);
 				});
 				req.send(blob);
 				
@@ -542,17 +547,26 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? private_key : files_key, contents)], {type: 'binary/octet-stream'});
 			var req = new XMLHttpRequest();
 			req.open('PUT', '/object/' + id);
-			req.addEventListener('load', function() {
-				if(this.status === 200) {
-					if(upload_history) {
-						// We were uploading a *.history/* file
-						if(callback) callback(id, blob);
+			req.addEventListener('readystatechange', function() {
+				if(this.readyState === 4) {
+					if(this.status === 200) {
+						if(upload_history) {
+							// We were uploading a *.history/* file
+							if(callback) callback(null, id, blob);
+						} else {
+							// We were uploading a normal file
+							cont();
+						}
 					} else {
-						// We were uploading a normal file
-						cont();
+						console.log('error', this);
+						if(upload_history) {
+							// We were uploading a *.history/* file
+							if(callback) callback({status: this.status, statusText: this.statusText});
+						} else {
+							// We were uploading a normal file
+							cont({status: this.status, statusText: this.statusText});
+						}
 					}
-				} else {
-					console.log('error', this);
 				}
 			});
 			req.addEventListener('progress', function(evt) {
@@ -560,16 +574,15 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					if(progress) progress(evt.loaded, evt.total);
 				}
 			});
-			req.addEventListener('error', function() {
-				console.log('error', this);
-			});
 			req.send(blob);
 		}
 	}
 	
-	function cont() {
-		if(callback) callback();
-		notifyFileChange(file, is_new_file ? 'created' : 'modified');
+	function cont(err) {
+		if(callback) callback(err);
+		if(!err) {
+			notifyFileChange(file, is_new_file ? 'created' : 'modified');
+		}
 	}
 };
 
