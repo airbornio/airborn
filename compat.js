@@ -511,7 +511,8 @@
 			}
 		};
 		this.dispatchEvent = function(event) {
-			Object.defineProperty(event, 'target', {get: function() { return this; }});
+			var _this = this;
+			Object.defineProperty(event, 'target', {get: function() { return _this; }});
 			if(listeners[event.type]) {
 				listeners[event.type].forEach(function(fn) {
 					fn.call(this, event);
@@ -1027,6 +1028,11 @@
 		function Database(metadata, name) {
 			console.log('new database', arguments, this);
 			Object.defineProperty(this, 'name', {value: name});
+			Object.defineProperty(this, 'version', {
+				get: function() {
+					return metadata.version;
+				}
+			});
 			Object.defineProperty(this, 'objectStoreNames', {
 				get: function() {
 					return Object.keys(metadata.objectStores);
@@ -1049,7 +1055,7 @@
 			};
 			this.transaction = function() {
 				console.log('transaction', arguments);
-				var transaction = new Transaction(metadata);
+				var transaction = new Transaction(metadata, function() {});
 				transaction.db = this;
 				return transaction;
 			};
@@ -1058,7 +1064,24 @@
 			};
 		}
 		
-		function Transaction(metadata) {
+		function extend(target) {
+			[].slice.call(arguments, 1).forEach(function(obj) {
+				Object.keys(obj).forEach(function(key) {
+					var value = obj[key];
+					if(value != null && value.constructor === Object) {
+						if(target.hasOwnProperty(key)) extend(target[key], value);
+						else target[key] = extend({}, value);
+					}
+					else if(value === undefined) delete target[key];
+					else target[key] = value;
+				});
+			});
+			return target;
+		}
+		
+		function Transaction(metadata, callback) {
+			var oldMetadata = extend({}, metadata);
+			
 			EventTarget.call(this);
 			
 			var queue = [];
@@ -1072,7 +1095,7 @@
 			};
 			
 			var _this = this;
-			setTimeout(function() {
+			var timeout = setTimeout(function() {
 				(function next(i) {
 					if(i < queue.length) {
 						queue[i](function() {
@@ -1080,9 +1103,18 @@
 						});
 					} else {
 						_this.dispatchEvent(new Event('complete'));
+						callback();
 					}
 				})(0);
 			});
+			
+			this.abort = function() {
+				console.log('abort', arguments);
+				clearTimeout(timeout);
+				extend(metadata, oldMetadata);
+				this.dispatchEvent(new Event('abort', {bubbles: true}));
+				callback(new DOMError('AbortError', 'The transaction was aborted by a call to abort().'));
+			};
 		}
 		Transaction.prototype = new EventTarget();
 		
@@ -1317,30 +1349,50 @@
 		
 		var indexedDB = {
 			open: function(name, version) {
+				if(version === 0) throw new TypeError("Database version can't be 0.");
 				console.log('open', arguments);
 				var req = new DOMRequest();
 				airborn.fs.getFile(appData + 'IDB/' + escapePathComponent(name) + '/metadata', {codec: 'json'}, function(metadata) {
 					console.log('metadata:', JSON.stringify(metadata));
+					var oldVersion = metadata && metadata.version;
 					if(metadata) {
-						var database = req.result = new Database(metadata, name);
-						if(metadata.version === undefined || version > metadata.version) {
-							metadata.version = version;
-							airborn.fs.putFile(appData + 'IDB/' + escapePathComponent(name) + '/metadata', {codec: 'json'}, metadata);
-							req.transaction = database._transaction = new Transaction(metadata);
-							req.transaction.db = database;
-							req.dispatchEvent(new Event('upgradeneeded'));
-							req.transaction.addEventListener('complete', function() {
-								delete req.transaction;
-								delete database._transaction;
-								req.dispatchEvent(new Event('success'));
-							});
-						} else {
-							req.dispatchEvent(new Event('success'));
+						var db = new Database(metadata, name);
+						if(version === undefined) {
+							version = metadata.version;
 						}
 					} else {
-						metadata = {version: version, objectStores: {}};
-						req.result = new Database(metadata, name);
-						airborn.fs.putFile(appData + 'IDB/' + escapePathComponent(name) + '/metadata', {codec: 'json'}, metadata);
+						metadata = {version: 0, objectStores: {}};
+						var db = new Database(metadata, name);
+						if(version === undefined) {
+							version = 0;
+						}
+					}
+					if(db.version > version) {
+						throw new DOMError('VersionError', 'The previous version of this database was higher than the version passed to open().');
+					}
+					req.result = db;
+					if(db.version < version) {
+						req.transaction = db._transaction = new Transaction(metadata, function(error) {
+							if(error) {
+								console.log('transaction.abort');
+								req.result = undefined;
+								req.error = error;
+								req.transaction = null;
+								delete db._transaction;
+								req.dispatchEvent(new Event('error', {bubbles: true}));
+							} else {
+								req.transaction = null;
+								delete db._transaction;
+								req.dispatchEvent(new Event('success'));
+							}
+						});
+						req.transaction.db = db;
+						metadata.version = version;
+						req.transaction._queue.push(function(cb) {
+							airborn.fs.putFile(appData + 'IDB/' + escapePathComponent(name) + '/metadata', {codec: 'json'}, metadata, cb);
+						});
+						req.dispatchEvent(new Event('upgradeneeded'));
+					} else {
 						req.dispatchEvent(new Event('success'));
 					}
 				});
