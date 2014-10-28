@@ -7,12 +7,14 @@ var settings = {};
 var inTransaction = false;
 var transaction = null;
 var transactionDate;
+var transactionIdPrefix;
 var filesToPut;
 function startTransaction() {
 	inTransaction = true;
 	if(!transaction) {
 		transaction = {};
 		transactionDate = new Date();
+		transactionIdPrefix = Math.round(Math.random() * Date.now()).toString(16);
 		filesToPut = 0;
 	}
 }
@@ -24,6 +26,27 @@ function endTransaction() {
 	if(filesToPut) return;
 	var _transaction = transaction;
 	transaction = null;
+	var transactions = {};
+	Object.keys(_transaction).forEach(function(path) {
+		var transactionId = getTransactionId(_transaction[path][1]);
+		if(!transactions[transactionId]) {
+			transactions[transactionId] = 0;
+		}
+		if(/\.history\/.+/.test(_transaction[path][0])) {
+			transactions[transactionId] += 2;
+		} else {
+			transactions[transactionId]++;
+		}
+	});
+	Object.keys(transactions).forEach(function(transactionId) {
+		var req = new XMLHttpRequest();
+		req.open('POST', '/transaction/add');
+		req.setRequestHeader('Content-Type', 'application/json');
+		req.send(JSON.stringify({
+			transactionId: transactionId,
+			messageCount: transactions[transactionId]
+		}));
+	});
 	Object.keys(_transaction).forEach(function(path) {
 		_transaction[path][1].finishingTransaction = true;
 		if(/\/\.history\//.test(_transaction[path][0])) {
@@ -33,6 +56,9 @@ function endTransaction() {
 	});
 }
 window.endTransaction = endTransaction;
+function getTransactionId(options) {
+	return transactionIdPrefix + ':' + (options.transactionId || '');
+}
 
 var sjcl = parent.sjcl;
 var private_key = parent.private_key;
@@ -503,7 +529,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					}
 				}
 			}
-			putFile(histname, {codec: options.codec}, contents, {edited: now, parentNames: parentNames}, function(err, histid, blob) {
+			putFile(histname, {codec: options.codec}, contents, {edited: now, parentNames: parentNames}, function(err, histid, transactionId, blob) {
 				
 				if(err) {
 					cont(err);
@@ -515,6 +541,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 				var req = new XMLHttpRequest();
 				req.open('PUT', '/object/' + id);
+				req.setRequestHeader('X-Transaction-Id', transactionId);
 				req.addEventListener('readystatechange', function() {
 					if(this.readyState === 4) {
 						if(this.status === 200) {
@@ -547,12 +574,14 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? private_key : files_key, contents)], {type: 'binary/octet-stream'});
 			var req = new XMLHttpRequest();
 			req.open('PUT', '/object/' + id);
+			var transactionId = getTransactionId(options);
+			req.setRequestHeader('X-Transaction-Id', transactionId);
 			req.addEventListener('readystatechange', function() {
 				if(this.readyState === 4) {
 					if(this.status === 200) {
 						if(upload_history) {
 							// We were uploading a *.history/* file
-							if(callback) callback(null, id, blob);
+							if(callback) callback(null, id, transactionId, blob);
 						} else {
 							// We were uploading a normal file
 							cont();
