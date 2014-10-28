@@ -724,7 +724,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			if(err) return callback('');
 			if(options.compat !== false && !options.webworker) {
 				console.log('Parsing', file);
-				var renames = {cookie: 'airborn_cookie', location: 'airborn_location', top: 'airborn_top'};
+				var renames = {cookie: 'airborn_cookie', location: 'airborn_location', top: 'airborn_top', parent: 'airborn_parent'};
 				if(navigator.userAgent.match(/Chrome/)) renames.localStorage = 'airborn_localStorage';
 				contents = renameGlobalVariables(contents, renames);
 			}

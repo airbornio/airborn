@@ -5,7 +5,7 @@
 	var apikey = document.apikey;
 	delete document.apikey;
 	var action = function(action, args, callback, progress, transfer) {
-		(action.substr(0, 3) === 'wm.' ? parent : window['top']).postMessage({messageID: ++messageID, action: action, args: args, apikey: apikey}, '*', transfer);
+		(action.substr(0, 3) === 'wm.' ? window['parent'] : window['top']).postMessage({messageID: ++messageID, action: action, args: args, apikey: apikey}, '*', transfer);
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) {
 			messageCallbacks[messageID].progress = progress;
@@ -13,7 +13,7 @@
 		}
 	};
 	window.addEventListener('message', function(message) {
-		if(message.source === window['top'] || message.source === parent) {
+		if(message.source === window['top'] || message.source === window['parent']) {
 			if(message.data.inReplyTo) {
 				var callback = messageCallbacks[message.data.inReplyTo];
 				if(callback !== undefined && message.data.progress) callback = callback.progress;
@@ -1394,11 +1394,14 @@
 	Object.defineProperty(window, 'airborn_top', {
 		value: (function() {
 			var top = window;
-			while(top.parent.parent.parent.parent !== top.parent.parent.parent) top = top.parent;
+			while(top['parent']['parent']['parent']['parent'] !== top['parent']['parent']['parent']) top = top['parent'];
 			return top;
 		})()
 	});
 	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top']; }, set: function(value) { this['top'] = value; }});
+	
+	Object.defineProperty(window, 'airborn_parent', {value: window === window.airborn_top ? window : window['parent']});
+	Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this['parent']; }, set: function(value) { this['parent'] = value; }});
 	
 	function MockWorker() {
 		EventTarget.call(this);

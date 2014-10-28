@@ -1,6 +1,7 @@
 /*global _, $, File, apps, powerMenu, getFile: true, prepareUrl: true, listenForFileChanges: true, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
 Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top']; }, set: function(value) { this['top'] = value; }});
+Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this['parent']; }, set: function(value) { this['parent'] = value; }});
 
 var workspace_start_top = 25;
 var workspace_start_left = 100;
