@@ -725,7 +725,12 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			if(options.compat !== false && !options.webworker) {
 				console.log('Parsing', file);
 				var renames = {cookie: 'airborn_cookie', location: 'airborn_location', top: 'airborn_top', parent: 'airborn_parent'};
-				if(navigator.userAgent.match(/Chrome/)) renames.localStorage = 'airborn_localStorage';
+				if(navigator.userAgent.match(/Chrome/)) {
+					renames.localStorage = 'airborn_localStorage';
+					renames.src = 'airborn_src';
+					renames.href = 'airborn_href';
+					renames.pathname = 'airborn_pathname';
+				}
 				contents = renameGlobalVariables(contents, renames);
 			}
 			if(options.webworker) {

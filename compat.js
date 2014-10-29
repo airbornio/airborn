@@ -375,17 +375,35 @@
 			});
 		}
 	});
+	Object.defineProperty(HTMLScriptElement.prototype, 'airborn_src', {
+		get: function() {
+			return getURLFilename(this['src']);
+		}
+	});
+	Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this['src']; }, set: function(value) { this['src'] = value; }});
 	var aHrefDescriptor = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'href');
 	Object.defineProperty(HTMLAnchorElement.prototype, 'href', {
 		get: function() {
 			return getURLFilename(aHrefDescriptor.get.call(this));
 		}
 	});
+	Object.defineProperty(HTMLAnchorElement.prototype, 'airborn_href', {
+		get: function() {
+			return getURLFilename(this['href']);
+		}
+	});
+	Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this['href']; }, set: function(value) { this['href'] = value; }});
 	Object.defineProperty(HTMLAnchorElement.prototype, 'pathname', {
 		get: function() {
 			return new URL('file://' + this.href).pathname;
 		}
 	});
+	Object.defineProperty(HTMLAnchorElement.prototype, 'airborn_pathname', {
+		get: function() {
+			return new URL('file://' + this.airborn_href).pathname;
+		}
+	});
+	Object.defineProperty(Object.prototype, 'airborn_pathname', {get: function() { return this['pathname']; }, set: function(value) { this['pathname'] = value; }});
 	var scriptGetAttribute = HTMLScriptElement.prototype.getAttribute;
 	HTMLScriptElement.prototype.getAttribute = function(attrName) {
 		var realAttr = scriptGetAttribute.call(this, attrName);

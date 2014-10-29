@@ -2,6 +2,8 @@
 
 Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top']; }, set: function(value) { this['top'] = value; }});
 Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this['parent']; }, set: function(value) { this['parent'] = value; }});
+Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this['src']; }, set: function(value) { this['src'] = value; }});
+Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this['href']; }, set: function(value) { this['href'] = value; }});
 
 var workspace_start_top = 25;
 var workspace_start_left = 100;
