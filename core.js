@@ -667,7 +667,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'<body>',
 			'<script>',
 			'if(window.parent === window.top) document.write("Loading…");',
-			'document.root = ' + JSON.stringify(file) + ';',
+			'document.root = ' + JSON.stringify(options.rootParent) + ';',
 			'document.filenames = {};',
 			'document.apikey = ' + JSON.stringify(getAPIKey()) + ';',
 			'window.addEventListener("message", function(message) {',
