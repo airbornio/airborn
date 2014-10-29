@@ -1042,6 +1042,7 @@ function renameGlobalVariables(source, variables) {
 	try {
 		ast = esprima.parse(source, {range: true});
 	} catch(e) {
+		console.log(e);
 		return source;
 	}
 	var scopeChain = [];
