@@ -619,7 +619,8 @@ var mimeTypes = {
 	js: 'text/javascript',
 	css: 'text/css',
 	png: 'image/png',
-	html: 'text/html'
+	html: 'text/html',
+	htm: 'text/html'
 };
 
 function resolve(from, to, rootParent) {
@@ -655,7 +656,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		_options[key] = options[key];
 	});
 	var extension = file.substr(file.lastIndexOf('.') + 1);
-	if(extension === 'html' && options.bootstrap !== false) {
+	if((extension === 'html' || extension === 'htm') && options.bootstrap !== false) {
 		_options.bootstrap = false;
 		var inline_linenr = +(new Error().stack.match(/[:@](\d+)/) || [])[1] + 2;
 		var data = [
@@ -701,7 +702,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'<!--# sourceURL = /Core/core.js > inline at line ' + inline_linenr + ' -->'
 		].join('\n');
 		callback(data);
-	} else if(extension === 'html' && (options.compat !== false || options.csp)) {
+	} else if((extension === 'html' || extension === 'htm') && (options.compat !== false || options.csp)) {
 		_options.compat = false;
 		parallel([
 			function(cb) {
@@ -841,7 +842,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var extension = url.substr(url.lastIndexOf('.') + 1);
 	var path = resolve(options.relativeParent, url, options.rootParent);
-	if(extension === 'html' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent}, cb, progress, createObjectURL);
+	if(extension === 'html' || extension === 'htm' || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
@@ -850,7 +851,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 			if((navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] < 35) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
-				else if(extension === 'html') data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
+				else if(extension === 'html' || extension === 'htm') data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
 				else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
 				else data = ';base64,' + sjcl.codec.base64.fromBits(c);
 				data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path + args) + ';charset=utf-8' + data;
@@ -858,7 +859,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 			} else {
 				if(extension === 'js') data = c + '\n//# sourceURL=' + path;
 				else if(extension === 'css') data = c + '\n/*# sourceURL=' + path + ' */';
-				else if(extension === 'html') data = c + '\n<!--# sourceURL=' + path + ' -->';
+				else if(extension === 'html' || extension === 'htm') data = c + '\n<!--# sourceURL=' + path + ' -->';
 				else if(typeof c === 'string') data = c;
 				else data = sjcl.codec.arrayBuffer.fromBits(c);
 				createObjectURL({data: data, type: mimeTypes[extension], name: path + args}, callback);
