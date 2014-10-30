@@ -717,7 +717,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			}
 		], function(compat, c, localStorage, err) {
 			if(err) return callback('');
-			callback((options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head)/i, '<script>document.airborn_localStorage = ' + localStorage + ';</script>' + compat));
+			callback((options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head)/i, '<script>document.airborn_localStorage = ' + localStorage.replace(/<\/(script)/ig, '<\\\/$1') + ';</script>' + compat));
 		});
 	} else if(extension === 'js') {
 		getFile(file, function(contents, err) {
