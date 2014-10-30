@@ -1461,16 +1461,44 @@
 		locationurl.href = locationurl.pathname + locationurl.search + locationurl.hash;
 	});
 	
+	function WindowProxy(window) {
+		Object.defineProperty(this, 'airborn_top', {
+			value: (function() {
+				var top = window;
+				while(top['parent']['parent']['parent'] !== top['parent']['parent']) top = top['parent'];
+				return top === window ? this : maybeWindowProxy(top);
+			})()
+		});
+		Object.defineProperty(this, 'airborn_parent', {value: this === this.airborn_top || window['parent'] === window ? this : maybeWindowProxy(window['parent'])});
+	}
+	var windowProxies = new Map();
+	function windowProxy(window) {
+		if(windowProxies.has(window)) {
+			return windowProxies.get(window);
+		}
+		var proxy = new WindowProxy(window);
+		windowProxies.set(window, proxy);
+		return proxy;
+	}
+	function maybeWindowProxy(window) {
+		try {
+			window.a;
+		} catch(e) {
+			return windowProxy(window);
+		}
+		return window;
+	}
+	
 	Object.defineProperty(window, 'airborn_top', {
 		value: (function() {
 			var top = window;
 			while(top['parent']['parent']['parent'] !== top['parent']['parent']) top = top['parent'];
-			return top;
+			return maybeWindowProxy(top);
 		})()
 	});
 	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top']; }, set: function(value) { this['top'] = value; }});
 	
-	Object.defineProperty(window, 'airborn_parent', {value: window === window.airborn_top ? window : window['parent']});
+	Object.defineProperty(window, 'airborn_parent', {value: window === window.airborn_top ? window : maybeWindowProxy(window['parent'])});
 	Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this['parent']; }, set: function(value) { this['parent'] = value; }});
 	
 	function MockWorker() {
