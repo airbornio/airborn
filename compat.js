@@ -1464,7 +1464,7 @@
 	Object.defineProperty(window, 'airborn_top', {
 		value: (function() {
 			var top = window;
-			while(top['parent']['parent']['parent']['parent'] !== top['parent']['parent']['parent']) top = top['parent'];
+			while(top['parent']['parent']['parent'] !== top['parent']['parent']) top = top['parent'];
 			return top;
 		})()
 	});
