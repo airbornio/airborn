@@ -208,7 +208,14 @@ window.getFile = function(file, options, callback) {
 				callback(cache.contents);
 			} else {
 				currentFilename = file;
-				callback(sjcl.codec[options.codec || 'utf8String'].fromBits(sjcl.codec[cache.codec || 'utf8String'].toBits(cache.contents)));
+				var decrypted;
+				try {
+					decrypted = sjcl.codec[options.codec || 'utf8String'].fromBits(sjcl.codec[cache.codec || 'utf8String'].toBits(cache.contents));
+				} catch(e) {
+					callback(null, {status: 0, statusText: e.message});
+					return true;
+				}
+				callback(decrypted);
 			}
 			return true;
 		}
