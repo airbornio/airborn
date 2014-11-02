@@ -1066,6 +1066,7 @@
 						airborn.fs.putFile(appData + 'IDB/' + escapePathComponent(_this.name) + '/metadata', {codec: 'json'}, _metadata, cb);
 					});
 				});
+				return this._transaction.objectStore(name);
 			};
 			this.deleteObjectStore = function(name) {
 				console.log('deleteObjectStore', arguments);
@@ -1238,6 +1239,7 @@
 			this.createIndex = function(name, keyPath, props) {
 				console.log('createIndex', arguments);
 				var _this = this;
+				metadata.objectStores[_this.name].indexes[name] = {keyPath: keyPath, props: props || {}};
 				this.transaction._queue.push(function(cb) {
 					var records = [];
 					var cursor = _this.openCursor();
@@ -1263,6 +1265,7 @@
 						}
 					});
 				});
+				return this.index(name);
 			};
 			this.index = function(name) {
 				console.log('index', arguments);
@@ -1299,7 +1302,7 @@
 			};
 			
 			airborn.fs.getFile(appData + 'IDB/' + escapePathComponent(objectStore.transaction.db.name) + '/' + escapePathComponent(objectStore.name) + '/', {codec: 'dir'}, function(contents) {
-				keys = Object.keys(contents).filter(function(name) {
+				keys = Object.keys(contents || {}).filter(function(name) {
 					return name.substr(-9) !== '.history/';
 				});
 				position = -1;
@@ -1382,7 +1385,7 @@
 						metadata = {version: 0, objectStores: {}};
 						var db = new Database(metadata, name);
 						if(version === undefined) {
-							version = 0;
+							version = 1;
 						}
 					}
 					if(db.version > version) {
