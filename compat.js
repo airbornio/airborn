@@ -378,6 +378,17 @@
 	Object.defineProperty(HTMLScriptElement.prototype, 'airborn_src', {
 		get: function() {
 			return getURLFilename(this['src']);
+		},
+		set: function(url) {
+			var script = this;
+			if(rSchema.test(url)) return (script['src'] = url);
+			preventWindowLoad++;
+			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
+				script['src'] = url;
+				script.addEventListener('load', function() {
+					if(windowLoadPrevented--) window.dispatchEvent(new Event('load'));
+				});
+			});
 		}
 	});
 	Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this['src']; }, set: function(value) { this['src'] = value; }});
