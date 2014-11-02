@@ -192,6 +192,7 @@
 	var rSchema = /^[a-z]+:/i;
 	var root = document.root;
 	delete document.root;
+	Object.defineProperty(document, 'baseURI', {get: function() { return root.replace(/\/Apps\/[^\/]+/, ''); }});
 	var appData = root.match(/\/Apps\/.+?\//)[0].replace('Apps', 'AppData');
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
@@ -223,6 +224,7 @@
 					Object.defineProperty(req, 'response', {get: function() {
 						if(responseType === 'document') {
 							var doc = document.implementation.createHTMLDocument('');
+							Object.defineProperty(doc, 'baseURI', {get: function() { return url.replace(/\/Apps\/[^\/]+/, ''); }});
 							doc.documentElement.innerHTML = contents;
 							return doc;
 						}
@@ -359,7 +361,7 @@
 	var scriptSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
 	Object.defineProperty(HTMLScriptElement.prototype, 'src', {
 		get: function() {
-			return getURLFilename(scriptSrcDescriptor.get.call(this));
+			return scriptSrcDescriptor.get.call(this) && new URL(getURLFilename(scriptSrcDescriptor.get.call(this)), 'file://' + this.ownerDocument.baseURI).href.replace('file://', '');
 		},
 		set: function(url) {
 			var script = this;
@@ -377,7 +379,8 @@
 	});
 	Object.defineProperty(HTMLScriptElement.prototype, 'airborn_src', {
 		get: function() {
-			return getURLFilename(this['src']);
+			// this['src'] is sometimes empty: https://crbug.com/291791
+			return this.getAttribute('src') && new URL(this.getAttribute('src'), 'file://' + this.ownerDocument.baseURI).href.replace('file://', '');
 		},
 		set: function(url) {
 			var script = this;
