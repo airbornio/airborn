@@ -731,7 +731,7 @@
 		return this.hasOwnProperty(name) ? this[name] : undefined;
 	};
 	Storage_.prototype.setItem = function(name, value) {
-		this[name] = value;
+		this[name] = value + '';
 		flushStorage();
 	};
 	var localStorage = new Storage_(document.airborn_localStorage);
@@ -739,18 +739,26 @@
 	try {
 		Object.defineProperty(window, 'localStorage', {
 			get: function() {
+				stringifyStorageValues();
 				return localStorage;
 			}
 		});
 	} catch(e) {
 		Object.defineProperty(window, 'airborn_localStorage', {
 			get: function() {
+				stringifyStorageValues();
 				return localStorage;
 			}
 		});
 	}
+	function stringifyStorageValues() {
+		Object.keys(localStorage).forEach(function(key) {
+			localStorage[key] += '';
+		});
+	}
 	var localStorageJSON = JSON.stringify(localStorage);
 	function flushStorage() {
+		stringifyStorageValues();
 		var json = JSON.stringify(localStorage);
 		if(json !== localStorageJSON) {
 			airborn.fs.putFile(appData + 'localStorage', json);
