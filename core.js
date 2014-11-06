@@ -257,7 +257,7 @@ window.getFile = function(file, options, callback) {
 						try {
 							decrypted = sjcl.decrypt(password, req.responseText);
 						} catch(e3) {
-							error = {status: 0, statusText: e3.message};
+							error = {status: 0, statusText: e.message};
 						}
 					}
 				}
