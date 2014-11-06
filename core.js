@@ -232,8 +232,7 @@ window.getFile = function(file, options, callback) {
 	}
 	req.addEventListener('readystatechange', cb);
 	if(!requestCache) {
-		var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
-		req.open('GET', 'object/' + sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file)));
+		req.open('GET', 'object/' + sjcl.codec.hex.fromBits(files_hmac.mac(file)));
 		req.send(null);
 	}
 	
@@ -252,13 +251,9 @@ window.getFile = function(file, options, callback) {
 					decrypted = sjcl.decrypt(files_key, req.responseText);
 				} catch(e) {
 					try {
-						decrypted = sjcl.decrypt(private_key, req.responseText);
+						decrypted = sjcl.decrypt(password, req.responseText);
 					} catch(e2) {
-						try {
-							decrypted = sjcl.decrypt(password, req.responseText);
-						} catch(e3) {
-							error = {status: 0, statusText: e.message};
-						}
+						error = {status: 0, statusText: e.message};
 					}
 				}
 				if(options.codec) {
