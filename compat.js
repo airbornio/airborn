@@ -409,12 +409,12 @@
 	Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this['href']; }, set: function(value) { this['href'] = value; }});
 	Object.defineProperty(HTMLAnchorElement.prototype, 'pathname', {
 		get: function() {
-			return new URL('file://' + this.href).pathname;
+			return this.href && new URL(this.href, 'file://').pathname;
 		}
 	});
 	Object.defineProperty(HTMLAnchorElement.prototype, 'airborn_pathname', {
 		get: function() {
-			return new URL('file://' + this.airborn_href).pathname;
+			return this.airborn_href && new URL(this.airborn_href, 'file://').pathname;
 		}
 	});
 	Object.defineProperty(Object.prototype, 'airborn_pathname', {get: function() { return this['pathname']; }, set: function(value) { this['pathname'] = value; }});
