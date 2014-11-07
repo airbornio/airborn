@@ -734,6 +734,10 @@
 		this[name] = value + '';
 		flushStorage();
 	};
+	Storage_.prototype.removeItem = function(name) {
+		delete this[name];
+		flushStorage();
+	};
 	var localStorage = new Storage_(document.airborn_localStorage);
 	delete document.airborn_localStorage;
 	try {
