@@ -21,7 +21,7 @@ window.addEventListener('message', function(message) {
 	if(message.data.inReplyTo) {
 		messageCallbacks[message.data.inReplyTo].apply(this, message.data.result);
 	} else if(message.source === mainWindow || (message.data.apikey && isValidAPIKey(message.data.apikey))) {
-		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'fs.listenForFileChanges', 'apps.installPackage', 'core.setTitle', 'core.setIcon', 'core.logout'].indexOf(message.data.action) !== -1) {
+		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'fs.listenForFileChanges', 'fs.pushRegister', 'fs.pushUnregister', 'apps.installPackage', 'core.setTitle', 'core.setIcon', 'core.logout'].indexOf(message.data.action) !== -1) {
 			window[message.data.action.split('.')[1]].apply(window, message.data.args.concat(function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
 			}, function() {

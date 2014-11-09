@@ -9,7 +9,7 @@
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) {
 			messageCallbacks[messageID].progress = progress;
-			messageCallbacks[messageID].listener = action === 'fs.listenForFileChanges' || action.substr(0, 10) === 'fs.prepare';
+			messageCallbacks[messageID].listener = action === 'fs.listenForFileChanges' || action === 'fs.pushRegister' || action.substr(0, 10) === 'fs.prepare';
 		}
 	};
 	window.addEventListener('message', function(message) {
@@ -89,6 +89,8 @@
 	addAction('fs.startTransaction');
 	addAction('fs.endTransaction');
 	addAction('fs.listenForFileChanges');
+	addAction('fs.pushRegister');
+	addAction('fs.pushUnregister');
 	
 	var _putFile = airborn.fs.putFile;
 	airborn.fs.putFile = function() {
@@ -1546,4 +1548,70 @@
 		});
 		return mockWorker;
 	};
+	
+	var messageHandlers = {};
+	navigator.mozSetMessageHandler = function(event, handler) {
+		if(!messageHandlers[event]) {
+			messageHandlers[event] = [];
+		}
+		messageHandlers[event].push(handler);
+	};
+	function mozCallMessageHandlers(event, data) {
+		if(messageHandlers[event]) {
+			messageHandlers[event].forEach(function(handler) {
+				handler(data);
+			});
+		}
+	}
+	
+	var endpoints = {};
+	var pushManager = {
+		register: function() {
+			var req = new DOMRequest();
+			airborn.fs.pushRegister(function(data) {
+				switch(data.event) {
+					case 'registered':
+						endpoints[data.result] = {
+							pushEndpoint: data.result,
+							version: undefined
+						};
+						req.result = data.result;
+						req.dispatchEvent(new Event('success'));
+						break;
+					case 'push':
+						if(!endpoints[data.result.pushEndpoint] || data.result.version <= endpoints[data.result.pushEndpoint].version) {
+							return;
+						}
+						endpoints[data.result.pushEndpoint] = {
+							pushEndpoint: data.result.pushEndpoint,
+							version: data.result.version
+						};
+						mozCallMessageHandlers('push', data.result);
+						break;
+					case 'push-register':
+						endpoints = {};
+						mozCallMessageHandlers('push-register', {});
+						break;
+				}
+			});
+			return req;
+		},
+		unregister: function(endpoint) {
+			var req = new DOMRequest();
+			airborn.fs.pushUnregister(endpoint, function() {
+				delete endpoints[endpoint];
+				req.dispatchEvent(new Event('success'));
+			});
+			return req;
+		},
+		registrations: function() {
+			var req = new DOMRequest();
+			setTimeout(function() {
+				req.result = Object.keys(endpoints).map(function(key) { return endpoints[key]; });
+				req.dispatchEvent(new Event('success'));
+			});
+			return req;
+		}
+	};
+	Object.defineProperty(navigator, 'push', {get: function() { return pushManager; }});
 })();

@@ -1,4 +1,4 @@
-/*global _, jsyaml, esprima, estraverse, string, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
+/*global _, jsyaml, esprima, estraverse, string, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
 
 var core_version = 2;
 
@@ -916,6 +916,80 @@ icon.rel = 'shortcut icon';
 document.head.appendChild(icon);
 window.setIcon = function(href) {
 	icon.href = href;
+};
+
+var pushUrl, pushHandlers = {};
+function pushInit() {
+	return new Promise(function(resolve/*, reject*/) {
+		getFile('/Core/3rdparty/socket.io/socket.io.js', function(contents) {
+			eval(contents);
+			var socket = io();
+			var url;
+			socket.on('hello', function(path) {
+				url = new URL(path, location.href).href;
+				resolve(url);
+			});
+			socket.on('push', function(data) {
+				if(pushHandlers[data.registrationId]) {
+					pushHandlers[data.registrationId].forEach(function(handler) {
+						handler({
+							event: 'push',
+							result: {
+								pushEndpoint: url + '?registrationId=' + data.registrationId,
+								version: data.version
+							}
+						});
+					});
+				}
+			});
+			function notifyPushRegister() {
+				Object.keys(pushHandlers).forEach(function(key) {
+					pushHandlers[key].forEach(function(handler) {
+						handler({
+							event: 'push-register'
+						});
+					});
+				});
+				pushHandlers = {};
+			}
+			socket.on('reconnect', function() {
+				pushUrl = new Promise(function(_resolve) {
+					resolve = _resolve;
+				});
+				notifyPushRegister();
+			});
+			socket.on('reconnect_failed', function() {
+				console.error('socket.io reconnect failed');
+				pushUrl = null;
+				notifyPushRegister();
+			});
+		});
+	});
+}
+
+window.pushRegister = function(callback) {
+	if(!pushUrl) {
+		pushUrl = pushInit();
+	}
+	pushUrl.then(function(url) {
+		var registrationId = Math.round(Math.random() * Date.now()).toString(16);
+		var endpoint = url + '?registrationId=' + registrationId;
+		
+		if(!pushHandlers[registrationId]) {
+			pushHandlers[registrationId] = [];
+		}
+		pushHandlers[registrationId].push(callback);
+		
+		callback({
+			event: 'registered',
+			result: endpoint
+		});
+	});
+};
+
+window.pushUnregister = function(endpoint, callback) {
+	delete pushHandlers[endpoint.split('?registrationId=')[1]];
+	callback();
 };
 
 function corsReq(url, callback, responseType) {
