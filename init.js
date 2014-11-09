@@ -1,3 +1,5 @@
+/* This file is licensed under the Affero General Public License. */
+
 /*global GET, sjcl, files_hmac, files_key, getFile */
 
 GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/core.js')), function(response) {

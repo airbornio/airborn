@@ -1,3 +1,5 @@
+/* This file is licensed under the Affero General Public License. */
+
 /*globals setTitle, openWindow, getServerMessages, update, mainWindow, loadSettings, isValidAPIKey */
 
 setTitle('');

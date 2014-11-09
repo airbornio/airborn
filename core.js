@@ -1,3 +1,5 @@
+/* This file is licensed under the Affero General Public License. */
+
 /*global _, jsyaml, esprima, estraverse, string, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
 
 var core_version = 2;

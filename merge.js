@@ -1,3 +1,5 @@
+/* This file is licensed under the Affero General Public License. */
+
 var set = {};
 var string = {};
 
