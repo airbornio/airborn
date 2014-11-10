@@ -77,7 +77,7 @@ function loadApps() {
 							maybeCont();
 						});
 					} else {
-						allApps[line] = {name: name, path: line, iconUrl: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='}; // Blank gif
+						allApps[line] = {name: name, path: line};
 						maybeCont();
 					}
 				});
