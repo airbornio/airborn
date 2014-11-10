@@ -2,7 +2,7 @@
 
 /*global _, jsyaml, esprima, estraverse, string, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
 
-var core_version = 2;
+var core_version = 3;
 
 var settings = {};
 
@@ -1049,21 +1049,21 @@ window.installPackage = function(manifest_url, params, callback) {
 };
 
 window.update = function() {
-	corsReq('http://airborn-update-stage.herokuapp.com/current-id', function() {
+	corsReq('http://airborn-update-stage.herokuapp.com/v2/current-id', function() {
 		var currentId = this.response;
 		getFile('/Core/version-id', function(contents) {
 			if(currentId !== contents) {
 				if((settings.core && settings.core.notifyOfUpdates === false) || (document.hasFocus() && confirm(
 					'There is an update for Airborn. Do you want to install it now? You can continue using Aiborn while and after updating. The update will apply next time you open Airborn.\nIf you click Cancel, you will be asked again in 1 hour or next time you open Airborn.'
 				))) {
-					corsReq('http://airborn-update-stage.herokuapp.com/current', function() {
+					corsReq('http://airborn-update-stage.herokuapp.com/v2/current', function() {
 						var zip = new JSZip(this.response);
-						var keys = Object.keys(zip.folder('airborn').files);
-						var target = '/Core/';
+						var keys = Object.keys(zip.files);
+						var target = '/';
 						keys.forEach(function(path) {
 							var file = zip.files[path];
 							if(!file.options.dir) {
-								putFile(target + path.replace(/^airborn\//, ''), {codec: 'arrayBuffer'}, file.asArrayBuffer(), {from: 'origin', parentFrom: 'origin'});
+								putFile(target + path, {codec: 'arrayBuffer'}, file.asArrayBuffer(), {from: 'origin', parentFrom: 'origin'});
 							}
 						});
 					}, 'arraybuffer');
