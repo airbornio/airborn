@@ -222,6 +222,7 @@
 				var req = this;
 				url = url.replace(rArgs, '');
 				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
+				if(url.substr(-1) === '/') url += 'index.html';
 				airborn.fs.getFile(url, {codec: codec}, function(contents, err) {
 					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
 					Object.defineProperty(req, 'status', {get: function() { return !err && 200; }});
@@ -247,6 +248,7 @@
 				var req = this;
 				url = url.replace(rArgs, '');
 				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
+				if(url.substr(-1) === '/') url += 'index.html';
 				airborn.fs.getFile(airborn.path.dirname(url), {codec: 'dir'}, function(contents, err) {
 					var getResponseHeader = req.getResponseHeader;
 					req.getResponseHeader = function(header) {
