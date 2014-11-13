@@ -734,7 +734,7 @@
 		});
 	}
 	Storage_.prototype.getItem = function(name) {
-		return this.hasOwnProperty(name) ? this[name] : undefined;
+		return this.hasOwnProperty(name) ? this[name] : null;
 	};
 	Storage_.prototype.setItem = function(name, value) {
 		this[name] = value + '';
