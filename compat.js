@@ -1488,9 +1488,38 @@
 	}});
 	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this['location']; }, set: function(value) { this['location'] = value; }});
 	
-	History.prototype.pushState = History.prototype.replaceState = function(state, title, url) {
+	var hist = [{url: locationurl}];
+	var histIndex = 0;
+	History.prototype.replaceState = function(state, title, url) {
 		locationurl = createLocationUrl(url, locationurl.href);
+		hist[histIndex] = {url: locationurl, state: state};
 	};
+	History.prototype.pushState = function(state, title, url) {
+		locationurl = createLocationUrl(url, locationurl.href);
+		hist[++histIndex] = {url: locationurl, state: state};
+		hist.length = histIndex + 1;
+	};
+	var go = History.prototype.go;
+	History.prototype.go = function(n) {
+		histIndex += n;
+		if(histIndex < 0) {
+			go.call(window.history, histIndex);
+		} else if(histIndex > hist.length) {
+			go.call(window.history, hist.length - histIndex);
+		} else {
+			locationurl = hist[histIndex].url;
+			var evt = new Event('popstate');
+			evt.state = hist[histIndex].state;
+			window.dispatchEvent(evt);
+		}
+	};
+	History.prototype.back = function() {
+		this.go(-1);
+	};
+	History.prototype.forward = function() {
+		this.go(1);
+	};
+	
 	window.addEventListener('hashchange', function() {
 		locationurl.hash = window['location'].hash;
 		locationurl.href = locationurl.pathname + locationurl.search + locationurl.hash;
