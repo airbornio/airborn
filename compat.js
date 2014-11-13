@@ -1470,7 +1470,7 @@
 		
 	function createLocationUrl(url, base) {
 		var urlobj = new URL(url, 'file://' + (base || ''));
-		return {
+		var obj = {
 			hash: urlobj.hash,
 			host: '',
 			hostname: '',
@@ -1481,6 +1481,17 @@
 			protocol: '',
 			search: urlobj.search
 		};
+		Object.defineProperty(obj, 'hash', {
+			get: function() {
+				return urlobj.hash;
+			},
+			set: function(hash) {
+				hash += '';
+				if(hash[0] !== '#') hash = '#' + hash;
+				window.history.pushState(undefined, undefined, hash);
+			}
+		});
+		return obj;
 	}
 	var locationurl = createLocationUrl(root.replace(/^\/Apps\/[^/]+/, ''));
 	Object.defineProperty(window, 'airborn_location', {get: function() {
