@@ -337,7 +337,7 @@
 			return [].join.call(arguments, '');
 		},
 		resolve: function(from, to) {
-			if(to[0] === '/') return to;
+			if(to[0] === '/') return airborn.path.resolve('/', to.substr(1));
 			var resolved = from.replace(/[^/]*$/, '') + to;
 			var rParentOrCurrent = /([^./]+\/\.\.\/|\/\.(?=\/))/g;
 			while(rParentOrCurrent.test(resolved)) resolved = resolved.replace(rParentOrCurrent, '');
