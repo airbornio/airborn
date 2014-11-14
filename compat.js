@@ -216,7 +216,11 @@
 			Object.defineProperty(this, 'responseType', {set: function(_responseType) {
 				console.log(this, arguments);
 				console.log("codec = '" + _responseType + "';");
-				responseType = _responseType;
+				if(_responseType === 'arraybuffer') {
+					codec =          'arrayBuffer';
+				} else {
+					responseType = _responseType;
+				}
 			}});
 			this.send = function() {
 				var req = this;
