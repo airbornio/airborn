@@ -30,7 +30,9 @@
 					} catch(e) {
 						object = new Blob([arg.data], {type: arg.type});
 					}
-					message.source.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(object)]}, '*');
+					var url = URL.createObjectURL(object);
+					filenames[url] = arg.name;
+					message.source.postMessage({inReplyTo: message.data.messageID, result: [url]}, '*');
 					return;
 				}
 				airborn.listeners[message.data.action + 'Request'].forEach(function(listener) {
