@@ -411,6 +411,31 @@
 			});
 		}
 	});
+	var imageSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+	Object.defineProperty(HTMLImageElement.prototype, 'src', {
+		get: function() {
+			return imageSrcDescriptor.get.call(this) && new URL(getURLFilename(imageSrcDescriptor.get.call(this)), 'file://' + this.ownerDocument.baseURI).href.replace('file://', '');
+		},
+		set: function(url) {
+			var img = this;
+			if(rSchema.test(url)) return imageSrcDescriptor.set.call(img, url);
+			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
+				imageSrcDescriptor.set.call(img, url);
+			});
+		}
+	});
+	Object.defineProperty(HTMLImageElement.prototype, 'airborn_src', {
+		get: function() {
+			return this['src'] && new URL(getURLFilename(this['src']), 'file://' + this.ownerDocument.baseURI).href.replace('file://', '');
+		},
+		set: function(url) {
+			var img = this;
+			if(rSchema.test(url)) return (img['src'] = url);
+			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
+				img['src'] = url;
+			});
+		}
+	});
 	Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this['src']; }, set: function(value) { this['src'] = value; }});
 	var aHrefDescriptor = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'href');
 	Object.defineProperty(HTMLAnchorElement.prototype, 'href', {
