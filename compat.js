@@ -229,12 +229,7 @@
 				url = url.replace(rArgs, '');
 				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				if(url.substr(-1) === '/') url += 'index.html';
-				if(codec) {	
-					airborn.fs.getFile(url, {codec: codec}, callback);
-				} else {
-					airborn.fs.prepareFile(url, {rootParent: root}, callback);
-				}
-				function callback(contents, err) {
+				airborn.fs.getFile(url, {codec: codec}, function(contents, err) {
 					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
 					Object.defineProperty(req, 'status', {get: function() { return !err && 200; }});
 					Object.defineProperty(req, 'response', {get: function() {
@@ -249,7 +244,7 @@
 					if(!codec) Object.defineProperty(req, 'responseText', {get: function() { return contents; }});
 					req.dispatchEvent(new Event('readystatechange'));
 					req.dispatchEvent(new Event('load'));
-				}
+				});
 			};
 		} else if(method === 'HEAD' && !rSchema.test(url)) {
 			this.airbornFile = true;
