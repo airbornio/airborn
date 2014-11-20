@@ -414,8 +414,10 @@
 		set: function(url) {
 			var img = this;
 			if(rSchema.test(url)) return imageSrcDescriptor.set.call(img, url);
+			Object.defineProperty(img, 'complete', {value: false, configurable: true});
 			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
 				imageSrcDescriptor.set.call(img, url);
+				delete img.complete; // Default to __proto__.complete
 			});
 		}
 	});
@@ -426,8 +428,11 @@
 		set: function(url) {
 			var img = this;
 			if(rSchema.test(url)) return (img['src'] = url);
+			var imgCompleteDescriptor = Object.getOwnPropertyDescriptor(img, 'complete');
+			Object.defineProperty(img, 'complete', {get: function() { return false; }});
 			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
 				img['src'] = url;
+				Object.defineProperty(img, 'complete', imgCompleteDescriptor);
 			});
 		}
 	});
