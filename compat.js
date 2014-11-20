@@ -1619,12 +1619,19 @@
 	var RealWorker = window.Worker;
 	window.Worker = function(url) {
 		var mockWorker = new MockWorker();
+		var messages = [];
+		mockWorker.postMessage = function() {
+			messages.push(arguments);
+		};
 		airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root, webworker: true}, function(url) {
 			var realWorker = new RealWorker(url);
 			realWorker.addEventListener('message', mockWorker.dispatchEvent.bind(mockWorker));
 			mockWorker.postMessage = function() {
 				realWorker.postMessage.apply(realWorker, arguments);
 			};
+			messages.forEach(function(message) {
+				mockWorker.postMessage.apply(mockWorker, message);
+			});
 		});
 		return mockWorker;
 	};
