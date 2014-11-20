@@ -414,6 +414,13 @@
 		set: function(url) {
 			var img = this;
 			if(rSchema.test(url)) return imageSrcDescriptor.set.call(img, url);
+			var absoluteUrl = airborn.path.resolve(root, url);
+			if(Object.keys(filenames).some(function(objectURL) {
+				if(filenames[objectURL] === absoluteUrl) {
+					imageSrcDescriptor.set.call(img, objectURL);
+					return true;
+				}
+			})) return;
 			Object.defineProperty(img, 'complete', {value: false, configurable: true});
 			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
 				imageSrcDescriptor.set.call(img, url);
@@ -428,6 +435,13 @@
 		set: function(url) {
 			var img = this;
 			if(rSchema.test(url)) return (img['src'] = url);
+			var absoluteUrl = airborn.path.resolve(root, url);
+			if(Object.keys(filenames).some(function(objectURL) {
+				if(filenames[objectURL] === absoluteUrl) {
+					img['src'] = objectURL;
+					return true;
+				}
+			})) return;
 			var imgCompleteDescriptor = Object.getOwnPropertyDescriptor(img, 'complete');
 			Object.defineProperty(img, 'complete', {get: function() { return false; }});
 			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
