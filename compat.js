@@ -220,6 +220,8 @@
 				console.log("codec = '" + _responseType + "';");
 				if(_responseType === 'arraybuffer') {
 					codec =          'arrayBuffer';
+				} else if(_responseType === 'json') {
+					codec = 'json';
 				} else {
 					responseType = _responseType;
 				}
