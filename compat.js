@@ -794,6 +794,13 @@
 		delete this[name];
 		flushStorage();
 	};
+	Storage_.prototype.clear = function(name) {
+		var _this = this;
+		Object.keys(_this).forEach(function(key) {
+			delete _this[key];
+		});
+		flushStorage();
+	};
 	var localStorage = new Storage_(document.airborn_localStorage);
 	delete document.airborn_localStorage;
 	try {
