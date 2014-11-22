@@ -623,6 +623,7 @@ var mimeTypes = {
 	js: 'text/javascript',
 	css: 'text/css',
 	png: 'image/png',
+	svg: 'image/svg+xml',
 	html: 'text/html',
 	htm: 'text/html',
 	xhtml: 'text/html'
