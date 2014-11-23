@@ -203,9 +203,19 @@ window.addEventListener('message', function(message) {
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
-							$(tab.tabtitlebar).find('.title').text(message.data.args[0]);
-							$(tab).find('iframe')[0].name = message.data.args[0]; // Webkit Developer Tools hint.
-							if($(div).hasClass('focused') && $(tab).hasClass('focused')) window.parent.postMessage({action: 'core.setTitle', args: message.data.args}, '*');
+							var cont = function(title) {
+								$(tab.tabtitlebar).find('.title').text(title);
+								$(tab).find('iframe')[0].name = title; // Webkit Developer Tools hint.
+								if($(div).hasClass('focused') && $(tab).hasClass('focused')) window.parent.postMessage({action: 'core.setTitle', args: [title]}, '*');
+							};
+							if(message.data.args[0]) {
+								cont(message.data.args[0]);
+							} else {
+								getFile(tab.path + 'manifest.webapp', function(manifest) {
+									manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
+									cont(manifest.name);
+								});
+							}
 						}
 					});
 				});

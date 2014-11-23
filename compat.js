@@ -143,7 +143,7 @@
 	};
 	
 	var title = document.querySelector('head > title');
-	if(title) airborn.wm.setTitle(title.textContent);
+	airborn.wm.setTitle(title && title.textContent);
 	document.addEventListener('DOMContentLoaded', function() {
 		var title = document.querySelector('head > title');
 		if(title) {
