@@ -170,6 +170,11 @@
 			
 			airborn.wm.setIcon(canvas.toDataURL('image/png'));
 		});
+		img.addEventListener('error', function() {
+			airborn.wm.setIcon();
+		});
+	} else {
+		airborn.wm.setIcon();
 	}
 	
 	window.addEventListener('mousedown', function() {

@@ -223,9 +223,26 @@ window.addEventListener('message', function(message) {
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
-							tab.icon = message.data.args[0];
-							if($(tab).hasClass('focused')) $(div).find('.icon').attr('src', message.data.args[0]);
-							//if($(div).hasClass('focused')) window.parent.postMessage({action: 'core.setIcon', args: message.data.args}, '*');
+							var cont = function(icon) {
+								tab.icon = icon;
+								if($(tab).hasClass('focused')) $(div).find('.icon').attr('src', icon);
+								//if($(div).hasClass('focused')) window.parent.postMessage({action: 'core.setIcon', args: [icon]}, '*');
+							};
+							if(message.data.args[0]) {
+								cont(message.data.args[0]);
+							} else {
+								getFile(tab.path + 'manifest.webapp', function(manifest) {
+									manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
+									var icon = manifest.icons && (manifest.icons['16'] || manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
+									if(icon) {
+										prepareUrl(icon, {relativeParent: tab.path, rootParent: tab.path}, function(url) {
+											cont(url);
+										});
+									} else {
+										cont();
+									}
+								});
+							}
 						}
 					});
 				});
