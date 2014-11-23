@@ -185,18 +185,22 @@
 	var filenames = document.filenames;
 	delete document.filenames;
 	var rArgs = /[?#].*$/;
-	function getURLFilename(url) {
+	function getURLFilename(url, relativeTo) {
+		var args = (url.match(rArgs) || [''])[0];
+		url = url.replace(rArgs, '');
 		var filename;
 		if(filenames.hasOwnProperty(url)) {
 			filename = filenames[url];
 		} else {
 			var startIndex = url.indexOf('filename=');
-			if(startIndex === -1) return url;
-			var args = (url.match(rArgs) || [''])[0];
-			filename = url.substr(startIndex + 9); // 'filename='.length == 9
-			filename = decodeURIComponent(filename.substr(0, filename.indexOf(';'))) + args;
+			if(startIndex === -1) {
+				filename = url;
+			} else {
+				filename = url.substr(startIndex + 9); // 'filename='.length == 9
+				filename = decodeURIComponent(filename.substr(0, filename.indexOf(';')));
+			}
 		}
-		return filename.replace(/^\/Apps\/[^/]+/, '');
+		return airborn.path.resolve(relativeTo, filename.replace(/^\/Apps\/[^/]+/, '')) + args;
 	}
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
@@ -353,22 +357,6 @@
 		}
 	};
 	
-	/*document.createElement = (function(createElement) {
-		return function(tagName) {
-			if(tagName.toLowerCase() === 'script') {
-				var element = createElement(tagName);
-				
-		};
-	})(document.createElement);*/
-	var linkHrefDescriptor = Object.getOwnPropertyDescriptor(HTMLLinkElement.prototype, 'href');
-	Object.defineProperty(HTMLLinkElement.prototype, 'href', {
-		set: function(url) {
-			var link = this;
-			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
-				linkHrefDescriptor.set.call(link, url);
-			});
-		}
-	});
 	var preventWindowLoad = 0, windowLoadPrevented = 0;
 	window.addEventListener('load', function(evt) {
 		if(preventWindowLoad) {
@@ -377,98 +365,79 @@
 			windowLoadPrevented++;
 		}
 	});
-	var scriptSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
-	Object.defineProperty(HTMLScriptElement.prototype, 'src', {
-		get: function() {
-			return scriptSrcDescriptor.get.call(this) && new URL(getURLFilename(scriptSrcDescriptor.get.call(this)), 'file://' + this.ownerDocument.baseURI).href.replace('file://', '');
-		},
-		set: function(url) {
-			var script = this;
-			if(rSchema.test(url)) return scriptSrcDescriptor.set.call(script, url);
-			preventWindowLoad++;
-			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
-				scriptSrcDescriptor.set.call(script, url);
-				script.addEventListener('load', function() {
+	[
+		[HTMLAnchorElement, 'href', 'airborn_href', function() {}, function() {}],
+		[HTMLLinkElement, 'href', 'airborn_href', function() {}, function() {}],
+		[HTMLScriptElement, 'src', 'airborn_src',
+			function() {
+				preventWindowLoad++;
+			},
+			function() {
+				this.addEventListener('load', function() {
 					if(windowLoadPrevented--) window.dispatchEvent(new Event('load'));
 				});
-				//script.textContent = contents + '\n//# sourceURL=' + path;
-				//window.eval(contents); script.dispatchEvent(new Event('load'));
-			});
+			}
+		],
+		[HTMLImageElement, 'src', 'airborn_src',
+			function() {
+				var imgCompleteDescriptor = Object.getOwnPropertyDescriptor(this, 'complete');
+				Object.defineProperty(this, 'complete', {get: function() { return false; }});
+				
+				return function() {
+					if(imgCompleteDescriptor) {
+						Object.defineProperty(this, 'complete', imgCompleteDescriptor);
+					} else {
+						delete this.complete;
+					}
+				}
+			}
+		]
+	].forEach(function(element) {
+		var HTMLElm = element[0];
+		var attr = element[1];
+		var rewrittenAttr = element[2];
+		var onStart = element[3];
+		var onEnd = element[4];
+		
+		var realDescriptor = Object.getOwnPropertyDescriptor(HTMLElm.prototype, attr);
+		function set(elm, url) {
+			if(realDescriptor) realDescriptor.set.call(elm, url);
+			else elm[attr] = url;
 		}
-	});
-	Object.defineProperty(HTMLScriptElement.prototype, 'airborn_src', {
-		get: function() {
-			// this['src'] is sometimes empty: https://crbug.com/291791
-			return this.getAttribute('src') && new URL(this.getAttribute('src'), 'file://' + this.ownerDocument.baseURI).href.replace('file://', '');
-		},
-		set: function(url) {
-			var script = this;
-			if(rSchema.test(url)) return (script['src'] = url);
-			preventWindowLoad++;
-			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
-				script['src'] = url;
-				script.addEventListener('load', function() {
-					if(windowLoadPrevented--) window.dispatchEvent(new Event('load'));
+		var descriptor = {
+			get: function() {
+				// this['src'] is sometimes empty: https://crbug.com/291791
+				return this.getAttribute(attr) || '';
+			},
+			set: function(url) {
+				var _this = this;
+				if(rSchema.test(url)) return set(_this, url);
+				var absoluteUrl = airborn.path.resolve(root, url);
+				if(Object.keys(filenames).some(function(objectURL) {
+					if(filenames[objectURL] === absoluteUrl) {
+						set(_this, objectURL);
+						return true;
+					}
+				})) return;
+				onEnd = onStart.call(_this) || onEnd;
+				airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
+					set(_this, url);
+					onEnd.call(_this);
 				});
-			});
-		}
-	});
-	var imageSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
-	Object.defineProperty(HTMLImageElement.prototype, 'src', {
-		get: function() {
-			return imageSrcDescriptor.get.call(this) && new URL(getURLFilename(imageSrcDescriptor.get.call(this)), 'file://' + this.ownerDocument.baseURI).href.replace('file://', '');
-		},
-		set: function(url) {
-			var img = this;
-			if(rSchema.test(url)) return imageSrcDescriptor.set.call(img, url);
-			var absoluteUrl = airborn.path.resolve(root, url);
-			if(Object.keys(filenames).some(function(objectURL) {
-				if(filenames[objectURL] === absoluteUrl) {
-					imageSrcDescriptor.set.call(img, objectURL);
-					return true;
-				}
-			})) return;
-			Object.defineProperty(img, 'complete', {value: false, configurable: true});
-			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
-				imageSrcDescriptor.set.call(img, url);
-				delete img.complete; // Default to __proto__.complete
-			});
-		}
-	});
-	Object.defineProperty(HTMLImageElement.prototype, 'airborn_src', {
-		get: function() {
-			return this['src'] && new URL(getURLFilename(this['src']), 'file://' + this.ownerDocument.baseURI).href.replace('file://', '');
-		},
-		set: function(url) {
-			var img = this;
-			if(rSchema.test(url)) return (img['src'] = url);
-			var absoluteUrl = airborn.path.resolve(root, url);
-			if(Object.keys(filenames).some(function(objectURL) {
-				if(filenames[objectURL] === absoluteUrl) {
-					img['src'] = objectURL;
-					return true;
-				}
-			})) return;
-			var imgCompleteDescriptor = Object.getOwnPropertyDescriptor(img, 'complete');
-			Object.defineProperty(img, 'complete', {get: function() { return false; }});
-			airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
-				img['src'] = url;
-				Object.defineProperty(img, 'complete', imgCompleteDescriptor);
-			});
-		}
+			}
+		};
+		Object.defineProperty(HTMLElm.prototype, attr, descriptor);
+		Object.defineProperty(HTMLElm.prototype, rewrittenAttr, descriptor);
+		var realGetAttribute = HTMLElm.prototype.getAttribute;
+		HTMLElm.prototype.getAttribute = function(attrName) {
+			var realAttr = realGetAttribute.call(this, attrName);
+			if(realAttr && attrName === attr) {
+				return getURLFilename(realAttr, this.ownerDocument.baseURI);
+			}
+			return realAttr;
+		};
 	});
 	Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this['src']; }, set: function(value) { this['src'] = value; }});
-	var aHrefDescriptor = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'href');
-	Object.defineProperty(HTMLAnchorElement.prototype, 'href', {
-		get: function() {
-			return getURLFilename(aHrefDescriptor.get.call(this));
-		}
-	});
-	Object.defineProperty(HTMLAnchorElement.prototype, 'airborn_href', {
-		get: function() {
-			return getURLFilename(this['href']);
-		}
-	});
 	Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this['href']; }, set: function(value) { this['href'] = value; }});
 	Object.defineProperty(HTMLAnchorElement.prototype, 'pathname', {
 		get: function() {
@@ -481,22 +450,6 @@
 		}
 	});
 	Object.defineProperty(Object.prototype, 'airborn_pathname', {get: function() { return this['pathname']; }, set: function(value) { this['pathname'] = value; }});
-	var scriptGetAttribute = HTMLScriptElement.prototype.getAttribute;
-	HTMLScriptElement.prototype.getAttribute = function(attrName) {
-		var realAttr = scriptGetAttribute.call(this, attrName);
-		if(realAttr && attrName === 'src') {
-			return getURLFilename(realAttr);
-		}
-		return realAttr;
-	};
-	var linkGetAttribute = HTMLLinkElement.prototype.getAttribute;
-	HTMLLinkElement.prototype.getAttribute = function(attrName) {
-		var realAttr = linkGetAttribute.call(this, attrName);
-		if(realAttr && attrName === 'href') {
-			return getURLFilename(realAttr);
-		}
-		return realAttr;
-	};
 	var elementInnerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
 	Object.defineProperty(Element.prototype, 'innerHTML', {
 		get: function() {
@@ -519,68 +472,10 @@
 			});
 		});
 	}
-	if(!scriptSrcDescriptor) { // Chrome (https://code.google.com/p/chromium/issues/detail?id=43394).
+	if(!elementInnerHTMLDescriptor) { // Chrome (https://code.google.com/p/chromium/issues/detail?id=43394).
 		window.addEventListener('load', function() {
 			setInterval(findNewElements, 2000);
 		});
-		Object.defineProperty(document, 'currentScript', {
-			get: function() {
-				var scripts = document.getElementsByTagName('script');
-				var currentScript = scripts[scripts.length - 1];
-				var realSrc = currentScript.src;
-				Object.defineProperty(currentScript, 'src', {
-					get: function() {
-						return getURLFilename(realSrc);
-					}
-				});
-				return currentScript;
-			}
-		});
-		var createElement = document.createElement;
-		document.createElement = function(tagName) {
-			var elm = createElement.call(document, tagName);
-			if(tagName.toLowerCase() === 'script') {
-				var src;
-				Object.defineProperty(elm, 'src', {
-					set: function(url) {
-						src = url;
-						if(rSchema.test(url)) return elm.setAttribute('src', url), url;
-						var winloaded = false;
-						function winload(evt) {
-							evt.stopImmediatePropagation();
-							winloaded = true;
-							window.removeEventListener('load', winload);
-						}
-						window.addEventListener('load', winload);
-						airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
-							elm.setAttribute('src', url);
-							elm.addEventListener('load', function() {
-								if(winloaded) window.dispatchEvent(new Event('load'));
-							});
-							//elm.textContent = contents + '\n//# sourceURL=' + path;
-							//window.eval(decodeURIComponent(url.substr(21))); elm.dispatchEvent(new Event('load'));
-						});
-					},
-					get: function() {
-						return src;
-					}
-				});
-			} else if(tagName.toLowerCase() === 'link') {
-				var href;
-				Object.defineProperty(elm, 'href', {
-					set: function(url) {
-						href = url;
-						airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
-							elm.setAttribute('href', url);
-						});
-					},
-					get: function() {
-						return href;
-					}
-				});
-			}
-			return elm;
-		};
 	}
 	
 	var storageLocations = {
