@@ -368,6 +368,7 @@
 	[
 		[HTMLAnchorElement, 'href', 'airborn_href', function() {}, function() {}],
 		[HTMLLinkElement, 'href', 'airborn_href', function() {}, function() {}],
+		[HTMLAudioElement, 'src', 'airborn_src', function() {}, function() {}],
 		[HTMLScriptElement, 'src', 'airborn_src',
 			function() {
 				preventWindowLoad++;
