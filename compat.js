@@ -205,10 +205,12 @@
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
 	var rSchema = /^[a-z]+:/i;
-	var root = document.root;
-	delete document.root;
-	Object.defineProperty(document, 'baseURI', {get: function() { return root.replace(/\/Apps\/[^\/]+/, ''); }});
-	var appData = root.match(/\/Apps\/.+?\//)[0].replace('Apps', 'AppData');
+	var rootParent = document.rootParent;
+	delete document.rootParent;
+	var relativeParent = document.relativeParent;
+	delete document.relativeParent;
+	Object.defineProperty(document, 'baseURI', {get: function() { return relativeParent.replace(/\/Apps\/[^\/]+/, ''); }});
+	var appData = rootParent.match(/\/Apps\/.+?\//)[0].replace('Apps', 'AppData');
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;
@@ -239,7 +241,7 @@
 				var req = this;
 				url = url.replace(/^file:(?:\/\/)?/, '');
 				url = url.replace(rArgs, '');
-				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
+				url = rootParent.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				if(url.substr(-1) === '/') url += 'index.html';
 				airborn.fs.getFile(url, {codec: codec}, function(contents, err) {
 					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
@@ -266,7 +268,7 @@
 				var req = this;
 				url = url.replace(/^file:(?:\/\/)?/, '');
 				url = url.replace(rArgs, '');
-				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
+				url = rootParent.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				if(url.substr(-1) === '/') url += 'index.html';
 				airborn.fs.getFile(airborn.path.dirname(url), {codec: 'dir'}, function(contents, err) {
 					var getResponseHeader = req.getResponseHeader;
@@ -415,7 +417,7 @@
 			set: function(url) {
 				var _this = this;
 				if(rSchema.test(url)) return set(_this, url);
-				var absoluteUrl = airborn.path.resolve(root, url);
+				var absoluteUrl = airborn.path.resolve(rootParent, url);
 				if(Object.keys(filenames).some(function(objectURL) {
 					if(filenames[objectURL] === absoluteUrl) {
 						set(_this, objectURL);
@@ -423,7 +425,7 @@
 					}
 				})) return;
 				onEnd = onStart.call(_this) || onEnd;
-				airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root}, function(url) {
+				airborn.fs.prepareUrl(url, {rootParent: rootParent, relativeParent: relativeParent, appData: appData, apikey: apikey}, function(url) {
 					set(_this, url);
 					onEnd.call(_this);
 				});
@@ -469,7 +471,7 @@
 				'[' + attrName + ']:not([' + attrName + '^="blob:"]):not([' + attrName + '^="data:"]):not([' + attrName + '^="http:"]):not([' + attrName + '^="https:"])'
 			), function(elm) {
 				var attr = elm.getAttribute(attrName);
-				if(attr && !rSchema.test(attr)) airborn.fs.prepareUrl(attr, {rootParent: root, relativeParent: root}, function(url, err) {
+				if(attr && !rSchema.test(attr)) airborn.fs.prepareUrl(attr, {rootParent: rootParent, relativeParent: relativeParent, appData: appData, apikey: apikey}, function(url, err) {
 					if(!err) elm.setAttribute(attrName, url);
 				});
 			});
@@ -1455,7 +1457,7 @@
 		});
 		return obj;
 	}
-	var locationurl = createLocationUrl(root.replace(/^\/Apps\/[^/]+/, ''));
+	var locationurl = createLocationUrl(relativeParent.replace(/^\/Apps\/[^/]+/, ''));
 	Object.defineProperty(window, 'airborn_location', {get: function() {
 		return locationurl;
 	}});
@@ -1549,7 +1551,7 @@
 		mockWorker.postMessage = function() {
 			messages.push(arguments);
 		};
-		airborn.fs.prepareUrl(url, {rootParent: root, relativeParent: root, webworker: true}, function(url) {
+		airborn.fs.prepareUrl(url, {rootParent: rootParent, relativeParent: relativeParent, webworker: true}, function(url) {
 			var realWorker = new RealWorker(url);
 			realWorker.addEventListener('message', mockWorker.dispatchEvent.bind(mockWorker));
 			mockWorker.postMessage = function() {

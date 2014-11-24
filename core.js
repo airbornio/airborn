@@ -668,6 +668,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 	var extension = file.substr(file.lastIndexOf('.') + 1);
 	if(isHTML(extension) && options.bootstrap !== false) {
 		_options.bootstrap = false;
+		delete _options.apikey;
 		var inline_linenr = +(new Error().stack.match(/[:@](\d+)/) || [])[1] + 2;
 		var data = [
 			'<!DOCTYPE html>',
@@ -678,9 +679,10 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'<body>',
 			'<script>',
 			'if(window.parent === window.top) document.write("Loading…");',
-			'document.root = ' + JSON.stringify(options.rootParent) + ';',
+			'document.rootParent = ' + JSON.stringify(options.rootParent) + ';',
+			'document.relativeParent = ' + JSON.stringify(file) + ';',
 			'document.filenames = {};',
-			'document.apikey = ' + JSON.stringify(getAPIKey()) + ';',
+			'document.apikey = ' + JSON.stringify(options.apikey || getAPIKey()) + ';',
 			'window.addEventListener("message", function(message) {',
 			'	if(message.data.action === "createObjectURL") {',
 			'		var arg = message.data.args[0], object;',
@@ -850,21 +852,24 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 		callback('https:' + url + args);
 		return;
 	}
-	var extension = url.substr(url.lastIndexOf('.') + 1);
+	if(url === '/') {
+		url = ''; // resolve to relativeParent
+	}
 	var path = resolve(options.relativeParent, url, options.rootParent);
-	if(isHTML(extension) || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent}, cb, progress, createObjectURL);
+	var extension = path.substr(path.lastIndexOf('.') + 1);
+	if(isHTML(extension) || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent, apikey: options.apikey}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
 		var data;
 		if(!err) {
-			if((navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] < 35) {
+			if(isHTML(extension) || args || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] < 35) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
 				else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
 				else data = ';base64,' + sjcl.codec.base64.fromBits(c);
-				data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path + args) + ';charset=utf-8' + data;
+				data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path) + ';charset=utf-8' + data;
 				callback(data + args);
 			} else {
 				if(extension === 'js') data = c + '\n//# sourceURL=' + path;
