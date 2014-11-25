@@ -237,6 +237,7 @@
 			}});
 			this.send = function() {
 				var req = this;
+				url = url.replace(/^file:(?:\/\/)?/, '');
 				url = url.replace(rArgs, '');
 				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				if(url.substr(-1) === '/') url += 'index.html';
@@ -263,6 +264,7 @@
 			this.overrideMimeType = function() { console.log(this, arguments); };
 			this.send = function() {
 				var req = this;
+				url = url.replace(/^file:(?:\/\/)?/, '');
 				url = url.replace(rArgs, '');
 				url = root.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				if(url.substr(-1) === '/') url += 'index.html';
@@ -1438,7 +1440,7 @@
 			origin: 'null',
 			pathname: urlobj.pathname,
 			port: '',
-			protocol: '',
+			protocol: 'file:',
 			search: urlobj.search
 		};
 		Object.defineProperty(obj, 'hash', {
