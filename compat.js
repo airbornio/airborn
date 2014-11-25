@@ -1455,6 +1455,7 @@
 				window.history.pushState(undefined, undefined, hash);
 			}
 		});
+		obj.reload = window['location'].reload.bind(window['location']);
 		return obj;
 	}
 	var locationurl = createLocationUrl(relativeParent.replace(/^\/Apps\/[^/]+/, ''));
