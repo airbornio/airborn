@@ -857,7 +857,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var path = resolve(options.relativeParent, url, options.rootParent);
 	var extension = path.substr(path.lastIndexOf('.') + 1);
-	if(isHTML(extension) || extension === 'css' || extension === 'js') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent, apikey: options.apikey}, cb, progress, createObjectURL);
+	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent, apikey: options.apikey}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
