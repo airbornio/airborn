@@ -900,7 +900,7 @@ window.openWindow = function(path, callback) {
 		div.className = 'window';
 		div.style.overflow = 'hidden';
 		var iframe = document.createElement('iframe'); 
-		iframe.sandbox = 'allow-scripts';
+		iframe.sandbox = 'allow-scripts allow-forms';
 		iframe.src = url;
 		iframe.scrolling = 'no';
 		div.appendChild(iframe);

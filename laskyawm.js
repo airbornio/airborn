@@ -379,7 +379,7 @@ openWindow = function(path, options, callback) {
 			
 			function cont() {
 				var iframe = document.createElement('iframe');
-				iframe.sandbox = 'allow-scripts';
+				iframe.sandbox = 'allow-scripts allow-forms';
 				iframe.src = url;
 				iframe.name = path; // Webkit Developer Tools hint.
 				tab.appendChild(iframe);
