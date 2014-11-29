@@ -545,7 +545,7 @@
 		});
 	}
 	DeviceStorage.prototype = new EventTarget();
-	function getDeviceStoragePath(deviceStorage, path) {
+	function toAirbornPath(deviceStorage, path) {
 		if(path[0] === '/') {
 			var parts = path.split('/');
 			if(storageLocations[parts[1]]) {
@@ -554,6 +554,15 @@
 			return path;
 		}
 		return storageLocations[deviceStorage.storageName] + path;
+	}
+	function toDeviceStoragePath(path) {
+		var parts = path.split('/');
+		Object.keys(storageLocations).forEach(function(deviceStorage) {
+			if(storageLocations[deviceStorage] === '/' + parts[1] + '/') {
+				parts[1] = deviceStorage;
+			}
+		});
+		return parts.join('/');
 	}
 	DeviceStorage.prototype.onchange = null;
 	DeviceStorage.prototype.available = function() {
@@ -565,7 +574,7 @@
 		return request;
 	};
 	DeviceStorage.prototype.addNamed = function(file, name) {
-		var path = getDeviceStoragePath(this, name);
+		var path = toAirbornPath(this, name);
 		var request = new DOMRequest();
 		airborn.fs.getFile(airborn.path.dirname(path), function(contents) {
 			if(contents && contents.hasOwnProperty(airborn.path.basename(path))) {
@@ -585,7 +594,7 @@
 		return request;
 	};
 	DeviceStorage.prototype.get = function(name) {
-		var path = getDeviceStoragePath(this, name);
+		var path = toAirbornPath(this, name);
 		var request = new DOMRequest();
 		airborn.fs.getFile(airborn.path.dirname(path), {codec: 'dir'}, function(contents) {
 			if(!contents || !contents.hasOwnProperty(airborn.path.basename(path))) {
@@ -593,14 +602,14 @@
 				request.dispatchEvent(new Event('error'));
 			} else {
 				var key = Object.keys(contents).pop();
-				request.result = new AsyncFile({name: path, type: contents[key].type, path: path});
+				request.result = new AsyncFile({name: toDeviceStoragePath(path), type: contents[key].type, path: path});
 				request.dispatchEvent(new Event('success'));
 			}
 		});
 		return request;
 	};
 	DeviceStorage.prototype.delete = function(name) {
-		var path = getDeviceStoragePath(this, name);
+		var path = toAirbornPath(this, name);
 		var request = new DOMRequest();
 		var dirname = airborn.path.dirname(path);
 		var basename = airborn.path.basename(path);
@@ -613,7 +622,7 @@
 		return request;
 	};
 	DeviceStorage.prototype.enumerate = function(_prefix) {
-		var prefix = getDeviceStoragePath(this, _prefix == null ? '' : _prefix);
+		var prefix = toAirbornPath(this, _prefix == null ? '' : _prefix);
 		var prefixLen = prefix.length;
 		var lastDir = prefix.split('/').slice(0, -1).join('/') + '/';
 		var cursor = new DOMCursor();
@@ -629,7 +638,7 @@
 						dirs++;
 						add(filePath, dirdone);
 					} else {
-						files.push({name: filePath, type: contents[name].type, path: filePath});
+						files.push({name: toDeviceStoragePath(filePath), type: contents[name].type, path: filePath});
 					}
 				});
 				function dirdone() {
