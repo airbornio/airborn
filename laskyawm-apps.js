@@ -25,9 +25,9 @@ apps.className = 'barMenu';
 apps.textContent = 'Loading…';
 document.body.appendChild(apps);
 
-var sidebar = document.createElement('div');
-sidebar.id = 'sidebar';
-document.body.appendChild(sidebar);
+var mainapps = document.createElement('div');
+mainapps.id = 'mainapps';
+document.body.appendChild(mainapps);
 
 loadApps();
 
@@ -53,12 +53,6 @@ document.body.addEventListener('keypress', function(evt) {
 	app.click();
 	$(apps).hide();
 });
-
-function updateSidebarHeight() {
-	sidebar.style.height = window.innerHeight - 25;
-}
-updateSidebarHeight();
-window.addEventListener('resize', updateSidebarHeight);
 
 function loadApps() {
 	var fragment = document.createDocumentFragment();
@@ -103,8 +97,8 @@ function loadApps() {
 			});
 			apps.innerHTML = '';
 			apps.appendChild(fragment.cloneNode(true));
-			sidebar.innerHTML = '';
-			sidebar.appendChild(fragment);
+			mainapps.innerHTML = '';
+			mainapps.appendChild(fragment);
 		}
 	});
 }

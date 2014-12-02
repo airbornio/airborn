@@ -8,7 +8,7 @@ Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return
 Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this['href']; }, set: function(value) { this['href'] = value; }});
 
 var workspace_start_top = 25;
-var workspace_start_left = 100;
+var workspace_start_left = 0;
 
 var childDivs = [];
 var childWindows = [];
@@ -658,8 +658,8 @@ function positionMinimized() {
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 			var minimizedLeft, pushLeft;
-			if(left < 150) {
-				minimizedLeft = 150;
+			if(left < 100) {
+				minimizedLeft = 100;
 				moved = true;
 			} else if(left > window.innerWidth - 350) {
 				minimizedLeft = window.innerWidth - 350;
