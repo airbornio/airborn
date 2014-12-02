@@ -10,6 +10,8 @@ Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { retur
 var workspace_start_top = 25;
 var workspace_start_left = 0;
 
+var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
+
 var childDivs = [];
 var childWindows = [];
 
@@ -556,8 +558,8 @@ function forceMinimize() {
 	var windows = childDivs.filter(function(win) {
 		return !win.classList.contains('minimized') || win.classList.contains('force-minimized');
 	}).map(function(win) {
-		if(win.classList.contains('maximized')) {
-			if(win.classList.contains('maximized-max'))
+		if(win.classList.contains('maximized') || deviceType === 'mobile') {
+			if(win.classList.contains('maximized-max') || deviceType === 'mobile')
 				return {
 					x1: workspace_start_left,
 					y1: workspace_start_top,
@@ -657,8 +659,8 @@ function positionMinimized() {
 		var moved;
 		if(win.classList.contains('minimized')) {
 			var left =
-				win.classList.contains('maximized') ?
-					(win.classList.contains('maximized-max') || win.classList.contains('maximized-left') ? workspace_start_left :
+				win.classList.contains('maximized') || deviceType === 'mobile' ?
+					(win.classList.contains('maximized-max') || deviceType === 'mobile' || win.classList.contains('maximized-left') ? workspace_start_left :
 					win.classList.contains('maximized-right') ? Math.floor((window.innerWidth + workspace_start_left) / 2) :
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;

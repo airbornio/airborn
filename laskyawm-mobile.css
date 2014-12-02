@@ -1,0 +1,9 @@
+.window {
+	width: 100% !important;
+	height: calc(100% - 25px) !important;
+	left: 0 !important;
+	top: 25px !important;
+}
+.window .titlebar .maximize {
+	display: none;
+}
