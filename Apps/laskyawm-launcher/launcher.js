@@ -1,28 +1,9 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, getFile, prepareUrl, openWindow, listenForFileChanges */
+/*global airborn */
 
-var apps;
-
-var toggleApps = document.createElement('div');
-toggleApps.id = 'toggleApps';
-toggleApps.className = 'barButton';
-toggleApps.textContent = 'Apps';
-toggleApps.tabIndex = '0';
-toggleApps.addEventListener('click', function() {
-	$(apps).toggle();
-});
-toggleApps.addEventListener('keypress', function(evt) {
-	if(evt.which === 13 || evt.which === 32) {
-		$(apps).toggle();
-	}
-});
-document.body.appendChild(toggleApps);
-
-apps = document.createElement('div');
+var apps = document.createElement('div');
 apps.id = 'apps';
-apps.className = 'barMenu';
-apps.textContent = 'Loading…';
 document.body.appendChild(apps);
 
 loadApps();
@@ -34,9 +15,7 @@ document.body.addEventListener('click', function(evt) {
 		app = app.parentElement;
 		if(!app || app.parentElement === app) return;
 	}
-	openWindow(app.title, {
-		originDiv: $('.window.focused')[0]
-	});
+	airborn.wm.openWindow(app.title, {}, null); // No originDiv, please.
 });
 document.body.addEventListener('keypress', function(evt) {
 	if(evt.which !== 13) return;
@@ -47,22 +26,21 @@ document.body.addEventListener('keypress', function(evt) {
 		if(!app || app.parentElement === app) return;
 	}
 	app.click();
-	$(apps).hide();
 });
 
 function loadApps() {
 	var fragment = document.createDocumentFragment();
-	getFile('/Apps/', {codec: 'dir'}, function(contents) {
+	airborn.fs.getFile('/Apps/', {codec: 'dir'}, function(contents) {
 		var total = 0, done = 0, allApps = {};
 		Object.keys(contents).forEach(function(line) {
 			if(line.substr(-9) !== '.history/') {
 				total++;
-				getFile('/Apps/' + line + 'manifest.webapp', function(manifest) {
+				airborn.fs.getFile('/Apps/' + line + 'manifest.webapp', function(manifest) {
 					manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 					var name = manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
 					var icon = manifest.icons && (manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
 					if(icon) {
-						prepareUrl(icon, {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
+						airborn.fs.prepareUrl(icon, {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
 							allApps[line] = {name: name, path: line, iconUrl: url};
 							maybeCont();
 						});
@@ -85,7 +63,7 @@ function loadApps() {
 				app.className = 'app';
 				app.textContent = props.name.replace(/ /g, '\u00a0');
 				var icon = document.createElement('img');
-				icon.src = props.iconUrl;
+				icon.src = props.iconUrl || ''; // Work around compat error.
 				app.insertBefore(icon, app.firstChild);
 				app.tabIndex = '0';
 				app.title = '/Apps/' + props.path;
@@ -97,10 +75,43 @@ function loadApps() {
 	});
 }
 
-listenForFileChanges(function(path) {
+airborn.fs.listenForFileChanges(function(path) {
 	if(path === '/Apps/') loadApps();
 });
 
-document.documentElement.addEventListener('click', function(evt) {
-	if(evt.target !== apps && evt.target !== toggleApps) $(apps).hide();
-});
+/* jshint ignore:start *//* jscs: disable */
+Array.prototype.alphanumSort = function(caseInsensitive) {
+	for (var z = 0, t; t = this[z]; z++) {
+		this[z] = [];
+		var x = 0, y = -1, n = 0, i, j;
+		
+		while (i = (j = t.charAt(x++)).charCodeAt(0)) {
+			var m = (i == 46 || (i >=48 && i <= 57));
+			if (m !== n) {
+			this[z][++y] = "";
+			n = m;
+			}
+			this[z][y] += j;
+		}
+	}
+	
+	this.sort(function(a, b) {
+		for (var x = 0, aa, bb; (aa = a[x]) && (bb = b[x]); x++) {
+			if (caseInsensitive) {
+			aa = aa.toLowerCase();
+			bb = bb.toLowerCase();
+			}
+			if (aa !== bb) {
+			var c = Number(aa), d = Number(bb);
+			if (c == aa && d == bb) {
+				return c - d;
+			} else return (aa > bb) ? 1 : -1;
+			}
+		}
+		return a.length - b.length;
+	});
+	
+	for (var z = 0; z < this.length; z++)
+	this[z] = this[z].join("");
+};
+/* jshint ignore:end *//* jscs: enable */

@@ -68,6 +68,9 @@ body {
 .window .titlebar button::-moz-focus-inner {
 	border: 0;
 }
+.window .titlebar button[disabled] {
+	opacity: .3;
+}
 .window .titlebar .tabbar {
 	display: inline-block;
 	white-space: nowrap;
@@ -192,30 +195,4 @@ body {
 	left: 0;
 	height: 100%;
 	pointer-events: none;
-}
-
-#mainapps {
-	width: 300px;
-	overflow: auto;
-	position: absolute;
-	margin: 0 auto;
-	top: 100px;
-	height: 400px;
-	left: 50%;
-	margin-left: -150px;
-	max-height: calc(100% - 150px);
-}
-#mainapps .app {
-	width: 100px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	text-align: center;
-	cursor: pointer;
-	padding: 5px;
-	color: #E6E6E6;
-	display: inline-block;
-}
-#mainapps .app img {
-	width: 64px;
-	height: 64px;
 }
