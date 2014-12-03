@@ -1,4 +1,7 @@
 {
 	"name": "App Launcher",
-	"launch_path": "/launcher.html"
+	"launch_path": "/launcher.html",
+	"icons": {
+		"64": "launcher.png"
+	}
 }
