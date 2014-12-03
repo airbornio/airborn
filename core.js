@@ -901,6 +901,7 @@ window.openWindow = function(path, callback) {
 		div.style.overflow = 'hidden';
 		var iframe = document.createElement('iframe'); 
 		iframe.sandbox = 'allow-scripts allow-forms allow-popups';
+		iframe.setAttribute('allowfullscreen', 'true');
 		iframe.src = url;
 		iframe.scrolling = 'no';
 		div.appendChild(iframe);
