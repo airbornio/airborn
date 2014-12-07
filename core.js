@@ -482,7 +482,9 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		getFile(dirname, {codec: 'dir'}, function(dircontents) {
 			if(!dircontents) dircontents = {};
 			
-			size = basename.substr(-1) === '/' ? undefined : sjcl.bitArray.bitLength(sjcl.codec[options.codec || 'utf8String'].toBits(contents)) / 8;
+			size = basename.substr(-1) === '/' ? undefined :
+				options.codec === 'arrayBuffer' ? contents.byteLength :
+				sjcl.bitArray.bitLength(sjcl.codec[options.codec || 'utf8String'].toBits(contents)) / 8;
 			is_new_file = !dircontents.hasOwnProperty(basename);
 			var newattrs = extend({}, is_new_file ? {created: now} : dircontents[basename], {edited: upload_history ? now : undefined, size: upload_history ? size : undefined}, attrs);
 			if(!dircontents.hasOwnProperty(basename) || !deepEquals(newattrs, dircontents[basename])) {
