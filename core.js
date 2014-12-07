@@ -470,7 +470,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 	}
 	
 	var upload_history = account_info.tier >= 5;
-	var now = attrs.edited || window.transactionDate || new Date();
+	var now = attrs.edited || transactionDate || new Date();
 	
 	var size, is_new_file;
 	if(!options.finishingTransaction && file !== '/') {
