@@ -852,7 +852,7 @@
 						callback({t: 8, v: results, l: obj.length});
 					});
 					break;
-				case '[object Map]':
+				/*case '[object Map]':
 					var keys = [];
 					for(var key of obj.keys()) {
 						keys.push(key);
@@ -881,7 +881,7 @@
 					}), function(results) {
 						callback({t: 15, v: results});
 					});
-					break;
+					break;*/
 				case '[object Date]':
 					callback({t: 6, v: obj.getTime()});
 					break;

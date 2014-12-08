@@ -10,6 +10,7 @@
 	
 	"eqnull": true,
 	"evil": true,
+	"scripturl": true,
 	"sub": true,
 	
 	"browser": true,

@@ -671,7 +671,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 	if(isHTML(extension) && options.bootstrap !== false) {
 		_options.bootstrap = false;
 		delete _options.apikey;
-		var inline_linenr = +(new Error().stack.match(/[:@](\d+)/) || [])[1] + 2;
+		var inline_linenr = +((new Error().stack || '').match(/[:@](\d+)/) || [])[1] + 2;
 		var data = [
 			'<!DOCTYPE html>',
 			'<html>',
@@ -701,8 +701,15 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'	if(message.data.progress) {',
 			'		if(window.parent !== window.top) window.parent.postMessage({action: "wm.setProgress", args: [message.data.result[0] / message.data.result[1]]}, "*");',
 			'	} else {',
-			'		document.open();',
-			'		document.write(message.data.result[0]);',
+			'		document.write(',
+			'			"<script>" +',
+			'			"document.rootParent = " + JSON.stringify(document.rootParent) + ";" +',
+			'			"document.relativeParent = " + JSON.stringify(document.relativeParent) + ";" +',
+			'			"document.filenames = " + JSON.stringify(document.filenames) + ";" +',
+			'			"document.apikey = " + JSON.stringify(document.apikey) + ";" +',
+			'			"<\\\\/script>" +',
+			'			message.data.result[0]',
+			'		);',
 			'		document.close();',
 			'		if(navigator.userAgent.indexOf("Firefox") !== -1) history.replaceState({}, "", ""); // Make refresh iframe work in Firefox',
 			'		if(window.parent !== window.top) window.parent.postMessage({action: "wm.hideProgress", args: []}, "*");',
@@ -715,6 +722,10 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'</html>',
 			'<!--# sourceURL = /Core/core.js > inline at line ' + inline_linenr + ' -->'
 		].join('\n');
+		console.log(('javascript:' + JSON.stringify(data)).length);
+		if(('javascript:' + JSON.stringify(data)).length > 2083) {
+			throw new TypeError('Data too long for IE.'); // Welcome to real-life JS1K.
+		}
 		callback(data);
 	} else if(isHTML(extension) && (options.compat !== false || options.csp)) {
 		_options.compat = false;
@@ -809,8 +820,11 @@ window.prepareString = function(contents, options, callback, progress, createObj
 	if(matches.length) {
 		matches.forEach(function(match) { // We don't process matches immediately for when getFile calls callback immediately.
 			prepareUrl(match[3], options, function(data, err) {
-				if(options.webworker) data = data.replace(/'/g, "\\'");
-				if(!err) match[5] = data;
+				if(!err) {
+					if(options.webworker) data = data.replace(/'/g, "\\'");
+					else if(data.substr(0, 11) === 'javascript:') data = data.replace(/"/g, '&quot;');
+					match[5] = data;
+				}
 				filesDownloaded++;
 				updateProgress();
 				if(filesDownloaded === matches.length) {
@@ -865,13 +879,15 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	function cb(c, err) {
 		var data;
 		if(!err) {
-			if(isHTML(extension) || args || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] < 35) {
+			if(isHTML(extension) && navigator.userAgent.indexOf('Trident') !== -1) {
+				callback('javascript:' + JSON.stringify(c));
+			} else if(isHTML(extension) || args || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] < 35 || navigator.userAgent.indexOf('Trident') !== -1) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
 				else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
 				else data = ';base64,' + sjcl.codec.base64.fromBits(c);
-				data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path) + ';charset=utf-8' + data;
+				data = 'data:' + mimeTypes[extension] + ';charset=utf-8' + data;
 				callback(data + args);
 			} else {
 				if(extension === 'js') data = c + '\n//# sourceURL=' + path;
@@ -902,7 +918,7 @@ window.openWindow = function(path, callback) {
 		div.className = 'window';
 		div.style.overflow = 'hidden';
 		var iframe = document.createElement('iframe'); 
-		iframe.sandbox = 'allow-scripts allow-forms allow-popups';
+		iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups';
 		iframe.setAttribute('allowfullscreen', 'true');
 		iframe.src = url;
 		iframe.scrolling = 'no';
@@ -1118,9 +1134,15 @@ window.logout = function() {
 
 var APIKeys = [];
 function getAPIKey() {
-	var array = new Uint32Array(10);
-	window.crypto.getRandomValues(array);
-	var key = Array.prototype.slice.call(array).toString();
+	var key;
+	var crypto = window.crypto || window.msCrypto;
+	//if(crypto && crypto.getRandomValues) {
+		var array = new Uint32Array(10);
+		crypto.getRandomValues(array);
+		key = Array.prototype.slice.call(array).toString();
+	//} else {
+	//	key = Array.apply(null, new Array(10)).map(function() { return Math.random() * 0xFFFFFFFF; }).toString();
+	//}
 	APIKeys.push(key);
 	return key;
 }
