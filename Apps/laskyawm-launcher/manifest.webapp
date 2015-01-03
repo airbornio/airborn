@@ -3,5 +3,10 @@
 	"launch_path": "/launcher.html",
 	"icons": {
 		"64": "launcher.png"
+	},
+	"permissions": {
+		"device-storage:apps": {
+			"access": "readonly"
+		}
 	}
 }

@@ -276,12 +276,15 @@ window.getFile = function(file, options, callback) {
 };
 
 var fileChangeListeners = [];
-window.listenForFileChanges = function(fn) {
-	fileChangeListeners.push(fn);
+window.listenForFileChanges = function(path, fn) {
+	fileChangeListeners.push({
+		path: path,
+		fn: fn
+	});
 };
 function notifyFileChange(path, reason) {
-	fileChangeListeners.forEach(function(fn) {
-		fn(path, reason);
+	fileChangeListeners.forEach(function(listener) {
+		if(startsWith(listener.path, path)) listener.fn(path, reason);
 	});
 }
 
@@ -543,7 +546,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				}
 				
 				// Copy history file to destination
-				var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
+				var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
 				var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 				var req = new XMLHttpRequest();
 				req.open('PUT', '/object/' + id);
@@ -574,7 +577,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		} else {
 			// Upload file
 			console.log('PUT', file);
-			var is_bootstrap_file = file.substr(0, 4) === '/key' || file.substr(0, 5) === '/hmac';
+			var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
 			var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
 			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? private_key : files_key, contents)], {type: 'binary/octet-stream'});
@@ -631,13 +634,20 @@ var mimeTypes = {
 	xhtml: 'text/html'
 };
 
+function startsWith(start, path) {
+	return path.substr(0, start.length) === start;
+}
 function resolve(from, to, rootParent) {
 	if(to === '') return from;
-	if(to[0] === '/') return resolve(rootParent, to.substr(1));
+	if(to[0] === '/') return resolve(rootParent, to.substr(1), rootParent);
 	var resolved = from.replace(/[^/]*$/, '') + to;
 	var rParentOrCurrent = /([^./]+\/\.\.\/|\/\.(?=\/))/g;
 	while(rParentOrCurrent.test(resolved)) resolved = resolved.replace(rParentOrCurrent, '');
+	if(!startsWith(dirname(rootParent), resolved)) resolved = resolve(rootParent, resolved.substr(resolved.lastIndexOf('/', resolved.length - 2) + 1), rootParent);
 	return resolved;
+}
+function dirname(path) {
+	return path.substr(0, path.lastIndexOf('/') + 1);
 }
 function basename(path) {
 	return path.substr(path.lastIndexOf('/') + 1);
@@ -671,6 +681,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 	if(isHTML(extension) && options.bootstrap !== false) {
 		_options.bootstrap = false;
 		delete _options.apikey;
+		delete _options.permissions;
 		var inline_linenr = +(new Error().stack.match(/[:@](\d+)/) || [])[1] + 2;
 		var data = [
 			'<!DOCTYPE html>',
@@ -684,7 +695,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'document.rootParent = ' + JSON.stringify(options.rootParent) + ';',
 			'document.relativeParent = ' + JSON.stringify(file) + ';',
 			'document.filenames = {};',
-			'document.apikey = ' + JSON.stringify(options.apikey || getAPIKey()) + ';',
+			'document.apikey = ' + JSON.stringify(options.apikey || getAPIKey(options.permissions)) + ';',
 			'window.addEventListener("message", function(message) {',
 			'	if(message.data.action === "createObjectURL") {',
 			'		var arg = message.data.args[0], object;',
@@ -850,7 +861,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 		callback(args);
 		return;
 	}
-	if(url.substr(0, 2) === '//') {
+	if(startsWith('//', url)) {
 		callback('https:' + url + args);
 		return;
 	}
@@ -859,7 +870,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var path = resolve(options.relativeParent, url, options.rootParent);
 	var extension = path.substr(path.lastIndexOf('.') + 1);
-	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent, apikey: options.apikey}, cb, progress, createObjectURL);
+	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent, apikey: options.apikey, permissions: options.permissions}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
@@ -1117,15 +1128,50 @@ window.logout = function() {
 };
 
 var APIKeys = [];
-function getAPIKey() {
+function getAPIKey(permissions) {
 	var array = new Uint32Array(10);
 	window.crypto.getRandomValues(array);
 	var key = Array.prototype.slice.call(array).toString();
-	APIKeys.push(key);
+	APIKeys[key] = permissions || {};
 	return key;
 }
 window.isValidAPIKey = function(key) {
-	return APIKeys.indexOf(key) !== -1;
+	return APIKeys[key] !== undefined;
+};
+function givesAccessToPath(permissions, path, type) {
+	return permissions[type || 'read'].some(function(allowed) {
+		return startsWith(allowed, path);
+	});
+}
+window.hasPermission = function(key, action, args) {
+	var permissions = APIKeys[key];
+	switch(action) {
+		case 'getFile':
+			return givesAccessToPath(permissions, args[0]);
+		case 'putFile':
+			return givesAccessToPath(permissions, args[0], 'write');
+		case 'prepareFile':
+			return givesAccessToPath(permissions, args[1].rootParent) && givesAccessToPath(permissions, args[0]);
+		case 'prepareString':
+		case 'prepareUrl':
+			return givesAccessToPath(permissions, args[1].rootParent);
+		case 'startTransaction':
+		case 'endTransaction':
+			return false;
+		case 'listenForFileChanges':
+			return givesAccessToPath(permissions, args[0]);
+		case 'pushRegister':
+		case 'pushUnregister':
+			return true;
+		case 'installPackage':
+			return permissions.hasOwnProperty('webapps-manage');
+		case 'setTitle':
+		case 'setIcon':
+		case 'logout':
+			return false;
+		default:
+			return false;
+	}
 };
 
 // From: http://tobyho.com/2013/12/02/fun-with-esprima/

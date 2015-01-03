@@ -535,8 +535,8 @@
 		var prefix = storageLocations[storageName];
 		var prefixLen = prefix.length;
 		var deviceStorage = this;
-		airborn.fs.listenForFileChanges(function(path, reason) {
-			if(path.substr(0, prefixLen) === prefix && path.substr(-1) !== '/') {
+		airborn.fs.listenForFileChanges(prefix, function(path, reason) {
+			if(path.substr(-1) !== '/') {
 				var evt = new Event('change');
 				evt.path = path.substr(prefixLen);
 				evt.reason = reason;

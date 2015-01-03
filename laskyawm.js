@@ -313,11 +313,32 @@ openWindow = function(path, options, callback) {
 		
 		var launch_path = manifest.launch_path ? manifest.launch_path.replace(/^\//, '') : path.match(/[^/]+(?=\/$)/)[0] + '.html';
 		var _path = path + launch_path;
+		var appData = _path.match('/Apps/.+?/')[0].replace('Apps', 'AppData');
 		
 		var csp = manifest.csp || "default-src *; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'";
 		if(csp.indexOf('-src ') !== -1) csp = csp.replace(/-src /g, '-src data: ');
 		else csp = 'default-src data:; ' + csp;
-		prepareUrl('/', {rootParent: _path, relativeParent: _path, csp: csp, appData: _path.match('/Apps/.+?/')[0].replace('Apps', 'AppData')}, function(url) {
+		var storageLocations = {
+			apps: '/Apps/',
+			music: '/Music/',
+			pictures: '/Pictures/',
+			sdcard: '/Documents/',
+			system: '/Core/',
+			videos: '/Videos/'
+		};
+		var permissions = {
+			read: [path, appData].concat(Object.keys(manifest.permissions || {}).filter(function(permission) {
+				return storageLocations[permission.replace('device-storage:', '')] && ['readonly', 'readwrite', 'readcreate'].indexOf(manifest.permissions[permission].access) !== -1;
+			}).map(function(permission) {
+				return storageLocations[permission.replace('device-storage:', '')];
+			})),
+			write: [appData].concat(Object.keys(manifest.permissions || {}).filter(function(permission) {
+				return storageLocations[permission.replace('device-storage:', '')] && ['readwrite', 'readcreate', 'createonly'].indexOf(manifest.permissions[permission].access) !== -1;
+			}).map(function(permission) {
+				return storageLocations[permission.replace('device-storage:', '')];
+			}))
+		};
+		prepareUrl('/', {rootParent: _path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
 			var div = options.targetDiv || document.createElement('div');
 			var iframeWin;
 			
