@@ -681,6 +681,9 @@
 	extendFileReader('readAsText', function(file, callback) {
 		airborn.fs.getFile(file.path, callback);
 	});
+	extendFileReader('readAsArrayBuffer', function(file, callback) {
+		airborn.fs.getFile(file.path, {codec: 'arrayBuffer'}, callback);
+	});
 	extendFileReader('readAsDataURL', function(file, callback) {
 		airborn.fs.getFile(file.path, {codec: 'base64url'}, function(contents) {
 			callback('data:' + file.type + ';base64,' + contents);
