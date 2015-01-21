@@ -75,7 +75,7 @@ function loadApps() {
 	});
 }
 
-airborn.fs.listenForFileChanges(function(path) {
+airborn.fs.listenForFileChanges('/Apps/', function(path) {
 	if(path === '/Apps/') loadApps();
 });
 

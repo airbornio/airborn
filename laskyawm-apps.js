@@ -97,7 +97,7 @@ function loadApps() {
 	});
 }
 
-listenForFileChanges(function(path) {
+listenForFileChanges('/Apps/', function(path) {
 	if(path === '/Apps/') loadApps();
 });
 
