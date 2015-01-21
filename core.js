@@ -1164,7 +1164,7 @@ window.hasPermission = function(key, action, args) {
 		case 'pushUnregister':
 			return true;
 		case 'installPackage':
-			return permissions.hasOwnProperty('webapps-manage');
+			return permissions.hasOwnProperty('manageApps');
 		case 'setTitle':
 		case 'setIcon':
 		case 'logout':

@@ -336,7 +336,8 @@ openWindow = function(path, options, callback) {
 				return storageLocations[permission.replace('device-storage:', '')] && ['readwrite', 'readcreate', 'createonly'].indexOf(manifest.permissions[permission].access) !== -1;
 			}).map(function(permission) {
 				return storageLocations[permission.replace('device-storage:', '')];
-			}))
+			})),
+			manageApps: (manifest.permissions || {})['webapps-manage']
 		};
 		prepareUrl('/', {rootParent: _path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
 			var div = options.targetDiv || document.createElement('div');
