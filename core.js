@@ -932,10 +932,8 @@ window.openWindow = function(path, callback) {
 	});
 };
 
-var title = document.createElement('title');
-document.head.appendChild(title);
 window.setTitle = function(t) {
-	title.textContent = t ? t + ' - Airborn OS' : 'Airborn OS';
+	document.title = t ? t + ' - Airborn OS' : 'Airborn OS';
 };
 
 var icon = document.createElement('link');
