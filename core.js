@@ -876,7 +876,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	function cb(c, err) {
 		var data;
 		if(!err) {
-			if(isHTML(extension) || args || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] < 35) {
+			if(isHTML(extension) || args || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] < 35 || (location.protocol === 'https:' && navigator.userAgent.indexOf('Chrome') !== -1)) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
