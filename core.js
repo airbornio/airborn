@@ -682,6 +682,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		_options.bootstrap = false;
 		delete _options.apikey;
 		delete _options.permissions;
+		delete _options.csp;
 		var inline_linenr = +(new Error().stack.match(/[:@](\d+)/) || [])[1] + 2;
 		var data = [
 			'<!DOCTYPE html>',
@@ -729,6 +730,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		callback(data);
 	} else if(isHTML(extension) && (options.compat !== false || options.csp)) {
 		_options.compat = false;
+		delete _options.csp;
 		parallel([
 			function(cb) {
 				prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/'}, cb, function() {}, createObjectURL);
@@ -743,7 +745,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			}
 		], function(compat, c, localStorage, err) {
 			if(err) return callback('');
-			callback((options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head|<!--|$)/i, '<script>document.airborn_localStorage = ' + localStorage.replace(/<\/(script)/ig, '<\\\/$1') + ';</script>' + compat));
+			callback(c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head|<!--|$)/i, '<script>document.airborn_localStorage = ' + localStorage.replace(/<\/(script)/ig, '<\\\/$1') + ';</script>' + (options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + compat));
 		});
 	} else if(extension === 'js') {
 		getFile(file, function(contents, err) {
@@ -870,7 +872,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var path = resolve(options.relativeParent, url, options.rootParent);
 	var extension = path.substr(path.lastIndexOf('.') + 1);
-	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent, apikey: options.apikey, permissions: options.permissions}, cb, progress, createObjectURL);
+	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent, apikey: options.apikey, permissions: options.permissions, csp: options.csp}, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
