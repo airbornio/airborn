@@ -396,6 +396,15 @@
 					}
 				}
 			}
+		],
+		[HTMLIFrameElement, 'src', 'airborn_src',
+			function() {
+				this.addEventListener('load', function onLoad(evt) {
+					evt.stopImmediatePropagation();
+					this.removeEventListener('load', onLoad);
+				});
+			},
+			function() {}
 		]
 	].forEach(function(element) {
 		var HTMLElm = element[0];
