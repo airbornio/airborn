@@ -6,6 +6,9 @@
 </head>
 <body>
 	<script src="lodash.min.js"></script>
+	<script>
+	Object.defineProperty(Object.prototype, 'airborn_source', {get: function() { return this['source']; }, set: function(value) { this['source'] = value; }});
+	</script>
 	<script src="jquery-1.11.0.js"></script>
 	<script src="jquery-ui-1.10.4.js"></script>
 	<script src="laskyawm.js"></script>

@@ -1562,6 +1562,9 @@
 	Object.defineProperty(window, 'airborn_parent', {value: window === window.airborn_top ? window : maybeWindowProxy(window['parent'])});
 	Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this['parent']; }, set: function(value) { this['parent'] = value; }});
 	
+	Object.defineProperty(MessageEvent.prototype, 'airborn_source', {get: function() { return maybeWindowProxy(this['source']); }});
+	Object.defineProperty(Object.prototype, 'airborn_source', {get: function() { return this['source']; }, set: function(value) { this['source'] = value; }});
+	
 	function MockWorker() {
 		EventTarget.call(this);
 	}
