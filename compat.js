@@ -1568,6 +1568,9 @@
 	Object.defineProperty(MessageEvent.prototype, 'airborn_source', {get: function() { return maybeWindowProxy(this['source']); }});
 	Object.defineProperty(Object.prototype, 'airborn_source', {get: function() { return this['source']; }, set: function(value) { this['source'] = value; }});
 	
+	Object.defineProperty(HTMLIFrameElement.prototype, 'airborn_contentWindow', {get: function() { return maybeWindowProxy(this['contentWindow']); }});
+	Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function() { return this['contentWindow']; }, set: function(value) { this['contentWindow'] = value; }});
+	
 	function MockWorker() {
 		EventTarget.call(this);
 	}

@@ -759,6 +759,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 					renames.href = 'airborn_href';
 					renames.pathname = 'airborn_pathname';
 					renames.source = 'airborn_source';
+					renames.contentWindow = 'airborn_contentWindow';
 				}
 				contents = renameGlobalVariables(contents, renames);
 			}
