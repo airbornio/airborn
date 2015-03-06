@@ -1531,6 +1531,9 @@
 			})()
 		});
 		Object.defineProperty(this, 'airborn_parent', {value: this === this.airborn_top || window['parent'] === window ? this : maybeWindowProxy(window['parent'])});
+		this.postMessage = function() {
+			window.postMessage.apply(window, arguments);
+		};
 	}
 	var windowProxies = new Map();
 	function windowProxy(window) {
