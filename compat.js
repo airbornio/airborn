@@ -142,41 +142,6 @@
 		return request;
 	};
 	
-	var title = document.querySelector('head > title');
-	airborn.wm.setTitle(title && title.textContent);
-	document.addEventListener('DOMContentLoaded', function() {
-		var title = document.querySelector('head > title');
-		if(title) {
-			airborn.wm.setTitle(title.textContent);
-			var observer = new window[window.MutationObserver ? 'MutationObserver' : 'WebKitMutationObserver'](function(mutations) {
-				mutations.forEach(function(mutation) {
-					airborn.wm.setTitle(mutation.target.textContent);
-				});
-			});
-			observer.observe(title, {subtree: true, characterData: true, childList: true});
-		}
-	});
-	
-	var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
-	if(icon) {
-		var img = document.createElement('img');
-		img.src = icon.href;
-		img.addEventListener('load', function() {
-			var canvas = document.createElement('canvas');
-			canvas.width = canvas.height = 16;
-			
-			var ctx = canvas.getContext('2d');
-			ctx.drawImage(img, 0, 0, 16, 16);
-			
-			airborn.wm.setIcon(canvas.toDataURL('image/png'));
-		});
-		img.addEventListener('error', function() {
-			airborn.wm.setIcon();
-		});
-	} else {
-		airborn.wm.setIcon();
-	}
-	
 	window.addEventListener('mousedown', function() {
 		airborn.wm.focus();
 		airborn.wm.reportClicked();
@@ -1542,6 +1507,43 @@
 	
 	Object.defineProperty(HTMLIFrameElement.prototype, 'airborn_contentWindow', {get: function() { return maybeWindowProxy(this['contentWindow']); }});
 	Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function() { return this['contentWindow']; }, set: function(value) { this['contentWindow'] = value; }});
+	
+	if(window === window.airborn_top) {
+		var title = document.querySelector('head > title');
+		airborn.wm.setTitle(title && title.textContent);
+		document.addEventListener('DOMContentLoaded', function() {
+			var title = document.querySelector('head > title');
+			if(title) {
+				airborn.wm.setTitle(title.textContent);
+				var observer = new window[window.MutationObserver ? 'MutationObserver' : 'WebKitMutationObserver'](function(mutations) {
+					mutations.forEach(function(mutation) {
+						airborn.wm.setTitle(mutation.target.textContent);
+					});
+				});
+				observer.observe(title, {subtree: true, characterData: true, childList: true});
+			}
+		});
+		
+		var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
+		if(icon) {
+			var img = document.createElement('img');
+			img.src = icon.href;
+			img.addEventListener('load', function() {
+				var canvas = document.createElement('canvas');
+				canvas.width = canvas.height = 16;
+				
+				var ctx = canvas.getContext('2d');
+				ctx.drawImage(img, 0, 0, 16, 16);
+				
+				airborn.wm.setIcon(canvas.toDataURL('image/png'));
+			});
+			img.addEventListener('error', function() {
+				airborn.wm.setIcon();
+			});
+		} else {
+			airborn.wm.setIcon();
+		}
+	}
 	
 	function MockWorker() {
 		EventTarget.call(this);
