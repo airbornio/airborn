@@ -282,34 +282,6 @@
 					req.dispatchEvent(new Event('load'));
 				});
 			};
-		} else if(method === 'GET' && url.substr(0, 5) === 'data:') {
-			this.setRequestHeader = function() { console.log(this, arguments); };
-			this.overrideMimeType = function() { console.log(this, arguments); };
-			Object.defineProperty(this, 'responseType', {set: function(_responseType) {
-				console.log(this, arguments);
-				console.log("codec = '" + _responseType + "';");
-				responseType = _responseType;
-			}});
-			this.send = function() {
-				var req = this;
-				var parts = url.substr(5).split(',');
-				var contents = parts[0].indexOf('base64') === -1 ? decodeURIComponent(parts[1]) : atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-				setTimeout(function() {
-					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
-					Object.defineProperty(req, 'status', {get: function() { return 200; }});
-					Object.defineProperty(req, 'response', {get: function() {
-						if(responseType === 'document') {
-							var doc = document.implementation.createHTMLDocument('');
-							doc.documentElement.innerHTML = contents;
-							return doc;
-						}
-						return contents;
-					}});
-					Object.defineProperty(req, 'responseText', {get: function() { return contents; }});
-					req.dispatchEvent(new Event('readystatechange'));
-					req.dispatchEvent(new Event('load'));
-				});
-			};
 		} else if(method === 'HEAD' && url.substr(0, 5) === 'data:') {
 			this.setRequestHeader = function() { console.log(this, arguments); };
 			this.overrideMimeType = function() { console.log(this, arguments); };
