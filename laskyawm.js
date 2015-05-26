@@ -11,7 +11,7 @@ Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function(
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
 var workspace_start_top = deviceType === 'mobile' ? 50 : 25;
-var workspace_start_left = 0;
+var workspace_start_left = 100;
 
 var childDivs = [];
 var childWindows = [];
@@ -683,8 +683,8 @@ function positionMinimized() {
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 			var minimizedLeft, pushLeft;
-			if(left < 100) {
-				minimizedLeft = 100;
+			if(left < 150) {
+				minimizedLeft = 150;
 				moved = true;
 			} else if(left > window.innerWidth - 350) {
 				minimizedLeft = window.innerWidth - 350;

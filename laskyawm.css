@@ -17,7 +17,7 @@ body {
 	border-radius: 7px;
 	position: absolute !important;
 	top: 25px;
-	left: 0;
+	left: 100px;
 	box-shadow: 0px 0px 5px #888;
 	background-color: #ECECEC;
 }
@@ -143,16 +143,16 @@ body {
 	height: calc(100% - 25px) !important;
 }
 .window.maximized.maximized-max, .hud-max {
-	left: 0 !important;
-	width: 100% !important;
+	left: 100px !important;
+	width: calc(100% - 100px) !important;
 }
 .window.maximized.maximized-left, .hud-left {
-	left: 0 !important;
-	width: 50% !important;
+	left: 100px !important;
+	width: calc(50% - 50px) !important;
 }
 .window.maximized.maximized-right, .hud-right {
-	left: 50% !important;
-	width: 50% !important;
+	left: calc(50% + 50px) !important;
+	width: calc(50% - 50px) !important;
 }
 .window.minimized.minimized { /* same specificity as .maximized above */
 	top: 0 !important;
@@ -192,30 +192,4 @@ body {
 	left: 0;
 	height: 100%;
 	pointer-events: none;
-}
-
-#mainapps {
-	width: 300px;
-	overflow: auto;
-	position: absolute;
-	margin: 0 auto;
-	top: 100px;
-	height: 400px;
-	left: 50%;
-	margin-left: -150px;
-	max-height: calc(100% - 150px);
-}
-#mainapps .app {
-	width: 100px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	text-align: center;
-	cursor: pointer;
-	padding: 5px;
-	color: #E6E6E6;
-	display: inline-block;
-}
-#mainapps .app img {
-	width: 64px;
-	height: 64px;
 }
