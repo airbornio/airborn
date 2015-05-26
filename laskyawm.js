@@ -572,13 +572,6 @@ $(document).on('mouseleave', '.window', function() {
 	updateZIndex();
 });
 
-openWindow('/Core/Apps/laskyawm-launcher/', {}, function(win, tab, div) {
-	$(div).css({width: 346, height: 400, top: 100, left: Math.ceil((window.innerWidth + workspace_start_left - 346) / 2)});
-	$(div).find('.close').attr('disabled', 'disabled');
-	clipResizableHandles.call(div, null, {position: $(div).position()});
-});
-
-
 function forceMinimize() {
 	var windows = childDivs.filter(function(win) {
 		return !win.classList.contains('minimized') || win.classList.contains('force-minimized');

@@ -25,6 +25,10 @@ apps.className = 'barMenu';
 apps.textContent = 'Loading…';
 document.body.appendChild(apps);
 
+var mainapps = document.createElement('div');
+mainapps.id = 'mainapps';
+document.body.appendChild(mainapps);
+
 loadApps();
 
 document.body.addEventListener('click', function(evt) {
@@ -92,7 +96,9 @@ function loadApps() {
 				fragment.appendChild(app);
 			});
 			apps.innerHTML = '';
-			apps.appendChild(fragment);
+			apps.appendChild(fragment.cloneNode(true));
+			mainapps.innerHTML = '';
+			mainapps.appendChild(fragment);
 		}
 	});
 }
