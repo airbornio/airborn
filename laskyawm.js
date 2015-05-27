@@ -11,7 +11,7 @@ Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function(
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
 var workspace_start_top = deviceType === 'mobile' ? 50 : 25;
-var workspace_start_left = 100;
+var workspace_start_left = deviceType === 'mobile' ? 0 : 100;
 
 var childDivs = [];
 var childWindows = [];
@@ -573,7 +573,7 @@ $(document).on('mouseleave', '.window', function() {
 });
 
 openWindow('/Apps/firetext/', {}, function(win, tab, div) {
-	$(div).addClass('maximized maximized-max');
+	if(deviceType !== 'mobile') $(div).addClass('maximized maximized-max');
 	clipResizableHandles.call(div, null, {position: $(div).position()});
 });
 
@@ -679,6 +679,7 @@ function updateZIndex(hovered) {
 
 function positionMinimized() {
 	var full = {};
+	var minMinimizedLeft = deviceType === 'mobile' ? 100 : 150;
 	[].slice.call(childDivs).reverse().forEach(function(win) {
 		var moved;
 		if(win.classList.contains('minimized')) {
@@ -689,8 +690,8 @@ function positionMinimized() {
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 			var minimizedLeft, pushLeft;
-			if(left < 150) {
-				minimizedLeft = 150;
+			if(left < minMinimizedLeft) {
+				minimizedLeft = minMinimizedLeft;
 				moved = true;
 			} else if(left > window.innerWidth - 350) {
 				minimizedLeft = window.innerWidth - 350;

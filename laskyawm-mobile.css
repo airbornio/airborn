@@ -38,8 +38,8 @@
 	border-bottom-left-radius: 7px;
 	box-shadow: inset 7px 0 5px -7px #888;
 }
-.window:not(.minimized):nth-of-type(4):nth-last-of-type(2) .titlebar:after, /* Firefox */
-.window:not(.minimized):nth-of-type(5):nth-last-of-type(1) .titlebar:after { /* Chrome */
+.window:not(.minimized):nth-of-type(5):nth-last-of-type(2) .titlebar:after, /* Firefox */
+.window:not(.minimized):nth-of-type(6):nth-last-of-type(1) .titlebar:after { /* Chrome */
 	background-color: #485C68;
 }
 .window .titlebar button {
@@ -78,7 +78,17 @@
 	height: 50px;
 }
 #toggleApps {
-	display: none;
+	position: absolute;
+	right: 50px;
+	top: 13px;
+}
+#apps {
+	left: auto;
+	right: 50px;
+}
+#apps:after {
+	left: auto;
+	right: 40px;
 }
 #togglePowerMenu {
 	padding: 17px;
@@ -86,7 +96,16 @@
 .barMenu {
 	top: 54px;
 }
+.barMenu > div {
+	vertical-align: top;
+	line-height: 32px;
+	height: 32px;
+	margin: 2px;
+}
 .barMenu > div > img {
 	width: 32px;
 	height: 32px;
+}
+#sidebar {
+	display: none;
 }
