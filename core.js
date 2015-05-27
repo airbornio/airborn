@@ -692,7 +692,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'</head>',
 			'<body>',
 			'<script>',
-			'if(window.parent === window.top) document.write("Loading…");',
+			'if(window.parent === window.top || window.matchMedia("only screen and (max-device-width: 640px)").matches) document.write("Loading…");',
 			'document.rootParent = ' + JSON.stringify(options.rootParent) + ';',
 			'document.relativeParent = ' + JSON.stringify(file) + ';',
 			'document.filenames = {};',
