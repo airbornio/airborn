@@ -158,8 +158,8 @@ getFile = function() {
 	messageCallbacks[messageID] = arguments[arguments.length - 1];
 };
 
-listenForFileChanges = function(fn) {
-	parent.postMessage({messageID: ++messageID, action: 'fs.listenForFileChanges', args: []}, '*');
+listenForFileChanges = function(path, fn) {
+	parent.postMessage({messageID: ++messageID, action: 'fs.listenForFileChanges', args: [path]}, '*');
 	
 	messageCallbacks[messageID] = fn;
 	messageCallbacks[messageID].listener = true;
