@@ -234,7 +234,7 @@ window.getFile = function(file, options, callback) {
 	}
 	req.addEventListener('readystatechange', cb);
 	if(!requestCache) {
-		req.open('GET', 'object/' + sjcl.codec.hex.fromBits(files_hmac.mac(file)));
+		req.open('GET', '/object/' + sjcl.codec.hex.fromBits(files_hmac.mac(file)) + '#' + (options.codec || '') + '.' + file);
 		req.send(null);
 	}
 	
