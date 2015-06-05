@@ -873,7 +873,11 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 	var path = resolve(options.relativeParent, url, options.rootParent);
 	var extension = path.substr(path.lastIndexOf('.') + 1);
-	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, {bootstrap: options.bootstrap, compat: options.compat, webworker: options.webworker, appData: options.appData, rootParent: options.rootParent, apikey: options.apikey, permissions: options.permissions, csp: options.csp}, cb, progress, createObjectURL);
+	var _options = {};
+	Object.keys(options).forEach(function(key) {
+		_options[key.replace(/^_/, '')] = options[key];
+	});
+	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, _options, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'sjcl'}, cb);
 	
 	function cb(c, err) {
@@ -911,7 +915,7 @@ getFile('/Core/merge.js', eval);
 var mainWindow;
 
 window.openWindow = function(path, callback) {
-	prepareUrl(path, {compat: false, rootParent: '/'}, function(url) {
+	prepareUrl(path, {compat: false, __compat: false, rootParent: '/'}, function(url) {
 		var div = document.createElement('div');
 		div.className = 'window';
 		div.style.overflow = 'hidden';

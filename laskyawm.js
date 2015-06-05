@@ -2,12 +2,6 @@
 
 /*global _, $, File, apps, powerMenu, getFile: true, prepareUrl: true, listenForFileChanges: true, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
-Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top']; }, set: function(value) { this['top'] = value; }});
-Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this['parent']; }, set: function(value) { this['parent'] = value; }});
-Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this['src']; }, set: function(value) { this['src'] = value; }});
-Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this['href']; }, set: function(value) { this['href'] = value; }});
-Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function() { return this['contentWindow']; }, set: function(value) { this['contentWindow'] = value; }});
-
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
 var workspace_start_top = deviceType === 'mobile' ? 50 : 25;
