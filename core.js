@@ -751,7 +751,6 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		getFile(file, function(contents, err) {
 			if(err) return callback('');
 			if(options.compat !== false && !options.webworker) {
-				console.log('Parsing', file);
 				var renames = {cookie: 'airborn_cookie', location: 'airborn_location', top: 'airborn_top', parent: 'airborn_parent'};
 				if(navigator.userAgent.match(/Chrome/)) {
 					renames.localStorage = 'airborn_localStorage';
@@ -761,7 +760,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 					renames.source = 'airborn_source';
 					renames.contentWindow = 'airborn_contentWindow';
 				}
-				contents = renameGlobalVariables(contents, renames);
+				contents = renameGlobalVariables(file, contents, renames);
 			}
 			if(options.webworker) {
 				_options.relativeParent = file;
@@ -1177,8 +1176,14 @@ window.hasPermission = function(key, action, args) {
 };
 
 // From: http://tobyho.com/2013/12/02/fun-with-esprima/
-function renameGlobalVariables(source, variables) {
+function renameGlobalVariables(file, source, variables) {
 	if(typeof esprima === 'undefined' || typeof estraverse === 'undefined') return source;
+	if(!Object.keys(variables).some(function(variable) {
+		return new RegExp('(?:^|[^"\'])\\b' + variable + '\\b').test(source);
+	})) {
+		return source;
+	}
+	console.log('Parsing', file);
 	var ast;
 	try {
 		ast = esprima.parse(source, {range: true});
