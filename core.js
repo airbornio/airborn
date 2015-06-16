@@ -29,13 +29,19 @@ function endTransaction() {
 	var _transaction = transaction;
 	transaction = null;
 	var transactions = {};
+	var fileNamesSeen = {};
 	Object.keys(_transaction).forEach(function(path) {
 		var transactionId = getTransactionId(_transaction[path][1]);
 		if(!transactions[transactionId]) {
 			transactions[transactionId] = 0;
 		}
 		if(/\.history\/.+/.test(_transaction[path][0])) {
-			transactions[transactionId] += 2;
+			transactions[transactionId]++;
+			var nonHistFileName = _transaction[path][0].split('.history/')[0];
+			if(!fileNamesSeen[nonHistFileName]) {
+				fileNamesSeen[nonHistFileName] = true;
+				transactions[transactionId]++;
+			}
 		} else {
 			transactions[transactionId]++;
 		}
