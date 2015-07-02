@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global _, $, File, apps, powerMenu, getFile: true, prepareUrl: true, listenForFileChanges: true, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
+/*global _, $, File, barIconsWidth, apps, powerMenu, getFile: true, prepareUrl: true, listenForFileChanges: true, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
@@ -687,8 +687,8 @@ function positionMinimized() {
 			if(left < minMinimizedLeft) {
 				minimizedLeft = minMinimizedLeft;
 				moved = true;
-			} else if(left > window.innerWidth - 350) {
-				minimizedLeft = window.innerWidth - 350;
+			} else if(left > window.innerWidth - barIconsWidth - 260) {
+				minimizedLeft = window.innerWidth - barIconsWidth - 260;
 				moved = true;
 				pushLeft = true;
 			} else {
@@ -703,7 +703,7 @@ function positionMinimized() {
 			}
 			if(moved) {
 				if(!win.realLeft) win.realLeft = win.style.left;
-				win.style.cssText += '; left: ' + (pushLeft ? window.innerWidth - 350 : minimizedLeft) + 'px !important;';
+				win.style.cssText += '; left: ' + (pushLeft ? window.innerWidth - barIconsWidth - 260 : minimizedLeft) + 'px !important;';
 			}
 			full[minimizedLeft] = win;
 		}

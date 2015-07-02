@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, prepareUrl */
+/*global $, prepareUrl, bar */
 
 var powerMenu;
 
@@ -11,11 +11,14 @@ togglePowerMenu.type = 'image';
 togglePowerMenu.alt = 'Log Out…';
 prepareUrl('/Core/power.png', {rootParent: '/'}, function(url) {
 	togglePowerMenu.src = url;
+	togglePowerMenu.addEventListener('load', function() {
+		bar.updateWidth();
+	});
 });
 togglePowerMenu.addEventListener('click', function() {
 	$(powerMenu).toggle();
 });
-document.body.appendChild(togglePowerMenu);
+bar.addItem(togglePowerMenu);
 
 powerMenu = document.createElement('div');
 powerMenu.id = 'powerMenu';

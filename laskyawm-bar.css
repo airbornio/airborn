@@ -4,6 +4,7 @@
 	position: absolute;
 	width: 100%;
 	height: 25px;
+	color: white;
 }
 .barButton {
 	color: white;
@@ -17,9 +18,17 @@
 	text-align: center;
 	display: inline-block;
 }
-#togglePowerMenu {
+#barIcons {
 	float: right;
+}
+#barIcons > * {
+	padding: 3px 0;
+	font-size: 15px;
+	float: right;
+}
+#togglePowerMenu {
 	padding: 4px 10px 5px;
+	margin: 0;
 }
 .barMenu {
 	display: none;
