@@ -6,6 +6,18 @@
 	background-color: transparent !important;
 	pointer-events: none;
 }
+.window:before {
+	opacity: 1;
+}
+.window.minimized:before {
+	/* Workaround for Chrome mobile, which doesn't support background-attachment: fixed.
+	 * We only align the background for the first minimized window, which at least makes the rounded tabs look right. */
+	background-attachment: scroll;
+	background-position: -100px 0;
+}
+.window:not(.minimized):before {
+	width: 120px;
+}
 .window * {
 	pointer-events: all;
 }
@@ -13,11 +25,7 @@
 	height: 50px;
 	width: 120px;
 	position: relative;
-	background-color: #ECECEC;
 	box-shadow: 0px 0px 5px #888;
-}
-.window.focused .titlebar {
-	background-color: #D4E4EC;
 }
 .window:not(.minimized) .titlebar:before, .window:not(.minimized) .titlebar:after {
 	content: "";
@@ -26,6 +34,10 @@
 	position: absolute;
 	bottom: 0;
 	left: 100%;
+	
+	/* Workaround for Chrome mobile, which doesn't support background-attachment: fixed. */
+	background-attachment: scroll;
+	background-position: -120px -43px;
 }
 .window:not(.minimized) .titlebar:before {
 	background-color: #ECECEC;

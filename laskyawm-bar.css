@@ -1,13 +1,15 @@
 #bar {
-	background-color: rgba(0, 0, 0, .25);
+	background-color: rgba(255, 255, 255, .5);
 	z-index: -1000;
 	position: absolute;
 	width: 100%;
 	height: 25px;
 	color: white;
+	text-shadow: 1px 1px 1px black;
 }
 .barButton {
 	color: white;
+	text-shadow: 1px 1px 1px black;
 	cursor: pointer;
 	font-weight: bold;
 }
@@ -27,8 +29,9 @@
 	float: right;
 }
 #togglePowerMenu {
-	padding: 4px 10px 5px;
+	padding: 4px 10px;
 	margin: 0;
+	line-height: 17px;
 }
 .barMenu {
 	display: none;
@@ -71,18 +74,21 @@
 	margin-right: 5px;
 }
 
-/*
-rgba(96, 123, 139, 1)	Background
-rgba(86, 110, 124, 1)	Sidebar color we want
-rgba(76,  97, 109, .5)	Sidebar css color below
-*/
 #sidebar {
 	width: 100px;
 	overflow: auto;
-	background: rgba(76, 97, 109, .5);
+	background: rgba(255, 255, 255, .2);
 	direction: rtl; /* Move scrollbar to the left. */
 	position: absolute;
 	z-index: 900;
+}
+#sidebar:before {
+	content: '';
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	opacity: .5;
+	z-index: -1;
 }
 #sidebar .app {
 	overflow: hidden;
@@ -92,6 +98,7 @@ rgba(76,  97, 109, .5)	Sidebar css color below
 	padding: 5px;
 	direction: ltr;
 	color: #E6E6E6;
+	text-shadow: 1px 1px 1px black;
 }
 #sidebar .app img {
 	width: 64px;
