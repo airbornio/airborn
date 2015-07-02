@@ -6,7 +6,7 @@ var powerMenu;
 
 var togglePowerMenu = document.createElement('input');
 togglePowerMenu.id = 'togglePowerMenu';
-togglePowerMenu.className = 'barButton';
+togglePowerMenu.classList.add('barButton');
 togglePowerMenu.type = 'image';
 togglePowerMenu.alt = 'Log Out…';
 prepareUrl('/Core/power.png', {rootParent: '/'}, function(url) {
@@ -15,7 +15,7 @@ prepareUrl('/Core/power.png', {rootParent: '/'}, function(url) {
 togglePowerMenu.addEventListener('click', function() {
 	$(powerMenu).toggle();
 });
-document.body.appendChild(togglePowerMenu);
+bar.addItem(togglePowerMenu);
 
 powerMenu = document.createElement('div');
 powerMenu.id = 'powerMenu';
