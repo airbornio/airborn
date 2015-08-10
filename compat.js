@@ -675,14 +675,13 @@
 				return localStorage;
 			}
 		});
-	} catch(e) {
-		Object.defineProperty(window, 'airborn_localStorage', {
-			get: function() {
-				stringifyStorageValues();
-				return localStorage;
-			}
-		});
-	}
+	} catch(e) {}
+	Object.defineProperty(window, 'airborn_localStorage', {
+		get: function() {
+			stringifyStorageValues();
+			return localStorage;
+		}
+	});
 	function stringifyStorageValues() {
 		Object.keys(localStorage).forEach(function(key) {
 			localStorage[key] += '';
