@@ -10,16 +10,16 @@ body {
 	cursor: default;
 	font-family: sans-serif;
 	height: 0;
+	background-size: cover;
 }
 .window {
 	width: 800px;
 	height: 600px;
-	border-radius: 7px;
+	border-radius: 4px;
 	position: absolute !important;
 	top: 25px;
 	left: 100px;
-	box-shadow: 0px 0px 5px #888;
-	background-color: #ECECEC;
+	background-color: rgba(255, 255, 255, 0.2);
 }
 .window .titlebar {
 	height: 25px;
@@ -28,14 +28,15 @@ body {
 	padding: 0 5px;
 }
 .window.focused {
-	background-color: #D4E4EC;
+	box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.3);
+	background-color: rgba(255, 255, 255, 0.6);
 }
 .window .titlebar button {
 	border: 1px solid transparent;
 	border-radius: 7px;
 	width: 18px;
 	height: 18px;
-	margin-top: 6px;
+	margin-top: 3px;
 	float: left;
 }
 .window .titlebar .close {
@@ -73,8 +74,6 @@ body {
 	white-space: nowrap;
 	max-width: calc(100% - 130px);
 	overflow: hidden;
- 	float: left;
-	margin-top: 5px;
 	z-index: 1;
 	position: relative;
 	margin-left: 20px;
@@ -83,17 +82,12 @@ body {
 	overflow-x: auto;
 }
 .window .titlebar .tabbar .tabtitlebar, .window .titlebar .addtab {
-	background-color: #ECECEC;
+	line-height: 27px;
 	display: inline-block;
-	height: 20px;
-	border-top-left-radius: 7px;
-	border-top-right-radius: 7px;
 	margin-left: 6px;
-	line-height: 23px;
-	padding: 0 7px;
+	padding: 0 10px;
 	cursor: default;
 	overflow: hidden;
-	position: relative;
 }
 .window .titlebar .tabbar .tabtitlebar:first-child {
 	margin-left: 0;
@@ -102,8 +96,7 @@ body {
 	background-color: white;
 }
 .window .titlebar .addtab {
-	float: left;
-	margin-top: 5px;
+	background-color: rgba(0,0,0,0.2);
 }
 .window .titlebar .icon {
 	float: right;
@@ -126,8 +119,8 @@ body {
 	width: 100%;
 	height: 100%;
 	border: 0;
-	border-bottom-left-radius: 7px;
-	border-bottom-right-radius: 7px;
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
 	background-color: white;
 	position: absolute;
 	left: 0;
@@ -145,6 +138,10 @@ body {
 .window.maximized.maximized-max, .hud-max {
 	left: 100px !important;
 	width: calc(100% - 100px) !important;
+	border-radius: 0;
+}
+.window.maximized.maximized-max iframe {
+	border-radius: 0;
 }
 .window.maximized.maximized-left, .hud-left {
 	left: 100px !important;
@@ -159,6 +156,7 @@ body {
 	width: 250px !important;
 	max-height: 25px;
 	overflow: hidden;
+	background-color: rgba(255,255,255,0.8);
 }
 .window.minimized .titlebar .tabbar {
 	max-width: calc(100% - 112px);
