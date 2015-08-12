@@ -1188,12 +1188,13 @@ window.hasPermission = function(key, action, args) {
 // From: http://tobyho.com/2013/12/02/fun-with-esprima/
 function renameGlobalVariables(file, source, variables) {
 	if(typeof esprima === 'undefined' || typeof estraverse === 'undefined') return source;
-	if(!Object.keys(variables).some(function(variable) {
+	var variablesContained = Object.keys(variables).filter(function(variable) {
 		return new RegExp('(?:^|[^"\'])\\b' + variable + '\\b').test(source);
-	})) {
+	});
+	if(!variablesContained.length) {
 		return source;
 	}
-	console.log('Parsing', file);
+	console.log('Parsing', file, 'because it appears to contain the following variables:', variablesContained.join(', '));
 	var ast;
 	try {
 		ast = esprima.parse(source, {range: true});
