@@ -739,7 +739,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		delete _options.csp;
 		parallel([
 			function(cb) {
-				prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/'}, cb, function() {}, createObjectURL);
+				prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/', compat: false}, cb, function() {}, createObjectURL);
 			},
 			function(cb) {
 				prepareFile(file, _options, cb, progress, createObjectURL);

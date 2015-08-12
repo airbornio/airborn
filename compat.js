@@ -7,7 +7,7 @@
 	var apikey = document.apikey;
 	delete document.apikey;
 	var action = function(action, args, callback, progress, transfer) {
-		(action.substr(0, 3) === 'wm.' ? window['parent'] : window['top']).postMessage({messageID: ++messageID, action: action, args: args, apikey: apikey}, '*', transfer);
+		(action.substr(0, 3) === 'wm.' ? window.parent : window.top).postMessage({messageID: ++messageID, action: action, args: args, apikey: apikey}, '*', transfer);
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) {
 			messageCallbacks[messageID].progress = progress;
@@ -15,7 +15,7 @@
 		}
 	};
 	window.addEventListener('message', function(message) {
-		if(message.source === window['top'] || message.source === window['parent']) {
+		if(message.source === window.top || message.source === window.parent) {
 			if(message.data.inReplyTo) {
 				var callback = messageCallbacks[message.data.inReplyTo];
 				if(callback !== undefined && message.data.progress) callback = callback.progress;
@@ -39,7 +39,7 @@
 					listener.apply(airborn, message.data.args);
 				});
 			}
-		} else if(window['parent'] === window['top']) {
+		} else if(window.parent === window.top) {
 			return;
 		} else if([].map.call(document.getElementsByTagName('iframe'), function(iframe) { return iframe.contentWindow; }).indexOf(message.source) !== -1) {
 			if(message.data.action) {
@@ -145,7 +145,7 @@
 	};
 	
 	window.addEventListener('mousedown', function() {
-		if(window['parent'] !== window['top']) {
+		if(window.parent !== window.top) {
 			airborn.wm.focus();
 			airborn.wm.reportClicked();
 		}
@@ -361,7 +361,7 @@
 		}
 		var descriptor = {
 			get: function() {
-				// this['src'] is sometimes empty: https://crbug.com/291791
+				// this.src is sometimes empty: https://crbug.com/291791
 				return this.getAttribute(attr) || '';
 			},
 			set: function(url) {
@@ -392,8 +392,8 @@
 			return realAttr;
 		};
 	});
-	Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this['src']; }, set: function(value) { this['src'] = value; }});
-	Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this['href']; }, set: function(value) { this['href'] = value; }});
+	Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this.src; }, set: function(value) { this.src = value; }});
+	Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this.href; }, set: function(value) { this.href = value; }});
 	Object.defineProperty(HTMLAnchorElement.prototype, 'pathname', {
 		get: function() {
 			return this.href && new URL(this.href, 'file://').pathname;
@@ -404,7 +404,7 @@
 			return this.airborn_href && new URL(this.airborn_href, 'file://').pathname;
 		}
 	});
-	Object.defineProperty(Object.prototype, 'airborn_pathname', {get: function() { return this['pathname']; }, set: function(value) { this['pathname'] = value; }});
+	Object.defineProperty(Object.prototype, 'airborn_pathname', {get: function() { return this.pathname; }, set: function(value) { this.pathname = value; }});
 	var elementInnerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
 	Object.defineProperty(Element.prototype, 'innerHTML', {
 		get: function() {
@@ -704,7 +704,7 @@
 	window.addEventListener('unload', flushStorage); // Doesn't work on browser tab close or in Firefox
 	
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
-	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this['cookie']; }, set: function(value) { this['cookie'] = value; }});
+	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this.cookie; }, set: function(value) { this.cookie = value; }});
 	
 	var IDB = (function() {
 		function parallel(fns, callback) {
@@ -1416,14 +1416,14 @@
 				window.history.pushState(undefined, undefined, hash);
 			}
 		});
-		obj.reload = window['location'].reload.bind(window['location']);
+		obj.reload = window.location.reload.bind(window.location);
 		return obj;
 	}
 	var locationurl = createLocationUrl(relativeParent.replace(/^\/Apps\/[^/]+/, ''));
 	Object.defineProperty(window, 'airborn_location', {get: function() {
 		return locationurl;
 	}});
-	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this['location']; }, set: function(value) { this['location'] = value; }});
+	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this.location; }, set: function(value) { this.location = value; }});
 	
 	var hist = [{url: locationurl}];
 	var histIndex = 0;
@@ -1458,7 +1458,7 @@
 	};
 	
 	window.addEventListener('hashchange', function() {
-		locationurl.hash = window['location'].hash;
+		locationurl.hash = window.location.hash;
 		locationurl.href = locationurl.pathname + locationurl.search + locationurl.hash;
 	});
 	
@@ -1466,11 +1466,11 @@
 		Object.defineProperty(this, 'airborn_top', {
 			value: (function() {
 				var top = window;
-				while(top['parent']['parent']['parent'] !== top['parent']['parent']) top = top['parent'];
+				while(top.parent.parent.parent !== top.parent.parent) top = top.parent;
 				return top === window ? this : maybeWindowProxy(top);
 			})()
 		});
-		Object.defineProperty(this, 'airborn_parent', {value: this === this.airborn_top || window['parent'] === window ? this : maybeWindowProxy(window['parent'])});
+		Object.defineProperty(this, 'airborn_parent', {value: this === this.airborn_top || window.parent === window ? this : maybeWindowProxy(window.parent)});
 		this.postMessage = function() {
 			window.postMessage.apply(window, arguments);
 		};
@@ -1496,22 +1496,22 @@
 	Object.defineProperty(window, 'airborn_top', {
 		value: (function() {
 			var top = window;
-			while(top['parent']['parent']['parent'] !== top['parent']['parent']) top = top['parent'];
+			while(top.parent.parent.parent !== top.parent.parent) top = top.parent;
 			return maybeWindowProxy(top);
 		})()
 	});
-	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this['top']; }, set: function(value) { this['top'] = value; }});
+	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this.top; }, set: function(value) { this.top = value; }});
 	
-	Object.defineProperty(window, 'airborn_parent', {value: window === window.airborn_top ? window : maybeWindowProxy(window['parent'])});
-	Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this['parent']; }, set: function(value) { this['parent'] = value; }});
+	Object.defineProperty(window, 'airborn_parent', {value: window === window.airborn_top ? window : maybeWindowProxy(window.parent)});
+	Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this.parent; }, set: function(value) { this.parent = value; }});
 	
-	Object.defineProperty(MessageEvent.prototype, 'airborn_source', {get: function() { return maybeWindowProxy(this['source']); }});
-	Object.defineProperty(Object.prototype, 'airborn_source', {get: function() { return this['source']; }, set: function(value) { this['source'] = value; }});
+	Object.defineProperty(MessageEvent.prototype, 'airborn_source', {get: function() { return maybeWindowProxy(this.source); }});
+	Object.defineProperty(Object.prototype, 'airborn_source', {get: function() { return this.source; }, set: function(value) { this.source = value; }});
 	
-	Object.defineProperty(HTMLIFrameElement.prototype, 'airborn_contentWindow', {get: function() { return maybeWindowProxy(this['contentWindow']); }});
-	Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function() { return this['contentWindow']; }, set: function(value) { this['contentWindow'] = value; }});
+	Object.defineProperty(HTMLIFrameElement.prototype, 'airborn_contentWindow', {get: function() { return maybeWindowProxy(this.contentWindow); }});
+	Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function() { return this.contentWindow; }, set: function(value) { this.contentWindow = value; }});
 	
-	if(window === window.airborn_top && window['parent'] !== window['top']) {
+	if(window === window.airborn_top && window.parent !== window.top) {
 		var title = document.querySelector('head > title');
 		airborn.wm.setTitle(title && title.textContent);
 		document.addEventListener('DOMContentLoaded', function() {
