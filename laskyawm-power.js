@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, prepareUrl, bar */
+/*global $, airborn, bar */
 
 var powerMenu;
 
@@ -9,7 +9,7 @@ togglePowerMenu.id = 'togglePowerMenu';
 togglePowerMenu.className = 'barButton';
 togglePowerMenu.type = 'image';
 togglePowerMenu.alt = 'Log Out…';
-prepareUrl('/Core/power.png', {rootParent: '/'}, function(url) {
+airborn.fs.prepareUrl('/Core/power.png', {rootParent: '/'}, function(url) {
 	togglePowerMenu.src = url;
 	togglePowerMenu.addEventListener('load', function() {
 		bar.updateWidth();

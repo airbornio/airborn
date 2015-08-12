@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global _, $, File, barIconsWidth, apps, powerMenu, getFile: true, prepareUrl: true, listenForFileChanges: true, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
+/*global _, $, barIconsWidth, apps, powerMenu, airborn, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
@@ -136,53 +136,9 @@ $.ui.plugin.add('resizable', 'unmaximize', {
 	}
 });
 
-var messageID = 0, messageCallbacks = {};
-
-prepareUrl = function(url, options, callback, progress) {
-	parent.postMessage({messageID: ++messageID, action: 'fs.prepareUrl', args: [url, options]}, '*');
-	
-	messageCallbacks[messageID] = callback;
-	messageCallbacks[messageID].progress = progress;
-	messageCallbacks[messageID].listener = true;
-};
-
-getFile = function() {
-	parent.postMessage({messageID: ++messageID, action: 'fs.getFile', args: (typeof arguments[arguments.length -1] === 'function' ? [].slice.call(arguments, 0, -1) : [].slice.call(arguments))}, '*');
-	
-	messageCallbacks[messageID] = arguments[arguments.length - 1];
-};
-
-listenForFileChanges = function(path, fn) {
-	parent.postMessage({messageID: ++messageID, action: 'fs.listenForFileChanges', args: [path]}, '*');
-	
-	messageCallbacks[messageID] = fn;
-	messageCallbacks[messageID].listener = true;
-};
-
 
 window.addEventListener('message', function(message) {
-	if(message.source === parent) {
-		if(message.data.action === 'createObjectURL') {
-			var arg = message.data.args[0], object;
-			if(arg.data instanceof ArrayBuffer) {
-				try {
-					object = new File([arg.data], arg.name, {type: arg.type});
-				} catch(e) {
-					object = new Blob([arg.data], {type: arg.type});
-				}
-				parent.postMessage({inReplyTo: message.data.messageID, result: [URL.createObjectURL(object)]}, '*');
-				return;
-			}
-			parent.postMessage({inReplyTo: message.data.messageID, result: ['data:' + arg.type + ';filename=' + encodeURIComponent(arg.name) + ';charset=utf-8,' + encodeURIComponent(arg.data)]}, '*');
-			return;
-		}
-		var inReplyTo = message.data.inReplyTo;
-		var callback = messageCallbacks[inReplyTo];
-		if(!callback) return;
-		if(message.data.progress) callback = callback.progress;
-		callback.apply(window, message.data.result);
-		if(!message.data.progress && !callback.listener) messageCallbacks[inReplyTo] = null;
-	} else if(childWindows.indexOf(message.source) !== -1) {
+	if(childWindows.indexOf(message.source) !== -1) {
 		if(message.data.action.substr(0, 3) === 'wm.') {
 			var options;
 			if(message.data.action === 'wm.focus') {
@@ -208,7 +164,7 @@ window.addEventListener('message', function(message) {
 							if(message.data.args[0]) {
 								cont(message.data.args[0]);
 							} else {
-								getFile(tab.path + 'manifest.webapp', function(manifest) {
+								airborn.fs.getFile(tab.path + 'manifest.webapp', function(manifest) {
 									manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 									cont(manifest.name);
 								});
@@ -228,11 +184,11 @@ window.addEventListener('message', function(message) {
 							if(message.data.args[0]) {
 								cont(message.data.args[0]);
 							} else {
-								getFile(tab.path + 'manifest.webapp', function(manifest) {
+								airborn.fs.getFile(tab.path + 'manifest.webapp', function(manifest) {
 									manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 									var icon = manifest.icons && (manifest.icons['16'] || manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
 									if(icon) {
-										prepareUrl(icon, {relativeParent: tab.path, rootParent: tab.path}, function(url) {
+										airborn.fs.prepareUrl(icon, {relativeParent: tab.path, rootParent: tab.path}, function(url) {
 											cont(url);
 										});
 									} else {
@@ -303,7 +259,7 @@ hideProgress = function(options) {
 
 openWindow = function(path, options, callback) {
 	showProgress(options);
-	getFile(path + 'manifest.webapp', function(manifest) {
+	airborn.fs.getFile(path + 'manifest.webapp', function(manifest) {
 		manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 		
 		var launch_path = manifest.launch_path ? manifest.launch_path.replace(/^\//, '') : path.match(/[^/]+(?=\/$)/)[0] + '.html';
@@ -334,7 +290,7 @@ openWindow = function(path, options, callback) {
 			})),
 			manageApps: (manifest.permissions || {})['webapps-manage']
 		};
-		prepareUrl('/', {rootParent: _path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
+		airborn.fs.prepareUrl('/', {rootParent: _path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
 			var div = options.targetDiv || document.createElement('div');
 			var iframeWin;
 			
@@ -751,7 +707,7 @@ extension = function(file) {
 
 openFile = function(path, action) {
 	console.log('Prefetching', path);
-	getFile(path); // Start downloading the file as soon as possible.
+	airborn.fs.getFile(path); // Start downloading the file as soon as possible.
 	var options = arguments[arguments.length - 1];
 	var args;
 	if(_.isObject(options)) {
@@ -761,7 +717,7 @@ openFile = function(path, action) {
 		options = {};
 	}
 	showProgress(options);
-	getFile('/Core/filetypes', function(contents) {
+	airborn.fs.getFile('/Core/filetypes', function(contents) {
 		var apppath;
 		if(action[0] === '/') {
 			apppath = action;

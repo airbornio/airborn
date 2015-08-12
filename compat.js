@@ -39,6 +39,8 @@
 					listener.apply(airborn, message.data.args);
 				});
 			}
+		} else if(window['parent'] === window['top']) {
+			return;
 		} else if([].map.call(document.getElementsByTagName('iframe'), function(iframe) { return iframe.contentWindow; }).indexOf(message.source) !== -1) {
 			if(message.data.action) {
 				action(message.data.action, message.data.args, function() {
@@ -143,8 +145,10 @@
 	};
 	
 	window.addEventListener('mousedown', function() {
-		airborn.wm.focus();
-		airborn.wm.reportClicked();
+		if(window['parent'] !== window['top']) {
+			airborn.wm.focus();
+			airborn.wm.reportClicked();
+		}
 	}, true);
 	
 	var filenames = document.filenames;
@@ -175,7 +179,7 @@
 	var relativeParent = document.relativeParent;
 	delete document.relativeParent;
 	Object.defineProperty(document, 'baseURI', {get: function() { return relativeParent.replace(/\/Apps\/[^\/]+/, ''); }});
-	var appData = rootParent.match(/\/Apps\/.+?\//)[0].replace('Apps', 'AppData');
+	var appData = (rootParent.match(/\/Apps\/.+?\//) || [rootParent])[0].replace('Apps', 'AppData');
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;
@@ -1507,7 +1511,7 @@
 	Object.defineProperty(HTMLIFrameElement.prototype, 'airborn_contentWindow', {get: function() { return maybeWindowProxy(this['contentWindow']); }});
 	Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function() { return this['contentWindow']; }, set: function(value) { this['contentWindow'] = value; }});
 	
-	if(window === window.airborn_top) {
+	if(window === window.airborn_top && window['parent'] !== window['top']) {
 		var title = document.querySelector('head > title');
 		airborn.wm.setTitle(title && title.textContent);
 		document.addEventListener('DOMContentLoaded', function() {

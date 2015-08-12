@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, getFile, prepareUrl, openWindow, listenForFileChanges */
+/*global $, airborn, openWindow */
 
 var apps;
 
@@ -62,17 +62,17 @@ window.addEventListener('resize', updateSidebarHeight);
 
 function loadApps() {
 	var fragment = document.createDocumentFragment();
-	getFile('/Apps/', {codec: 'dir'}, function(contents) {
+	airborn.fs.getFile('/Apps/', {codec: 'dir'}, function(contents) {
 		var total = 0, done = 0, allApps = {};
 		Object.keys(contents).forEach(function(line) {
 			if(line.substr(-9) !== '.history/') {
 				total++;
-				getFile('/Apps/' + line + 'manifest.webapp', function(manifest) {
+				airborn.fs.getFile('/Apps/' + line + 'manifest.webapp', function(manifest) {
 					manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 					var name = manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
 					var icon = manifest.icons && (manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
 					if(icon) {
-						prepareUrl(icon, {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
+						airborn.fs.prepareUrl(icon, {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
 							allApps[line] = {name: name, path: line, iconUrl: url};
 							maybeCont();
 						});
@@ -95,7 +95,7 @@ function loadApps() {
 				app.className = 'app';
 				app.textContent = props.name.replace(/ /g, '\u00a0');
 				var icon = document.createElement('img');
-				icon.src = props.iconUrl;
+				icon.src = props.iconUrl || '';
 				app.insertBefore(icon, app.firstChild);
 				app.tabIndex = '0';
 				app.title = '/Apps/' + props.path;
@@ -109,7 +109,7 @@ function loadApps() {
 	});
 }
 
-listenForFileChanges('/Apps/', function(path) {
+airborn.fs.listenForFileChanges('/Apps/', function(path) {
 	if(path === '/Apps/') loadApps();
 });
 
