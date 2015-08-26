@@ -1474,6 +1474,9 @@
 		this.postMessage = function() {
 			window.postMessage.apply(window, arguments);
 		};
+		this.focus = function() {
+			window.focus.apply(window, arguments);
+		};
 	}
 	var windowProxies = new Map();
 	function windowProxy(window) {
