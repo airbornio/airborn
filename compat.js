@@ -412,12 +412,14 @@
 		},
 		set: function(html) {
 			elementInnerHTMLDescriptor.set.call(this, html);
-			findNewElements();
+			if(this.ownerDocument.contains(this)) {
+				findNewElements(this);
+			}
 		}
 	});
-	function findNewElements() {
+	function findNewElements(context) {
 		['src', 'href', 'icon'].forEach(function(attrName) {
-			Array.prototype.forEach.call(document.querySelectorAll(
+			Array.prototype.forEach.call(context.querySelectorAll(
 				'[' + attrName + ']:not([' + attrName + '^="blob:"]):not([' + attrName + '^="data:"]):not([' + attrName + '^="http:"]):not([' + attrName + '^="https:"])'
 			), function(elm) {
 				var attr = elm.getAttribute(attrName);
@@ -429,7 +431,7 @@
 	}
 	if(!elementInnerHTMLDescriptor) { // Chrome (https://code.google.com/p/chromium/issues/detail?id=43394).
 		window.addEventListener('load', function() {
-			setInterval(findNewElements, 2000);
+			setInterval(findNewElements, 2000, document);
 		});
 	}
 	
