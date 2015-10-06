@@ -676,8 +676,8 @@ function focusWindow(div) {
 	childDivs.push(childDivs.splice(childDivs.indexOf(div), 1)[0]);
 	updateZIndex();
 	forceMinimize();
-	window.parent.postMessage({action: 'core.setTitle', args: [$(div).find('.tabtitlebar.focused')[0].textContent.replace('\u00a0', '')]}, '*');
-	//window.parent.postMessage({action: 'core.setIcon', args: [div.getElementsByClassName('icon')[0].src]}, '*');
+	airborn.core.setTitle($(div).find('.tabtitlebar.focused')[0].textContent.replace('\u00a0', ''));
+	//airborn.core.setIcon(div.getElementsByClassName('icon')[0].src);
 }
 
 function focusTab(tab) {

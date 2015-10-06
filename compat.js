@@ -98,6 +98,13 @@
 	addAction('fs.pushRegister');
 	addAction('fs.pushUnregister');
 	
+	if(window.parent === window.top) {
+		addAction('core.setTitle');
+		addAction('core.setIcon');
+		addAction('core.logout');
+		airborn.wm = airborn.core;
+	}
+	
 	var _putFile = airborn.fs.putFile;
 	airborn.fs.putFile = function() {
 		var args = [].slice.call(arguments);
@@ -154,6 +161,7 @@
 	var filenames = document.filenames;
 	delete document.filenames;
 	var rArgs = /[?#].*$/;
+	var rSchema = /^[a-z]+:/i;
 	function getURLFilename(url, relativeTo) {
 		var args = (url.match(rArgs) || [''])[0];
 		url = url.replace(rArgs, '');
@@ -163,6 +171,9 @@
 		} else {
 			var startIndex = url.indexOf('filename=');
 			if(startIndex === -1) {
+				if(rSchema.test(url)) {
+					return url;
+				}
 				filename = url;
 			} else {
 				filename = url.substr(startIndex + 9); // 'filename='.length == 9
@@ -173,7 +184,6 @@
 	}
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
-	var rSchema = /^[a-z]+:/i;
 	var rootParent = document.rootParent;
 	delete document.rootParent;
 	var relativeParent = document.relativeParent;
@@ -1516,11 +1526,17 @@
 	Object.defineProperty(HTMLIFrameElement.prototype, 'airborn_contentWindow', {get: function() { return maybeWindowProxy(this.contentWindow); }});
 	Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function() { return this.contentWindow; }, set: function(value) { this.contentWindow = value; }});
 	
-	if(window === window.airborn_top && window.parent !== window.top) {
+	if(window === window.airborn_top) {
 		var title = document.querySelector('head > title');
 		airborn.wm.setTitle(title && title.textContent);
+		var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
+		if(icon) {
+			updateIcon();
+		} else {
+			airborn.wm.setIcon('');
+		}
 		document.addEventListener('DOMContentLoaded', function() {
-			var title = document.querySelector('head > title');
+			title = document.querySelector('head > title');
 			if(title) {
 				airborn.wm.setTitle(title.textContent);
 				var observer = new window[window.MutationObserver ? 'MutationObserver' : 'WebKitMutationObserver'](function(mutations) {
@@ -1530,10 +1546,13 @@
 				});
 				observer.observe(title, {subtree: true, characterData: true, childList: true});
 			}
+			icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
+			if(icon) {
+				updateIcon();
+				new window[window.MutationObserver ? 'MutationObserver' : 'WebKitMutationObserver'](updateIcon).observe(icon, {attributes: true, attributeFilter: ['href']});
+			}
 		});
-		
-		var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
-		if(icon) {
+		function updateIcon() {
 			var img = document.createElement('img');
 			img.src = icon.href;
 			img.addEventListener('load', function() {
@@ -1546,10 +1565,8 @@
 				airborn.wm.setIcon(canvas.toDataURL('image/png'));
 			});
 			img.addEventListener('error', function() {
-				airborn.wm.setIcon();
+				airborn.wm.setIcon('');
 			});
-		} else {
-			airborn.wm.setIcon();
 		}
 	}
 	

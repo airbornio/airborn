@@ -27,7 +27,7 @@ var logout = document.createElement('div');
 logout.tabIndex = '0';
 logout.textContent = 'Log Out';
 logout.addEventListener('click', function() {
-	window.parent.postMessage({action: 'core.logout', args: []}, '*');
+	airborn.core.logout();
 });
 powerMenu.appendChild(logout);
 document.body.appendChild(powerMenu);
