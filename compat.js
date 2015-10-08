@@ -647,7 +647,7 @@
 		airborn.fs.getFile(file.path, {codec: 'arrayBuffer'}, callback);
 	});
 	extendFileReader('readAsDataURL', function(file, callback) {
-		airborn.fs.getFile(file.path, {codec: 'base64url'}, function(contents) {
+		airborn.fs.getFile(file.path, {codec: 'base64'}, function(contents) {
 			callback('data:' + file.type + ';base64,' + contents);
 		});
 	});

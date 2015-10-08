@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global _, jsyaml, esprima, estraverse, string, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
+/*global _, jsyaml, esprima, estraverse, string, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
 
 var core_version = 3;
 
@@ -75,35 +75,6 @@ var files_hmac = parent.files_hmac;
 var password = parent.password;
 var files_key = parent.files_key;
 var account_info = parent.account_info;
-
-sjcl.codec.raw = sjcl.codec.sjcl = {
-	fromBits: function(bits) { return bits; },
-	toBits: function(bits) { return bits; }
-};
-
-var utf8String_fromBits = sjcl.codec.utf8String.fromBits; // `sjcl.codec.utf8String.fromBits` will get overwritten in our getFile hackery.
-sjcl.codec.json = sjcl.codec.prettyjson = {
-	fromBits: function(bits) { return JSON.parse(utf8String_fromBits(bits)); },
-	toBits: function(obj) { return sjcl.codec.utf8String.toBits(JSON.stringify(obj)); }
-};
-sjcl.codec.prettyjson.toBits = function(obj) { return sjcl.codec.utf8String.toBits(JSON.stringify(obj, null, '\t')); };
-
-var currentFilename;
-sjcl.codec.dir = sjcl.codec.yaml = {
-	fromBits: function(bits) { return jsyaml.safeLoad(utf8String_fromBits(bits), {filename: currentFilename}); },
-	toBits: function(obj) { return sjcl.codec.utf8String.toBits(jsyaml.safeDump(obj, {flowLevel: 1})); }
-};
-sjcl.codec.dir.fromBits = function(bits) {
-	var utf8 = utf8String_fromBits(bits);
-	if(utf8 !== '{}' && !/^.+: {.*}$/m.test(utf8)) {
-		var obj = {};
-		utf8.split('\n').forEach(function(line) {
-			if(line) obj[line] = {};
-		});
-		return obj;
-	}
-	return jsyaml.safeLoad(utf8, {filename: currentFilename});
-};
 
 /** @namespace ArrayBuffer */
 sjcl.codec.arrayBuffer = {
@@ -196,6 +167,185 @@ sjcl.codec.arrayBuffer = {
 	/* jshint ignore:end *//* jscs: enable */
 };
 
+var codec = {};
+
+codec.raw = codec.arrayBuffer = {
+	fromAB: function(ab) { return ab; },
+	toAB: function(ab) { return ab; }
+};
+
+var decoder = new TextDecoder('utf8');
+var encoder = new TextEncoder('utf8');
+codec.utf8String = {
+	fromAB: function(ab) { return decoder.decode(new DataView(ab)); },
+	toAB: function(string) { return encoder.encode(string).buffer; }
+};
+
+codec.json = codec.prettyjson = {
+	fromAB: function(ab) { return JSON.parse(codec.utf8String.fromAB(ab)); },
+	toAB: function(obj) { return codec.utf8String.toAB(JSON.stringify(obj)); }
+};
+codec.prettyjson.toAB = function(obj) { return codec.utf8String.toAB(JSON.stringify(obj, null, '\t')); };
+
+var currentFilename;
+codec.dir = codec.yaml = {
+	fromAB: function(ab) { return jsyaml.safeLoad(codec.utf8String.fromAB(ab), {filename: currentFilename}); },
+	toAB: function(obj) { return codec.utf8String.toAB(jsyaml.safeDump(obj, {flowLevel: 1})); }
+};
+codec.dir.fromAB = function(ab) {
+	var utf8 = codec.utf8String.fromAB(ab);
+	if(utf8 !== '{}' && !/^.+: {.*}$/m.test(utf8)) {
+		var obj = {};
+		utf8.split('\n').forEach(function(line) {
+			if(line) obj[line] = {};
+		});
+		return obj;
+	}
+	return jsyaml.safeLoad(utf8, {filename: currentFilename});
+};
+
+codec.base64 = {
+	fromAB: function(ab) {
+		var binary = '';
+		var bytes = new Uint8Array(ab);
+		var len = bytes.byteLength;
+		for(var i = 0; i < len; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return btoa(binary);
+	},
+	toAB: function(string) {
+		var binary = atob(string);
+		var len = binary.length;
+		var bytes = new Uint8Array(len);
+		for(var i = 0; i < len; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+		return bytes.buffer;
+	}
+};
+
+var subtle = window.crypto.subtle || window.crypto.webkitSubtle;
+
+function encrypt(key, plaintext, callback) {
+	subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['encrypt']).then(function(_key) {
+		var iv = sjcl.codec.arrayBuffer.fromBits(sjcl.random.randomWords(4,0));
+		var ivLength = iv.byteLength;
+		var plaintextLength = plaintext.byteLength;
+		var L = _computeL(plaintextLength, ivLength);
+		var ctr = new Uint8Array(16);
+		ctr[0] = L - 1;
+		ctr.set(new Uint8Array(iv, 0, 15 - L), 1);
+		var ks = 128;
+		var adata = codec.utf8String.toAB('');
+		var ts = 64;
+		var tag = _computeTag(key, plaintext, iv, adata, ts, L);
+		return Promise.all([
+			subtle.encrypt({
+				name: 'AES-CTR',
+				counter: ctr,
+				length: ks,
+			}, _key, sjcl.codec.arrayBuffer.fromBits(tag)),
+			subtle.encrypt({
+				name: 'AES-CTR',
+				counter: (ctr[15] = 1, ctr),
+				length: ks,
+			}, _key, plaintext)
+		]).then(function(result) {
+			var tag = result[0];
+			var ct = result[1];
+			var concat = new Uint8Array(ct.byteLength + tag.byteLength);
+			concat.set(new Uint8Array(ct), 0);
+			concat.set(new Uint8Array(tag), ct.byteLength);
+			return JSON.stringify({
+				adata: codec.base64.fromAB(adata),
+				cipher: 'aes',
+				ct: codec.base64.fromAB(concat),
+				iter: 1000,
+				iv: codec.base64.fromAB(iv),
+				ks: ks,
+				ts: ts,
+				v: 1
+			});
+		});
+	}).then(callback, function() {
+		// Web Crypto or the algorithm may be unsupported, try sjcl.
+		callback(sjcl.encrypt(key, sjcl.codec.arrayBuffer.toBits(plaintext)));
+	});
+}
+
+function decrypt(key, str, callback) {
+	subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['decrypt']).then(function(_key) {
+		var obj = JSON.parse(str);
+		var ct = codec.base64.toAB(obj.ct);
+		var iv = codec.base64.toAB(obj.iv);
+		var ivLength = iv.byteLength;
+		var ts = obj.ts;
+		var plaintextLength = ct.byteLength - ts / 8;
+		var L = _computeL(plaintextLength, ivLength);
+		var ctr = new Uint8Array(16);
+		ctr[0] = L - 1;
+		ctr.set(new Uint8Array(iv, 0, 15 - L), 1);
+		var ks = obj.ks;
+		var adata = codec.base64.toAB(obj.adata);
+		return Promise.all([
+			subtle.decrypt({
+				name: 'AES-CTR',
+				counter: ctr,
+				length: ks,
+			}, _key, new DataView(ct, plaintextLength)),
+			subtle.decrypt({
+				name: 'AES-CTR',
+				counter: (ctr[15] = 1, ctr),
+				length: ks,
+			}, _key, new DataView(ct, 0, plaintextLength))
+		]).then(function(result) {
+			var tag = result[0];
+			var plaintext = result[1];
+			var tag2 = _computeTag(key, plaintext, iv, adata, ts, L);
+			if(!sjcl.bitArray.equal(sjcl.codec.arrayBuffer.toBits(tag), tag2)) {
+				throw new sjcl.exception.corrupt("ccm: tag doesn't match");
+			}
+			return plaintext;
+		});
+	}).then(callback, function(e) {
+		// Web Crypto or the algorithm may be unsupported, try sjcl.
+		var decrypted;
+		var utf8String_fromBits = sjcl.codec.utf8String.fromBits;
+		sjcl.codec.utf8String.fromBits = function(bits) { return bits; };
+		try {
+			decrypted = sjcl.decrypt(key, str, {raw: 1});
+		} catch(e2) {
+			callback(null, e);
+			return;
+		} finally {
+			sjcl.codec.utf8String.fromBits = utf8String_fromBits;
+		}
+		callback(sjcl.codec.arrayBuffer.fromBits(decrypted));
+	});
+}
+
+function _computeL(plaintextLength, ivLength) {
+	var L;
+	for(L = 2; L < 4 && plaintextLength >>> 8 * L; L++) {}
+	if(L < 15 - ivLength) {
+		L = 15 - ivLength;
+	}
+	return L;
+}
+
+function _computeTag(key, plaintext, iv, adata, ts, L) {
+	var _sjcl_computeTag = sjcl.mode.ccm.K; // Minified name.
+	var tag = _sjcl_computeTag(new sjcl.cipher.aes(key), sjcl.codec.arrayBuffer.toBits(plaintext), sjcl.codec.arrayBuffer.toBits(iv.slice(0, 15 - L)), sjcl.codec.arrayBuffer.toBits(adata), ts, L);
+	/* Less CPU-intensive version for updated sjcl.
+	var _sjcl_computeTag = sjcl.arrayBuffer.ccm.r; // Minified name.
+	var paddedPlaintext = new Uint8Array(plaintextLength + (16 - plaintextLength % 16));
+	paddedPlaintext.set(new Uint8Array(plaintext), 0);
+	var tag = _sjcl_computeTag(new sjcl.cipher.aes(key), paddedPlaintext.buffer, sjcl.codec.arrayBuffer.toBits(iv.slice(0, 15 - L)), sjcl.codec.arrayBuffer.toBits(adata), ts / 8, plaintextLength, L);
+	*/
+	return tag;
+}
+
 window.getFileCache = {};
 window.getRequestCache = {};
 window.getFile = function(file, options, callback) {
@@ -218,7 +368,7 @@ window.getFile = function(file, options, callback) {
 				currentFilename = file;
 				var decrypted;
 				try {
-					decrypted = sjcl.codec[options.codec || 'utf8String'].fromBits(sjcl.codec[cache.codec || 'utf8String'].toBits(cache.contents));
+					decrypted = codec[options.codec || 'utf8String'].fromAB(codec[cache.codec || 'utf8String'].toAB(cache.contents));
 				} catch(e) {
 					callback(null, {status: 0, statusText: e.message});
 					return true;
@@ -249,30 +399,36 @@ window.getFile = function(file, options, callback) {
 			window.getRequestCache[file] = null;
 			if(handleFromCache()) return; // We might've PUT a newer version by now.
 			if(req.status === 200) {
-				var fromBits = sjcl.codec.utf8String.fromBits;
-				if(options.codec) {
-					sjcl.codec.utf8String.fromBits = sjcl.codec[options.codec].fromBits;
-				}
 				currentFilename = file;
 				var decrypted, error;
-				try {
-					decrypted = sjcl.decrypt(files_key, req.responseText);
-				} catch(e) {
+				var cont = function() {
 					try {
-						decrypted = sjcl.decrypt(password, req.responseText);
-					} catch(e2) {
+						decrypted = codec[options.codec || 'utf8String'].fromAB(decrypted);
+					} catch(e) {
 						error = {status: 0, statusText: e.message};
 					}
-				}
-				if(options.codec) {
-					sjcl.codec.utf8String.fromBits = fromBits;
-				}
-				if(error) {
-					callback(null, error);
-				} else {
-					if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: decrypted, ts: Date.now()};
-					callback(decrypted);
-				}
+					if(error) {
+						callback(null, error);
+					} else {
+						if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: decrypted, ts: Date.now()};
+						callback(decrypted);
+					}
+				};
+				decrypt(files_key, req.responseText, function(_decrypted, e) {
+					if(e) {
+						decrypt(password, req.responseText, function(_decrypted, e2) {
+							if(e2) {
+								error = {status: 0, statusText: e.message};
+							} else {
+								decrypted = _decrypted;
+							}
+							cont();
+						});
+					} else {
+						decrypted = _decrypted;
+						cont();
+					}
+				});
 			} else {
 				console.error('GET', file);
 				callback(null, {status: req.status, statusText: req.statusText});
@@ -491,9 +647,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		getFile(dirname, {codec: 'dir'}, function(dircontents) {
 			if(!dircontents) dircontents = {};
 			
-			size = basename.substr(-1) === '/' ? undefined :
-				options.codec === 'arrayBuffer' ? contents.byteLength :
-				sjcl.bitArray.bitLength(sjcl.codec[options.codec || 'utf8String'].toBits(contents)) / 8;
+			size = basename.substr(-1) === '/' ? undefined : codec[options.codec || 'utf8String'].toAB(contents).byteLength;
 			is_new_file = !dircontents.hasOwnProperty(basename);
 			var newattrs = extend({}, is_new_file ? {created: now} : dircontents[basename], {edited: upload_history ? now : undefined, size: upload_history ? size : undefined}, attrs);
 			if(!dircontents.hasOwnProperty(basename) || !deepEquals(newattrs, dircontents[basename])) {
@@ -585,40 +739,42 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			console.log('PUT', file);
 			var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
 			var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
-			if(options.codec) contents = sjcl.codec[options.codec].toBits(contents);
-			var blob = new Blob([sjcl.encrypt(is_bootstrap_file ? private_key : files_key, contents)], {type: 'binary/octet-stream'});
-			var req = new XMLHttpRequest();
-			req.open('PUT', '/object/' + id);
-			var transactionId = getTransactionId(options);
-			req.setRequestHeader('X-Transaction-Id', transactionId);
-			req.addEventListener('readystatechange', function() {
-				if(this.readyState === 4) {
-					if(this.status === 200) {
-						if(upload_history) {
-							// We were uploading a *.history/* file
-							if(callback) callback(null, id, transactionId, blob);
+			contents = codec[options.codec || 'utf8String'].toAB(contents);
+			encrypt(is_bootstrap_file ? private_key : files_key, contents, function(encrypted) {
+				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
+				var req = new XMLHttpRequest();
+				req.open('PUT', '/object/' + id);
+				var transactionId = getTransactionId(options);
+				req.setRequestHeader('X-Transaction-Id', transactionId);
+				req.addEventListener('readystatechange', function() {
+					if(this.readyState === 4) {
+						if(this.status === 200) {
+							if(upload_history) {
+								// We were uploading a *.history/* file
+								if(callback) callback(null, id, transactionId, blob);
+							} else {
+								// We were uploading a normal file
+								cont();
+							}
 						} else {
-							// We were uploading a normal file
-							cont();
-						}
-					} else {
-						console.log('error', this);
-						if(upload_history) {
-							// We were uploading a *.history/* file
-							if(callback) callback({status: this.status, statusText: this.statusText});
-						} else {
-							// We were uploading a normal file
-							cont({status: this.status, statusText: this.statusText});
+							console.log('error', this);
+							if(upload_history) {
+								// We were uploading a *.history/* file
+								if(callback) callback({status: this.status, statusText: this.statusText});
+							} else {
+								// We were uploading a normal file
+								cont({status: this.status, statusText: this.statusText});
+							}
 						}
 					}
-				}
+				});
+				req.addEventListener('progress', function(evt) {
+					if(evt.lengthComputable) {
+						if(progress) progress(evt.loaded, evt.total);
+					}
+				});
+				req.send(blob);
 			});
-			req.addEventListener('progress', function(evt) {
-				if(evt.lengthComputable) {
-					if(progress) progress(evt.loaded, evt.total);
-				}
-			});
-			req.send(blob);
 		}
 	}
 	
@@ -884,7 +1040,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 		_options[key.replace(/^_/, '')] = options[key];
 	});
 	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, _options, cb, progress, createObjectURL);
-	else getFile(path, {codec: 'sjcl'}, cb);
+	else getFile(path, {codec: 'arrayBuffer'}, cb);
 	
 	function cb(c, err) {
 		var data;
@@ -894,15 +1050,14 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
 				else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
-				else data = ';base64,' + sjcl.codec.base64.fromBits(c);
+				else data = ';base64,' + codec.base64.fromAB(c);
 				data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path) + ';charset=utf-8' + data;
 				callback(data + args);
 			} else {
 				if(extension === 'js') data = c + '\n//# sourceURL=' + path;
 				else if(extension === 'css') data = c + '\n/*# sourceURL=' + path + ' */';
 				else if(isHTML(extension)) data = c + '\n<!--# sourceURL=' + path + ' -->';
-				else if(typeof c === 'string') data = c;
-				else data = sjcl.codec.arrayBuffer.fromBits(c);
+				else data = c; // string or arrayBuffer
 				createObjectURL({data: data, type: mimeTypes[extension], name: path + args}, callback);
 			}
 		} else {
