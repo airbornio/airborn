@@ -354,7 +354,7 @@ openWindow = function(path, options, callback) {
 			
 			function cont() {
 				var iframe = document.createElement('iframe');
-				iframe.sandbox = 'allow-scripts allow-forms allow-popups';
+				iframe.sandbox = 'allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
 				iframe.setAttribute('allowfullscreen', 'true');
 				iframe.src = url;
 				iframe.name = path; // Webkit Developer Tools hint.
