@@ -91,18 +91,26 @@ function updateBackground(timer) {
 	context.fillStyle = gradient;
 	context.fill();
 	
-	var scaledCanvas = document.createElement('canvas');
-	scaledCanvas.width = size * 25;
-	scaledCanvas.height = size * 25;
+	if(!(
+		CSS.supports('image-rendering', 'pixelated') ||
+		CSS.supports('image-rendering', '-moz-crisp-edges') ||
+		CSS.supports('-ms-interpolation-mode', 'nearest-neighbor')
+	)) {
+		var scaledCanvas = document.createElement('canvas');
+		scaledCanvas.width = size * 25;
+		scaledCanvas.height = size * 25;
+		
+		var scaledContext = scaledCanvas.getContext('2d');
+		scaledContext.mozImageSmoothingEnabled =
+		scaledContext.webkitImageSmoothingEnabled =
+		scaledContext.msImageSmoothingEnabled =
+		scaledContext.imageSmoothingEnabled = false;
+		scaledContext.drawImage(canvas, 0, 0, size * 25, size * 25);
+		
+		canvas = scaledCanvas;
+	}
 	
-	var scaledContext = scaledCanvas.getContext('2d');
-	scaledContext.mozImageSmoothingEnabled =
-	scaledContext.webkitImageSmoothingEnabled =
-	scaledContext.msImageSmoothingEnabled =
-	scaledContext.imageSmoothingEnabled = false;
-	scaledContext.drawImage(canvas, 0, 0, size * 25, size * 25);
-	
-	var dataUrl = scaledCanvas.toDataURL();
+	var dataUrl = canvas.toDataURL();
 	var image = 'url(' + dataUrl + ')';
 	
 	var cssText = [
@@ -114,6 +122,10 @@ function updateBackground(timer) {
 		timer ?
 		'	transition: background-image 4s, opacity 4s;' :
 		'	transition: none;',
+		'	background-size: ' + size * 25 + 'px ' + size * 25 + 'px;',
+		'	image-rendering: pixelated;',
+		'	image-rendering: -moz-crisp-edges;',
+		'	-ms-interpolation-mode: nearest-neighbor;',
 		'}',
 		'body:before,',
 		'#sidebar:before,',
