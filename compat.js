@@ -286,6 +286,33 @@
 		}
 	};
 	
+	var prepareUrlRequestCache = {};
+	function prepareUrl(url, callback) {
+		if(prepareUrlRequestCache[url]) {
+			if(prepareUrlRequestCache[url].result) {
+				callback.apply(this, prepareUrlRequestCache[url].result);
+			} else {
+				prepareUrlRequestCache[url].push(callback);
+			}
+		} else {
+			prepareUrlRequestCache[url] = [callback];
+			airborn.fs.prepareUrl(url, {rootParent: rootParent, relativeParent: relativeParent, appData: appData, apikey: apikey}, function() {
+				var args = arguments;
+				prepareUrlRequestCache[url].forEach(function(cb) {
+					cb.apply(this, args);
+				});
+				prepareUrlRequestCache[url].result = args;
+			});
+		}
+	}
+	airborn.fs.listenForFileChanges(rootParent, function() {
+		Object.keys(prepareUrlRequestCache).forEach(function(url) {
+			if(prepareUrlRequestCache[url].result) {
+				delete prepareUrlRequestCache[url];
+			}
+		});
+	});
+	
 	airborn.path = {
 		dirname: function(path) {
 			return path.substr(0, path.replace(/\/+$/, '').lastIndexOf('/') + 1);
@@ -385,7 +412,7 @@
 					}
 				})) return;
 				onEnd = onStart.call(_this) || onEnd;
-				airborn.fs.prepareUrl(url, {rootParent: rootParent, relativeParent: relativeParent, appData: appData, apikey: apikey}, function(url) {
+				prepareUrl(url, function(url) {
 					set(_this, url);
 					onEnd.call(_this);
 				});
@@ -433,7 +460,7 @@
 				'[' + attrName + ']:not([' + attrName + '^="blob:"]):not([' + attrName + '^="data:"]):not([' + attrName + '^="http:"]):not([' + attrName + '^="https:"])'
 			), function(elm) {
 				var attr = elm.getAttribute(attrName);
-				if(attr && !rSchema.test(attr)) airborn.fs.prepareUrl(attr, {rootParent: rootParent, relativeParent: relativeParent, appData: appData, apikey: apikey}, function(url, err) {
+				if(attr && !rSchema.test(attr)) prepareUrl(attr, function(url, err) {
 					if(!err) elm.setAttribute(attrName, url);
 				});
 			});
