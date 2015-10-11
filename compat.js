@@ -592,7 +592,7 @@
 				request.error = new DOMError('FileNotFound', "The file doesn't exist.");
 				request.dispatchEvent(new Event('error'));
 			} else {
-				request.result = new AsyncFile({name: toDeviceStoragePath(path), type: contents[basename].type, path: path});
+				request.result = new AsyncFile({name: toDeviceStoragePath(path), type: contents[basename].type, path: path, lastModifiedDate: contents[basename].edited || new Date()});
 				request.dispatchEvent(new Event('success'));
 			}
 		});
@@ -628,7 +628,7 @@
 						dirs++;
 						add(filePath, dirdone);
 					} else {
-						files.push({name: toDeviceStoragePath(filePath), type: contents[name].type, path: filePath});
+						files.push({name: toDeviceStoragePath(filePath), type: contents[name].type, path: filePath, lastModifiedDate: contents[name].edited || new Date()});
 					}
 				});
 				function dirdone() {
