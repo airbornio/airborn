@@ -585,13 +585,14 @@
 	DeviceStorage.prototype.get = function(name) {
 		var path = toAirbornPath(this, name);
 		var request = new DOMRequest();
-		airborn.fs.getFile(airborn.path.dirname(path), {codec: 'dir'}, function(contents) {
-			if(!contents || !contents.hasOwnProperty(airborn.path.basename(path))) {
+		var dirname = airborn.path.dirname(path);
+		var basename = airborn.path.basename(path);
+		airborn.fs.getFile(dirname, {codec: 'dir'}, function(contents) {
+			if(!contents || !contents.hasOwnProperty(basename)) {
 				request.error = new DOMError('FileNotFound', "The file doesn't exist.");
 				request.dispatchEvent(new Event('error'));
 			} else {
-				var key = Object.keys(contents).pop();
-				request.result = new AsyncFile({name: toDeviceStoragePath(path), type: contents[key].type, path: path});
+				request.result = new AsyncFile({name: toDeviceStoragePath(path), type: contents[basename].type, path: path});
 				request.dispatchEvent(new Event('success'));
 			}
 		});
