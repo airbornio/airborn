@@ -520,7 +520,7 @@
 	function DeviceStorage(storageName) {
 		EventTarget.call(this);
 		Object.defineProperty(this, 'storageName', {value: storageName});
-		Object.defineProperty(this, 'default', {value: storageName === 'sdcard'});
+		Object.defineProperty(this, 'default', {value: true});
 		var prefix = storageLocations[storageName];
 		var prefixLen = prefix.length;
 		var deviceStorage = this;
