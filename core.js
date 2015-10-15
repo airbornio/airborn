@@ -791,6 +791,7 @@ var mimeTypes = {
 	css: 'text/css',
 	png: 'image/png',
 	svg: 'image/svg+xml',
+	woff: 'application/font-woff',
 	html: 'text/html',
 	htm: 'text/html',
 	xhtml: 'text/html'
