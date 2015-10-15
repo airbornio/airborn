@@ -527,8 +527,8 @@
 		airborn.fs.listenForFileChanges(prefix, function(path, reason) {
 			if(path.substr(-1) !== '/') {
 				var evt = new Event('change');
-				evt.path = path.substr(prefixLen);
-				evt.reason = reason;
+				Object.defineProperty(evt, 'path', {value: toDeviceStoragePath(path)});
+				Object.defineProperty(evt, 'reason', {value: reason});
 				deviceStorage.dispatchEvent(evt);
 			}
 		});
