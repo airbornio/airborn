@@ -971,7 +971,7 @@ window.prepareString = function(contents, options, callback, progress, createObj
 			i++;
 		}
 	} else {
-		rURL = /((?:\s(?:src|href|icon)\s*=|[:\s]url\()\s*(["']?))(.*?)(?=["') >])(\2\s*\)?)/;
+		rURL = /((?:\s(?:src|href|icon)\s*=|[:,\s]url\()\s*(["']?))(.*?)(?=["') >])(\2\s*\)?)/;
 		while((match = contents.substr(i).match(rURL))) {
 			if(!rSchema.test(match[3])) {
 				matches.push(match);
