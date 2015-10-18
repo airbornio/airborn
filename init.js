@@ -18,8 +18,8 @@ if(iframe) iframe.style.display = 'none';
 	'/Core/startup.js',
 	'/settings',
 	'/Core/compat.js',
-	'/Core/laskyawm.html',
-	'/CoreData/laskyawm-localStorage'
+	'/Apps/firetext/index.html',
+	'/Apps/firetext/styles.css'
 ].forEach(function(url) {
 	var link = document.createElement('link');
 	link.rel = 'prefetch';
