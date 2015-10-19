@@ -127,7 +127,11 @@
 				var arrayBuffer = this.result;
 				args[2] = arrayBuffer;
 				args[1].codec = 'arrayBuffer';
-				action('fs.putFile', args.slice(0, 4), args[4], args[5], [arrayBuffer]);
+				if(navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/)) { // Safari
+					action('fs.putFile', args.slice(0, 4), args[4], args[5]);
+				} else {
+					action('fs.putFile', args.slice(0, 4), args[4], args[5], [arrayBuffer]);
+				}
 			};
 			reader.readAsArrayBuffer(blob);
 			return;
@@ -183,6 +187,16 @@
 		return airborn.path.resolve(relativeTo, filename.replace(/^\/Apps\/[^/]+/, '')) + args;
 	}
 	
+	function defineWithPrefixed(obj, prop, rewrittenProp, descriptor) {
+		try {
+			Object.defineProperty(obj, prop, descriptor);
+		} catch(e) {}
+		Object.defineProperty(obj, rewrittenProp, descriptor);
+	}
+	function defineDummy(prop, rewrittenProp) {
+		Object.defineProperty(Object.prototype, rewrittenProp, {get: function() { return this[prop]; }, set: function(value) { this[prop] = value; }});
+	}
+	
 	var requestOpen = XMLHttpRequest.prototype.open;
 	var rootParent = document.rootParent;
 	delete document.rootParent;
@@ -205,7 +219,7 @@
 				console.log("codec = 'arrayBuffer';");
 				codec = 'arrayBuffer';
 			};
-			Object.defineProperty(this, 'responseType', {set: function(_responseType) {
+			defineWithPrefixed(this, 'responseType', 'airborn_responseType', {set: function(_responseType) {
 				console.log(this, arguments);
 				console.log("codec = '" + _responseType + "';");
 				if(_responseType === 'arraybuffer') {
@@ -223,9 +237,9 @@
 				url = rootParent.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				if(url.substr(-1) === '/') url += 'index.html';
 				airborn.fs.getFile(url, {codec: codec}, function(contents, err) {
-					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
-					Object.defineProperty(req, 'status', {get: function() { return !err && 200; }});
-					Object.defineProperty(req, 'response', {get: function() {
+					defineWithPrefixed(req, 'readyState', 'airborn_readyState', {get: function() { return 4; }});
+					defineWithPrefixed(req, 'status', 'airborn_status', {get: function() { return !err && 200; }});
+					defineWithPrefixed(req, 'response', 'airborn_response', {get: function() {
 						if(responseType === 'document') {
 							var doc = document.implementation.createHTMLDocument('');
 							Object.defineProperty(doc, 'baseURI', {get: function() { return url.replace(/\/Apps\/[^\/]+/, ''); }});
@@ -234,7 +248,7 @@
 						}
 						return contents;
 					}});
-					if(!codec) Object.defineProperty(req, 'responseText', {get: function() { return contents; }});
+					if(!codec) defineWithPrefixed(req, 'responseText', 'airborn_responseText', {get: function() { return contents; }});
 					req.dispatchEvent(new Event('readystatechange'));
 					req.dispatchEvent(new Event('load'));
 				});
@@ -255,8 +269,8 @@
 						if(header === 'Content-Length') return contents[airborn.path.basename(url)].size;
 						return getResponseHeader.apply(this, arguments);
 					};
-					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
-					Object.defineProperty(req, 'status', {get: function() { return !err && 200; }});
+					defineWithPrefixed(req, 'readyState', 'airborn_readyState', {get: function() { return 4; }});
+					defineWithPrefixed(req, 'status', 'airborn_status', {get: function() { return !err && 200; }});
 					req.dispatchEvent(new Event('readystatechange'));
 					req.dispatchEvent(new Event('load'));
 				});
@@ -274,8 +288,8 @@
 						if(header === 'Content-Length') return contents.length;
 						return getResponseHeader.apply(this, arguments);
 					};
-					Object.defineProperty(req, 'readyState', {get: function() { return 4; }});
-					Object.defineProperty(req, 'status', {get: function() { return 200; }});
+					defineWithPrefixed(req, 'readyState', 'airborn_readyState', {get: function() { return 4; }});
+					defineWithPrefixed(req, 'status', 'airborn_status', {get: function() { return 200; }});
 					req.dispatchEvent(new Event('readystatechange'));
 					req.dispatchEvent(new Event('load'));
 				});
@@ -285,6 +299,11 @@
 			requestOpen.apply(this, arguments);
 		}
 	};
+	defineDummy('responseType', 'airborn_responseType');
+	defineDummy('readyState', 'airborn_readyState');
+	defineDummy('status', 'airborn_status');
+	defineDummy('response', 'airborn_response');
+	defineDummy('responseText', 'airborn_responseText');
 	
 	var prepareUrlRequestCache = {};
 	function prepareUrl(url, callback) {
@@ -393,7 +412,7 @@
 		
 		var realDescriptor = Object.getOwnPropertyDescriptor(HTMLElm.prototype, attr);
 		function set(elm, url) {
-			if(realDescriptor) realDescriptor.set.call(elm, url);
+			if(realDescriptor && realDescriptor.set) realDescriptor.set.call(elm, url);
 			else elm[attr] = url;
 		}
 		var descriptor = {
@@ -418,8 +437,7 @@
 				});
 			}
 		};
-		Object.defineProperty(HTMLElm.prototype, attr, descriptor);
-		Object.defineProperty(HTMLElm.prototype, rewrittenAttr, descriptor);
+		defineWithPrefixed(HTMLElm.prototype, attr, rewrittenAttr, descriptor);
 		var realGetAttribute = HTMLElm.prototype.getAttribute;
 		HTMLElm.prototype.getAttribute = function(attrName) {
 			var realAttr = realGetAttribute.call(this, attrName);
@@ -429,31 +447,41 @@
 			return realAttr;
 		};
 	});
-	Object.defineProperty(Object.prototype, 'airborn_src', {get: function() { return this.src; }, set: function(value) { this.src = value; }});
-	Object.defineProperty(Object.prototype, 'airborn_href', {get: function() { return this.href; }, set: function(value) { this.href = value; }});
-	Object.defineProperty(HTMLAnchorElement.prototype, 'pathname', {
-		get: function() {
-			return this.href && new URL(this.href, 'file://').pathname;
-		}
-	});
-	Object.defineProperty(HTMLAnchorElement.prototype, 'airborn_pathname', {
+	defineDummy('src', 'airborn_src');
+	defineDummy('href', 'airborn_href');
+	defineWithPrefixed(HTMLAnchorElement.prototype, 'pathname', 'airborn_pathname', {
 		get: function() {
 			return this.airborn_href && new URL(this.airborn_href, 'file://').pathname;
 		}
 	});
-	Object.defineProperty(Object.prototype, 'airborn_pathname', {get: function() { return this.pathname; }, set: function(value) { this.pathname = value; }});
+	defineDummy('pathname', 'airborn_pathname');
 	var elementInnerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-	Object.defineProperty(Element.prototype, 'innerHTML', {
-		get: function() {
-			return elementInnerHTMLDescriptor.get.call(this);
-		},
-		set: function(html) {
-			elementInnerHTMLDescriptor.set.call(this, html);
-			if(this.ownerDocument.contains(this)) {
-				findNewElements(this);
+	try {
+		Object.defineProperty(Element.prototype, 'innerHTML', {
+			get: function() {
+				return elementInnerHTMLDescriptor.get.call(this);
+			},
+			set: function(html) {
+				elementInnerHTMLDescriptor.set.call(this, html);
+				if(this.ownerDocument.contains(this)) {
+					findNewElements(this);
+				}
 			}
-		}
-	});
+		});
+	} catch(e) { // Safari
+		Object.defineProperty(Element.prototype, 'airborn_innerHTML', {
+			get: function() {
+				return this.innerHTML;
+			},
+			set: function(html) {
+				this.innerHTML = html;
+				if(this.ownerDocument.contains(this)) {
+					findNewElements(this);
+				}
+			}
+		});
+	}
+	defineDummy('innerHTML', 'airborn_innerHTML');
 	function findNewElements(context) {
 		['src', 'href', 'icon'].forEach(function(attrName) {
 			Array.prototype.forEach.call(context.querySelectorAll(
@@ -464,11 +492,6 @@
 					if(!err) elm.setAttribute(attrName, url);
 				});
 			});
-		});
-	}
-	if(!elementInnerHTMLDescriptor) { // Chrome (https://code.google.com/p/chromium/issues/detail?id=43394).
-		window.addEventListener('load', function() {
-			setInterval(findNewElements, 2000, document);
 		});
 	}
 	
@@ -517,6 +540,12 @@
 		DOMRequest.call(this);
 	}
 	DOMCursor.prototype = new DOMRequest();
+	if(!window.DOMError) {
+		window.DOMError = function DOMError(name, message) {
+			Object.defineProperty(this, 'name', {value: name});
+			Object.defineProperty(this, 'message', {value: message});
+		};
+	}
 	function DeviceStorage(storageName) {
 		EventTarget.call(this);
 		Object.defineProperty(this, 'storageName', {value: storageName});
@@ -660,7 +689,7 @@
 			if(file instanceof AsyncFile) {
 				var reader = this;
 				readerFn(file, function(result) {
-					Object.defineProperty(reader, 'result', {get: function() { return result; }});
+					defineWithPrefixed(reader, 'result', 'airborn_result', {get: function() { return result; }});
 					reader.dispatchEvent(new Event('load'));
 				});
 			} else {
@@ -668,6 +697,7 @@
 			}
 		};
 	}
+	defineDummy('result', 'airborn_result');
 	extendFileReader('readAsText', function(file, callback) {
 		airborn.fs.getFile(file.path, callback);
 	});
@@ -712,15 +742,7 @@
 	};
 	var localStorage = new Storage_(document.airborn_localStorage);
 	delete document.airborn_localStorage;
-	try {
-		Object.defineProperty(window, 'localStorage', {
-			get: function() {
-				stringifyStorageValues();
-				return localStorage;
-			}
-		});
-	} catch(e) {}
-	Object.defineProperty(window, 'airborn_localStorage', {
+	defineWithPrefixed(window, 'localStorage', 'airborn_localStorage', {
 		get: function() {
 			stringifyStorageValues();
 			return localStorage;
@@ -744,7 +766,7 @@
 	window.addEventListener('unload', flushStorage); // Doesn't work on browser tab close or in Firefox
 	
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
-	Object.defineProperty(Object.prototype, 'airborn_cookie', {get: function() { return this.cookie; }, set: function(value) { this.cookie = value; }});
+	defineDummy('cookie', 'airborn_cookie');
 	
 	var IDB = (function() {
 		function parallel(fns, callback) {
@@ -1430,7 +1452,8 @@
 		};
 	})();
 	
-	Object.defineProperty(window, 'indexedDB', {value: IDB.indexedDB});
+	defineWithPrefixed(window, 'indexedDB', 'airborn_indexedDB', {value: IDB.indexedDB});
+	defineDummy('indexedDB', 'airborn_indexedDB');
 	Object.defineProperty(window, 'mozIndexedDB', {value: undefined});
 		
 	function createLocationUrl(url, base) {
@@ -1463,7 +1486,7 @@
 	Object.defineProperty(window, 'airborn_location', {get: function() {
 		return locationurl;
 	}});
-	Object.defineProperty(Object.prototype, 'airborn_location', {get: function() { return this.location; }, set: function(value) { this.location = value; }});
+	defineDummy('location', 'airborn_location');
 	
 	var hist = [{url: locationurl}];
 	var histIndex = 0;
@@ -1543,16 +1566,16 @@
 			return maybeWindowProxy(top);
 		})()
 	});
-	Object.defineProperty(Object.prototype, 'airborn_top', {get: function() { return this.top; }, set: function(value) { this.top = value; }});
+	defineDummy('top', 'airborn_top');
 	
 	Object.defineProperty(window, 'airborn_parent', {value: window === window.airborn_top ? window : maybeWindowProxy(window.parent)});
-	Object.defineProperty(Object.prototype, 'airborn_parent', {get: function() { return this.parent; }, set: function(value) { this.parent = value; }});
+	defineDummy('parent', 'airborn_parent');
 	
 	Object.defineProperty(MessageEvent.prototype, 'airborn_source', {get: function() { return maybeWindowProxy(this.source); }});
-	Object.defineProperty(Object.prototype, 'airborn_source', {get: function() { return this.source; }, set: function(value) { this.source = value; }});
+	defineDummy('source', 'airborn_source');
 	
 	Object.defineProperty(HTMLIFrameElement.prototype, 'airborn_contentWindow', {get: function() { return maybeWindowProxy(this.contentWindow); }});
-	Object.defineProperty(Object.prototype, 'airborn_contentWindow', {get: function() { return this.contentWindow; }, set: function(value) { this.contentWindow = value; }});
+	defineDummy('contentWindow', 'airborn_contentWindow');
 	
 	if(window === window.airborn_top) {
 		var title = document.querySelector('head > title');

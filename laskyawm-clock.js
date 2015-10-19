@@ -25,7 +25,7 @@
 		
 		// Get time
 		var currentTime = new Date();
-		clock.textContent = currentTime.toLocaleTimeString(navigator.language, {hour: 'numeric', minute: 'numeric'});
+		clock.textContent = currentTime.toLocaleTimeString(navigator.language, {hour: 'numeric', minute: 'numeric'}).replace(/(:..):../, '$1');
 
 		// Keep up-to-date
 		updateTimeout = setTimeout(updateTime, 60000 - (currentTime.getSeconds() * 1000) - currentTime.getMilliseconds());

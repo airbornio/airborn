@@ -91,7 +91,7 @@ function updateBackground(timer) {
 	context.fillStyle = gradient;
 	context.fill();
 	
-	if(!(
+	if(!window.CSS || !CSS.supports || !(
 		CSS.supports('image-rendering', 'pixelated') ||
 		CSS.supports('image-rendering', '-moz-crisp-edges') ||
 		CSS.supports('-ms-interpolation-mode', 'nearest-neighbor')

@@ -174,6 +174,14 @@ codec.raw = codec.arrayBuffer = {
 	toAB: function(ab) { return ab; }
 };
 
+if(!window.TextDecoder) {
+	window.TextDecoder = function() {};
+	TextDecoder.prototype.decode = function(dataview) { return sjcl.codec.utf8String.fromBits(sjcl.codec.arrayBuffer.toBits(dataview.buffer)); };
+}
+if(!window.TextEncoder) {
+	window.TextEncoder = function() {};
+	TextEncoder.prototype.encode = function(str) { return {buffer: sjcl.codec.arrayBuffer.fromBits(sjcl.codec.utf8String.toBits(str))}; };
+}
 var decoder = new TextDecoder('utf8');
 var encoder = new TextEncoder('utf8');
 codec.utf8String = {
@@ -228,87 +236,97 @@ codec.base64 = {
 var subtle = window.crypto.subtle || window.crypto.webkitSubtle;
 
 function encrypt(key, plaintext, callback) {
-	subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['encrypt']).then(function(_key) {
-		var iv = sjcl.codec.arrayBuffer.fromBits(sjcl.random.randomWords(4,0));
-		var ivLength = iv.byteLength;
-		var plaintextLength = plaintext.byteLength;
-		var L = _computeL(plaintextLength, ivLength);
-		var ctr = new Uint8Array(16);
-		ctr[0] = L - 1;
-		ctr.set(new Uint8Array(iv, 0, 15 - L), 1);
-		var ks = 128;
-		var adata = codec.utf8String.toAB('');
-		var ts = 64;
-		var tag = _computeTag(key, plaintext, iv, adata, ts, L);
-		return Promise.all([
-			subtle.encrypt({
-				name: 'AES-CTR',
-				counter: ctr,
-				length: ks,
-			}, _key, sjcl.codec.arrayBuffer.fromBits(tag)),
-			subtle.encrypt({
-				name: 'AES-CTR',
-				counter: (ctr[15] = 1, ctr),
-				length: ks,
-			}, _key, plaintext)
-		]).then(function(result) {
-			var tag = result[0];
-			var ct = result[1];
-			var concat = new Uint8Array(ct.byteLength + tag.byteLength);
-			concat.set(new Uint8Array(ct), 0);
-			concat.set(new Uint8Array(tag), ct.byteLength);
-			return JSON.stringify({
-				adata: codec.base64.fromAB(adata),
-				cipher: 'aes',
-				ct: codec.base64.fromAB(concat),
-				iter: 1000,
-				iv: codec.base64.fromAB(iv),
-				ks: ks,
-				ts: ts,
-				v: 1
+	try {
+		subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['encrypt']).then(function(_key) {
+			var iv = sjcl.codec.arrayBuffer.fromBits(sjcl.random.randomWords(4,0));
+			var ivLength = iv.byteLength;
+			var plaintextLength = plaintext.byteLength;
+			var L = _computeL(plaintextLength, ivLength);
+			var ctr = new Uint8Array(16);
+			ctr[0] = L - 1;
+			ctr.set(new Uint8Array(iv, 0, 15 - L), 1);
+			var ks = 128;
+			var adata = codec.utf8String.toAB('');
+			var ts = 64;
+			var tag = _computeTag(key, plaintext, iv, adata, ts, L);
+			return Promise.all([
+				subtle.encrypt({
+					name: 'AES-CTR',
+					counter: ctr,
+					length: ks,
+				}, _key, sjcl.codec.arrayBuffer.fromBits(tag)),
+				subtle.encrypt({
+					name: 'AES-CTR',
+					counter: (ctr[15] = 1, ctr),
+					length: ks,
+				}, _key, plaintext)
+			]).then(function(result) {
+				var tag = result[0];
+				var ct = result[1];
+				var concat = new Uint8Array(ct.byteLength + tag.byteLength);
+				concat.set(new Uint8Array(ct), 0);
+				concat.set(new Uint8Array(tag), ct.byteLength);
+				return JSON.stringify({
+					adata: codec.base64.fromAB(adata),
+					cipher: 'aes',
+					ct: codec.base64.fromAB(concat),
+					iter: 1000,
+					iv: codec.base64.fromAB(iv),
+					ks: ks,
+					ts: ts,
+					v: 1
+				});
 			});
-		});
-	}).then(callback, function() {
+		}).then(callback, error);
+	} catch(e) {
+		error();
+	}
+	function error() {
 		// Web Crypto or the algorithm may be unsupported, try sjcl.
 		callback(sjcl.encrypt(key, sjcl.codec.arrayBuffer.toBits(plaintext)));
-	});
+	}
 }
 
 function decrypt(key, str, callback) {
-	subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['decrypt']).then(function(_key) {
-		var obj = JSON.parse(str);
-		var ct = codec.base64.toAB(obj.ct);
-		var iv = codec.base64.toAB(obj.iv);
-		var ivLength = iv.byteLength;
-		var ts = obj.ts;
-		var plaintextLength = ct.byteLength - ts / 8;
-		var L = _computeL(plaintextLength, ivLength);
-		var ctr = new Uint8Array(16);
-		ctr[0] = L - 1;
-		ctr.set(new Uint8Array(iv, 0, 15 - L), 1);
-		var ks = obj.ks;
-		var adata = codec.base64.toAB(obj.adata);
-		return Promise.all([
-			subtle.decrypt({
-				name: 'AES-CTR',
-				counter: ctr,
-				length: ks,
-			}, _key, new DataView(ct, plaintextLength)),
-			subtle.decrypt({
-				name: 'AES-CTR',
-				counter: (ctr[15] = 1, ctr),
-				length: ks,
-			}, _key, new DataView(ct, 0, plaintextLength))
-		]).then(function(result) {
-			var tag = result[0];
-			var plaintext = result[1];
-			var tag2 = _computeTag(key, plaintext, iv, adata, ts, L);
-			if(!sjcl.bitArray.equal(sjcl.codec.arrayBuffer.toBits(tag), tag2)) {
-				throw new sjcl.exception.corrupt("ccm: tag doesn't match");
-			}
-			return plaintext;
-		});
-	}).then(callback, function(e) {
+	try {
+		subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['decrypt']).then(function(_key) {
+			var obj = JSON.parse(str);
+			var ct = codec.base64.toAB(obj.ct);
+			var iv = codec.base64.toAB(obj.iv);
+			var ivLength = iv.byteLength;
+			var ts = obj.ts;
+			var plaintextLength = ct.byteLength - ts / 8;
+			var L = _computeL(plaintextLength, ivLength);
+			var ctr = new Uint8Array(16);
+			ctr[0] = L - 1;
+			ctr.set(new Uint8Array(iv, 0, 15 - L), 1);
+			var ks = obj.ks;
+			var adata = codec.base64.toAB(obj.adata);
+			return Promise.all([
+				subtle.decrypt({
+					name: 'AES-CTR',
+					counter: ctr,
+					length: ks,
+				}, _key, new DataView(ct, plaintextLength)),
+				subtle.decrypt({
+					name: 'AES-CTR',
+					counter: (ctr[15] = 1, ctr),
+					length: ks,
+				}, _key, new DataView(ct, 0, plaintextLength))
+			]).then(function(result) {
+				var tag = result[0];
+				var plaintext = result[1];
+				var tag2 = _computeTag(key, plaintext, iv, adata, ts, L);
+				if(!sjcl.bitArray.equal(sjcl.codec.arrayBuffer.toBits(tag), tag2)) {
+					throw new sjcl.exception.corrupt("ccm: tag doesn't match");
+				}
+				return plaintext;
+			});
+		}).then(callback, error);
+	} catch(e) {
+		error();
+	}
+	function error(e) {
 		// Web Crypto or the algorithm may be unsupported, try sjcl.
 		var decrypted;
 		var utf8String_fromBits = sjcl.codec.utf8String.fromBits;
@@ -322,7 +340,7 @@ function decrypt(key, str, callback) {
 			sjcl.codec.utf8String.fromBits = utf8String_fromBits;
 		}
 		callback(sjcl.codec.arrayBuffer.fromBits(decrypted));
-	});
+	}
 }
 
 function _computeL(plaintextLength, ivLength) {
@@ -414,9 +432,9 @@ window.getFile = function(file, options, callback) {
 						callback(decrypted);
 					}
 				};
-				decrypt(files_key, req.responseText, function(_decrypted, e) {
+				decrypt(files_key, req.response, function(_decrypted, e) {
 					if(e) {
-						decrypt(password, req.responseText, function(_decrypted, e2) {
+						decrypt(password, req.response, function(_decrypted, e2) {
 							if(e2) {
 								error = {status: 0, statusText: e.message};
 							} else {
@@ -914,14 +932,28 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		getFile(file, function(contents, err) {
 			if(err) return callback('');
 			if(options.compat !== false && !options.webworker) {
-				var renames = {cookie: 'airborn_cookie', location: 'airborn_location', top: 'airborn_top', parent: 'airborn_parent'};
-				if(navigator.userAgent.match(/Chrome/)) {
+				var renames = {};
+				renames.cookie = 'airborn_cookie';
+				renames.location = 'airborn_location';
+				renames.top = 'airborn_top';
+				renames.parent = 'airborn_parent';
+				if(navigator.userAgent.match(/Safari/)) { // Safari or Chrome
 					renames.localStorage = 'airborn_localStorage';
 					renames.src = 'airborn_src';
 					renames.href = 'airborn_href';
 					renames.pathname = 'airborn_pathname';
 					renames.source = 'airborn_source';
 					renames.contentWindow = 'airborn_contentWindow';
+					if(!navigator.userAgent.match(/Chrome/)) { // Safari
+						renames.indexedDB = 'airborn_indexedDB';
+						renames.responseType = 'airborn_responseType';
+						renames.readyState = 'airborn_readyState';
+						renames.status = 'airborn_status';
+						renames.response = 'airborn_response';
+						renames.responseText = 'airborn_responseText';
+						renames.innerHTML = 'airborn_innerHTML';
+						renames.result = 'airborn_result';
+					}
 				}
 				contents = renameGlobalVariables(file, contents, renames);
 			}
