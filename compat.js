@@ -1585,10 +1585,10 @@
 			img.src = icon.href;
 			img.addEventListener('load', function() {
 				var canvas = document.createElement('canvas');
-				canvas.width = canvas.height = 16;
+				canvas.width = canvas.height = 32;
 				
 				var ctx = canvas.getContext('2d');
-				ctx.drawImage(img, 0, 0, 16, 16);
+				ctx.drawImage(img, 0, 0, 32, 32);
 				
 				airborn.wm.setIcon(canvas.toDataURL('image/png'));
 			});

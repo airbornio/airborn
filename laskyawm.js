@@ -186,7 +186,7 @@ window.addEventListener('message', function(message) {
 							} else {
 								airborn.fs.getFile(tab.path + 'manifest.webapp', function(manifest) {
 									manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
-									var icon = manifest.icons && (manifest.icons['16'] || manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
+									var icon = manifest.icons && (manifest.icons['32'] || manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
 									if(icon) {
 										airborn.fs.prepareUrl(icon, {relativeParent: tab.path, rootParent: tab.path}, function(url) {
 											cont(url);
