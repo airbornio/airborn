@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, airborn, bar */
+/*global $, airborn, deviceType, bar */
 
 var powerMenu;
 
@@ -23,6 +23,18 @@ bar.addItem(togglePowerMenu);
 powerMenu = document.createElement('div');
 powerMenu.id = 'powerMenu';
 powerMenu.className = 'barMenu';
+var plans = document.createElement('div');
+plans.tabIndex = '0';
+plans.textContent = 'Plans';
+if(deviceType === 'desktop') {
+	plans.style.borderBottom = '1px solid #aaa';
+	plans.style.paddingBottom = '5px';
+	plans.style.marginBottom = '6px';
+}
+plans.addEventListener('click', function() {
+	window.open('https://www.airbornos.com/plans');
+});
+powerMenu.appendChild(plans);
 var logout = document.createElement('div');
 logout.tabIndex = '0';
 logout.textContent = 'Log Out';
