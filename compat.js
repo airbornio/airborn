@@ -567,7 +567,7 @@
 		var request = new DOMRequest();
 		airborn.fs.getFile(airborn.path.dirname(path), {codec: 'dir'}, function(contents) {
 			if(contents && contents.hasOwnProperty(airborn.path.basename(path))) {
-				request.error = new DOMError('FileExists', 'The file already exists.');
+				request.error = new DOMError('NoModificationAllowedError', 'The file already exists.');
 				request.dispatchEvent(new Event('error'));
 			} else {
 				airborn.fs.putFile(path, {codec: 'blob'}, file, function(err) {
@@ -589,7 +589,7 @@
 		var basename = airborn.path.basename(path);
 		airborn.fs.getFile(dirname, {codec: 'dir'}, function(contents) {
 			if(!contents || !contents.hasOwnProperty(basename)) {
-				request.error = new DOMError('FileNotFound', "The file doesn't exist.");
+				request.error = new DOMError('NotFoundError', "The file doesn't exist.");
 				request.dispatchEvent(new Event('error'));
 			} else {
 				request.result = new AsyncFile({name: toDeviceStoragePath(path), type: contents[basename].type, path: path, lastModifiedDate: contents[basename].edited || new Date()});
