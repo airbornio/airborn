@@ -565,7 +565,7 @@
 	DeviceStorage.prototype.addNamed = function(file, name) {
 		var path = toAirbornPath(this, name);
 		var request = new DOMRequest();
-		airborn.fs.getFile(airborn.path.dirname(path), function(contents) {
+		airborn.fs.getFile(airborn.path.dirname(path), {codec: 'dir'}, function(contents) {
 			if(contents && contents.hasOwnProperty(airborn.path.basename(path))) {
 				request.error = new DOMError('FileExists', 'The file already exists.');
 				request.dispatchEvent(new Event('error'));
