@@ -1578,6 +1578,23 @@
 	defineDummy('contentWindow', 'airborn_contentWindow');
 	
 	if(window === window.airborn_top) {
+		function updateIcon() {
+			var img = document.createElement('img');
+			img.src = icon.href;
+			img.addEventListener('load', function() {
+				var canvas = document.createElement('canvas');
+				canvas.width = canvas.height = 32;
+				
+				var ctx = canvas.getContext('2d');
+				ctx.drawImage(img, 0, 0, 32, 32);
+				
+				airborn.wm.setIcon(canvas.toDataURL('image/png'));
+			});
+			img.addEventListener('error', function() {
+				airborn.wm.setIcon('');
+			});
+		}
+		
 		var title = document.querySelector('head > title');
 		airborn.wm.setTitle(title && title.textContent);
 		var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
@@ -1603,22 +1620,6 @@
 				new window[window.MutationObserver ? 'MutationObserver' : 'WebKitMutationObserver'](updateIcon).observe(icon, {attributes: true, attributeFilter: ['href']});
 			}
 		});
-		function updateIcon() {
-			var img = document.createElement('img');
-			img.src = icon.href;
-			img.addEventListener('load', function() {
-				var canvas = document.createElement('canvas');
-				canvas.width = canvas.height = 32;
-				
-				var ctx = canvas.getContext('2d');
-				ctx.drawImage(img, 0, 0, 32, 32);
-				
-				airborn.wm.setIcon(canvas.toDataURL('image/png'));
-			});
-			img.addEventListener('error', function() {
-				airborn.wm.setIcon('');
-			});
-		}
 	}
 	
 	function MockWorker() {
