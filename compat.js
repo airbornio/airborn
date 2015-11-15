@@ -383,7 +383,7 @@
 		[HTMLImageElement, 'src', 'airborn_src',
 			function() {
 				var imgCompleteDescriptor = Object.getOwnPropertyDescriptor(this, 'complete');
-				Object.defineProperty(this, 'complete', {get: function() { return false; }});
+				Object.defineProperty(this, 'complete', {get: function() { return false; }, configurable: true});
 				
 				return function() {
 					if(imgCompleteDescriptor) {
