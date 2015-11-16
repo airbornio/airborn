@@ -105,6 +105,41 @@
 		airborn.wm = airborn.core;
 	}
 	
+	var getFileCache = {};
+	var listeningForDirectory = {};
+	var _getFile = airborn.fs.getFile;
+	airborn.fs.getFile = function(file, options, callback) {
+		if(typeof options === 'function' || options === undefined) {
+			callback = options;
+			options = {};
+		}
+		if(callback === undefined) {
+			callback = function() {};
+		}
+		
+		var JSON_options = JSON.stringify(options);
+		if(!getFileCache[file]) {
+			getFileCache[file] = {};
+		}
+		if(getFileCache[file][JSON_options]) {
+			callback.apply(this, getFileCache[file][JSON_options]);
+			return;
+		}
+		var mainDirectory = file.substr(0, rootParent.replace(/[^/]*$/, '').length) === rootParent.replace(/[^/]*$/, '') ? rootParent.replace(/[^/]*$/, '') : (file.match(/\/[^\/]*\//) || ['/'])[0];
+		if(!listeningForDirectory[mainDirectory]) {
+			listeningForDirectory[mainDirectory] = true;
+			airborn.fs.listenForFileChanges(mainDirectory, function(path) {
+				getFileCache[path] = {};
+			});
+		}
+		_getFile(file, options, function() {
+			if(!getFileCache[file][JSON_options]) {
+				getFileCache[file][JSON_options] = arguments;
+			}
+			callback.apply(this, getFileCache[file][JSON_options]);
+		});
+	};
+	
 	var _putFile = airborn.fs.putFile;
 	airborn.fs.putFile = function() {
 		var args = [].slice.call(arguments);
@@ -249,8 +284,10 @@
 						return contents;
 					}});
 					if(!codec) defineWithPrefixed(req, 'responseText', 'airborn_responseText', {get: function() { return contents; }});
-					req.dispatchEvent(new Event('readystatechange'));
-					req.dispatchEvent(new Event('load'));
+					setTimeout(function() {
+						req.dispatchEvent(new Event('readystatechange'));
+						req.dispatchEvent(new Event('load'));
+					});
 				});
 			};
 		} else if(method === 'HEAD' && !rSchema.test(url)) {
@@ -271,8 +308,10 @@
 					};
 					defineWithPrefixed(req, 'readyState', 'airborn_readyState', {get: function() { return 4; }});
 					defineWithPrefixed(req, 'status', 'airborn_status', {get: function() { return !err && 200; }});
-					req.dispatchEvent(new Event('readystatechange'));
-					req.dispatchEvent(new Event('load'));
+					setTimeout(function() {
+						req.dispatchEvent(new Event('readystatechange'));
+						req.dispatchEvent(new Event('load'));
+					});
 				});
 			};
 		} else if(method === 'HEAD' && url.substr(0, 5) === 'data:') {
@@ -282,14 +321,14 @@
 				var req = this;
 				var parts = url.substr(5).split(',');
 				var contents = parts[0].indexOf('base64') === -1 ? decodeURIComponent(parts[1]) : atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+				var getResponseHeader = req.getResponseHeader;
+				req.getResponseHeader = function(header) {
+					if(header === 'Content-Length') return contents.length;
+					return getResponseHeader.apply(this, arguments);
+				};
+				defineWithPrefixed(req, 'readyState', 'airborn_readyState', {get: function() { return 4; }});
+				defineWithPrefixed(req, 'status', 'airborn_status', {get: function() { return 200; }});
 				setTimeout(function() {
-					var getResponseHeader = req.getResponseHeader;
-					req.getResponseHeader = function(header) {
-						if(header === 'Content-Length') return contents.length;
-						return getResponseHeader.apply(this, arguments);
-					};
-					defineWithPrefixed(req, 'readyState', 'airborn_readyState', {get: function() { return 4; }});
-					defineWithPrefixed(req, 'status', 'airborn_status', {get: function() { return 200; }});
 					req.dispatchEvent(new Event('readystatechange'));
 					req.dispatchEvent(new Event('load'));
 				});
@@ -519,15 +558,17 @@
 		};
 		this.dispatchEvent = function(event) {
 			var _this = this;
-			Object.defineProperty(event, 'target', {get: function() { return _this; }});
-			if(listeners[event.type]) {
-				listeners[event.type].forEach(function(fn) {
-					fn.call(this, event);
-				});
-			}
-			if(this['on' + event.type]) {
-				this['on' + event.type](event);
-			}
+			setTimeout(function() {
+				Object.defineProperty(event, 'target', {get: function() { return _this; }});
+				if(listeners[event.type]) {
+					listeners[event.type].forEach(function(fn) {
+						fn.call(_this, event);
+					});
+				}
+				if(_this['on' + event.type]) {
+					_this['on' + event.type](event);
+				}
+			});
 			return true;
 		};
 	}
@@ -585,10 +626,8 @@
 	DeviceStorage.prototype.onchange = null;
 	DeviceStorage.prototype.available = function() {
 		var request = new DOMRequest();
-		setTimeout(function() {
-			request.result = 'available';
-			request.dispatchEvent(new Event('success'));
-		});
+		request.result = 'available';
+		request.dispatchEvent(new Event('success'));
 		return request;
 	};
 	DeviceStorage.prototype.addNamed = function(file, name) {
@@ -690,7 +729,9 @@
 				var reader = this;
 				readerFn(file, function(result) {
 					defineWithPrefixed(reader, 'result', 'airborn_result', {get: function() { return result; }});
-					reader.dispatchEvent(new Event('load'));
+					setTimeout(function() {
+						reader.dispatchEvent(new Event('load'));
+					});
 				});
 			} else {
 				origMethod.apply(this, arguments);
@@ -1307,9 +1348,7 @@
 					});
 				} else {
 					delete req.result;
-					setTimeout(function() {
-						req.dispatchEvent(new Event('success'));
-					});
+					req.dispatchEvent(new Event('success'));
 				}
 			};
 			this.update = function(object) {
@@ -1440,9 +1479,7 @@
 			},
 			deleteDatabase: function() { // TODO
 				var req = new DOMRequest();
-				setTimeout(function() {
-					req.dispatchEvent(new Event('success'));
-				});
+				req.dispatchEvent(new Event('success'));
 				return req;
 			}
 		};
@@ -1703,10 +1740,8 @@
 		},
 		registrations: function() {
 			var req = new DOMRequest();
-			setTimeout(function() {
-				req.result = Object.keys(endpoints).map(function(key) { return endpoints[key]; });
-				req.dispatchEvent(new Event('success'));
-			});
+			req.result = Object.keys(endpoints).map(function(key) { return endpoints[key]; });
+			req.dispatchEvent(new Event('success'));
 			return req;
 		}
 	};
