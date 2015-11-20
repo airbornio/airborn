@@ -228,9 +228,18 @@
 		} catch(e) {}
 		Object.defineProperty(obj, rewrittenProp, descriptor);
 	}
+	var AirbornObjectPrototype = Object.create(null);
 	function defineDummy(prop, rewrittenProp) {
 		Object.defineProperty(Object.prototype, rewrittenProp, {get: function() { return this[prop]; }, set: function(value) { this[prop] = value; }});
+		Object.defineProperty(AirbornObjectPrototype, rewrittenProp, {get: function() { return this[prop]; }, set: function(value) { this[prop] = value; }});
 	}
+	var _Object_create = Object.create;
+	Object.create = function(O) {
+		if(O === null) {
+			O = AirbornObjectPrototype;
+		}
+		return _Object_create.apply(this, arguments);
+	};
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
 	var rootParent = document.rootParent;
