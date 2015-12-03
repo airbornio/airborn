@@ -13,7 +13,8 @@ body {
 }
 body:before,
 #sidebar:before,
-.window:before {
+.window:before,
+.hud {
 	background-attachment: fixed;
 }
 body:before {
@@ -150,9 +151,8 @@ body:before {
 }
 .hud {
 	position: absolute;
-	border: 5px solid #5CC9FF;
-	z-index: 999;
 	border-radius: 7px;
+	opacity: .7;
 }
 .window.maximized, .hud {
 	top: 25px !important;

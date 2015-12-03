@@ -57,11 +57,12 @@ addClipResizableHandles('draggable', 'drag');
 addClipResizableHandles('resizable', 'resize');
 
 
-function addHUD(pos) {
+function addHUD(pos, div) {
 	var $hud = $('.hud');
 	if(!$hud.length) $hud = $('<div>').appendTo('body');
 	$hud.attr('class', 'hud hud-' + pos);
 	$hud.attr('data-pos', pos);
+	$hud.css('z-index', div.css('z-index') - 1);
 }
 function removeHUD() {
 	$('.hud').remove();
@@ -75,16 +76,16 @@ $.ui.plugin.add('draggable', 'minimize', {
 			this.removeClass('maximized');
 			this.addClass('minimized');
 		} else if(event.pageY < workspace_start_top && !this.hasClass('minimized')) {
-			addHUD('max');
+			addHUD('max', this);
 		} else {
 			if(event.pageY > workspace_start_top && this.hasClass('minimized')) {
 				this.removeClass('minimized');
 			}
 			if(event.pageY > 2 * workspace_start_top) {
 				if(event.pageX < workspace_start_left + 20) {
-					addHUD('left');
+					addHUD('left', this);
 				} else if(event.pageX > window.innerWidth - 20) {
-					addHUD('right');
+					addHUD('right', this);
 				} else {
 					removeHUD();
 				}

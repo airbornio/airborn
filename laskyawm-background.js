@@ -118,7 +118,8 @@ function updateBackground(timer) {
 		'#sidebar:before,',
 		'.window:before,',
 		'.window:not(.minimized) .titlebar:before,',
-		'.window:not(.minimized) .titlebar:after {',
+		'.window:not(.minimized) .titlebar:after,',
+		'.hud {',
 		timer ?
 		'	transition: background-image 4s, opacity 4s;' :
 		'	transition: none;',
@@ -134,7 +135,8 @@ function updateBackground(timer) {
 		'}',
 		'.window.minimized:before,',
 		'.window:not(.minimized):nth-of-type(5):nth-last-of-type(2) .titlebar:after, /* Firefox */',
-		'.window:not(.minimized):nth-of-type(6):nth-last-of-type(1) .titlebar:after { /* Chrome */',
+		'.window:not(.minimized):nth-of-type(6):nth-last-of-type(1) .titlebar:after, /* Chrome */',
+		'.hud {',
 		'	background-image: linear-gradient(to right, rgba(255, 255, 255, .5), rgba(255, 255, 255, .5)),' + image + ';',
 		'}',
 		'@media only screen and (max-device-width: 640px) {',
