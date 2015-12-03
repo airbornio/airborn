@@ -1118,6 +1118,7 @@ window.openWindow = function(path, callback) {
 		iframe.setAttribute('allowfullscreen', 'true');
 		iframe.src = url;
 		iframe.scrolling = 'no';
+		iframe.name = 'LaskyaWM'; // Webkit Developer Tools hint.
 		div.appendChild(iframe);
 		document.body.appendChild(div);
 		mainWindow = iframe.contentWindow;
