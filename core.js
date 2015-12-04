@@ -1113,6 +1113,9 @@ window.openWindow = function(path, callback) {
 		var div = document.createElement('div');
 		div.className = 'window';
 		div.style.overflow = 'hidden';
+		div.addEventListener('scroll', function() {
+			div.scrollTo(0, 0);
+		});
 		var iframe = document.createElement('iframe'); 
 		iframe.sandbox = 'allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
 		iframe.setAttribute('allowfullscreen', 'true');
