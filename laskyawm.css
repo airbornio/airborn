@@ -115,6 +115,7 @@ body:before {
 	cursor: default;
 	overflow: hidden;
 	position: relative;
+	vertical-align: top;
 }
 .window .titlebar .tabbar .tabtitlebar:first-child {
 	margin-left: 0;
