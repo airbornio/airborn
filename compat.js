@@ -95,6 +95,7 @@
 	addAction('fs.startTransaction');
 	addAction('fs.endTransaction');
 	addAction('fs.listenForFileChanges');
+	addAction('fs.getObjectLocation');
 	addAction('fs.pushRegister');
 	addAction('fs.pushUnregister');
 	
@@ -1667,6 +1668,9 @@
 			}
 		});
 	}
+	
+	airborn.top_location = new URL(document.top_location);
+	delete document.top_location;
 	
 	function MockWorker() {
 		EventTarget.call(this);

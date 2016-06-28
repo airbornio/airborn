@@ -35,7 +35,7 @@ window.addEventListener('message', function(message) {
 			}
 			throw new Error('Permission denied: ' + message.data.action + '(' + message.data.args.map(JSON.stringify).join(', ') + ')');
 		}
-		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'fs.listenForFileChanges', 'fs.pushRegister', 'fs.pushUnregister', 'apps.installPackage', 'core.setTitle', 'core.setIcon', 'core.logout'].indexOf(message.data.action) !== -1) {
+		if(['fs.getFile', 'fs.putFile', 'fs.prepareFile', 'fs.prepareString', 'fs.prepareUrl', 'fs.startTransaction', 'fs.endTransaction', 'fs.listenForFileChanges', 'fs.getObjectLocation', 'fs.pushRegister', 'fs.pushUnregister', 'apps.installPackage', 'core.setTitle', 'core.setIcon', 'core.logout'].indexOf(message.data.action) !== -1) {
 			window[message.data.action.split('.')[1]].apply(window, message.data.args.concat(function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments)}, '*');
 			}, function() {

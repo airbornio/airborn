@@ -289,7 +289,9 @@ openWindow = function(path, options, callback) {
 			}).map(function(permission) {
 				return storageLocations[permission.replace('device-storage:', '')];
 			})),
-			manageApps: (manifest.permissions || {})['webapps-manage']
+			manageApps: (manifest.permissions || {})['webapps-manage'],
+			urlArgs: (_path.match('/Apps/(.+?)/') || [])[1],
+			getObjectLocations: (manifest.permissions || {})['get-object-locations'],
 		};
 		airborn.fs.prepareUrl('/', {rootParent: _path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
 			var div = options.targetDiv || document.createElement('div');

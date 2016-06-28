@@ -47,16 +47,19 @@ function endTransaction() {
 		}
 	});
 	Object.keys(transactions).forEach(function(transactionId) {
-		var req = new XMLHttpRequest();
-		req.open('POST', '/transaction/add');
-		req.setRequestHeader('Content-Type', 'application/json');
-		req.send(JSON.stringify({
-			transactionId: transactionId,
-			messageCount: transactions[transactionId]
-		}));
+		if(transactions[transactionId] > 1) {
+			var req = new XMLHttpRequest();
+			req.open('POST', '/transaction/add');
+			req.setRequestHeader('Content-Type', 'application/json');
+			req.send(JSON.stringify({
+				transactionId: transactionId,
+				messageCount: transactions[transactionId]
+			}));
+		}
 	});
 	Object.keys(_transaction).forEach(function(path) {
 		_transaction[path][1].finishingTransaction = true;
+		_transaction[path][1].messageCount = transactions[getTransactionId(_transaction[path][1])];
 		if(/\/\.history\//.test(_transaction[path][0])) {
 			window.getFileCache[_transaction[path][0]] = {codec: _transaction[path][1].codec, contents: _transaction[path][2], ts: Date.now()};
 		}
@@ -75,6 +78,7 @@ var files_hmac = parent.files_hmac;
 var password = parent.password;
 var files_key = parent.files_key;
 var account_info = parent.account_info;
+var S3Prefix = parent.S3Prefix;
 
 /** @namespace ArrayBuffer */
 sjcl.codec.arrayBuffer = {
@@ -235,7 +239,7 @@ codec.base64 = {
 
 var subtle = window.crypto.subtle || window.crypto.webkitSubtle;
 
-function encrypt(key, plaintext, callback) {
+function encrypt(key, plaintext, params, callback) {
 	try {
 		subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['encrypt']).then(function(_key) {
 			var iv = sjcl.codec.arrayBuffer.fromBits(sjcl.random.randomWords(4,0));
@@ -270,7 +274,7 @@ function encrypt(key, plaintext, callback) {
 					adata: codec.base64.fromAB(adata),
 					cipher: 'aes',
 					ct: codec.base64.fromAB(concat),
-					iter: 1000,
+					iter: params.iter != null ? params.iter : 1000,
 					iv: codec.base64.fromAB(iv),
 					ks: ks,
 					ts: ts,
@@ -283,7 +287,7 @@ function encrypt(key, plaintext, callback) {
 	}
 	function error() {
 		// Web Crypto or the algorithm may be unsupported, try sjcl.
-		callback(sjcl.encrypt(key, sjcl.codec.arrayBuffer.toBits(plaintext)));
+		callback(sjcl.encrypt(key, sjcl.codec.arrayBuffer.toBits(plaintext), params));
 	}
 }
 
@@ -375,6 +379,9 @@ window.getFile = function(file, options, callback) {
 		callback = function() {};
 	}
 	
+	if((options.S3Prefix && options.S3Prefix !== window.S3Prefix) || options.object) {
+		options.cache = false;
+	}
 	if(handleFromCache()) return;
 	function handleFromCache() {
 		if(options.cache === false) return;
@@ -408,7 +415,8 @@ window.getFile = function(file, options, callback) {
 	}
 	req.addEventListener('readystatechange', cb);
 	if(!requestCache) {
-		req.open('GET', '/object/' + sjcl.codec.hex.fromBits(files_hmac.mac(file)) + '#' + (options.codec || '') + '.' + file);
+		req.open('GET', getObjectUrl(file, options));
+		if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
 		req.send(null);
 	}
 	
@@ -432,7 +440,7 @@ window.getFile = function(file, options, callback) {
 						callback(decrypted);
 					}
 				};
-				decrypt(files_key, req.response, function(_decrypted, e) {
+				decrypt(options.password != null ? options.password : files_key, req.response, function(_decrypted, e) {
 					if(e) {
 						decrypt(password, req.response, function(_decrypted, e2) {
 							if(e2) {
@@ -467,6 +475,23 @@ function notifyFileChange(path, reason) {
 		if(startsWith(listener.path, path)) listener.fn(path, reason);
 	});
 }
+
+function getObjectUrl(file, options) {
+	return '/object/' + (options.object || _getObjectLocation(file)) + '#' + (options.S3Prefix && options.S3Prefix !== S3Prefix && !options.demo ? '1' : '0') + '.' + file;
+}
+function _getObjectLocation(file) {
+	var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
+	return sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
+}
+window.getObjectLocation = function(file, fn) {
+	var upload_history = account_info.tier >= 5;
+	fn({
+		S3Prefix: S3Prefix,
+		object: _getObjectLocation(file),
+		demo: location.pathname === '/demo' ? true : undefined,
+		hist: upload_history ? true : undefined,
+	});
+};
 
 /*function guid() {
 	var d = new Date().getTime();
@@ -656,7 +681,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 	var now = attrs.edited || transactionDate || new Date();
 	
 	var size, is_new_file;
-	if(!options.finishingTransaction && file !== '/') {
+	if(!options.finishingTransaction && file !== '/' && !(options.S3Prefix && options.S3Prefix !== window.S3Prefix)) {
 		// Add file to parent directories
 		var slashindex = file.lastIndexOf('/', file.length - 2) + 1;
 		var dirname = file.substr(0, slashindex);
@@ -678,8 +703,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		});
 	}
 	
+	if((options.S3Prefix && options.S3Prefix !== window.S3Prefix) || options.object) {
+		options.cache = false;
+	}
 	if(!/\/\.history\//.test(file)) {
-		window.getFileCache[file] = {codec: options.codec, contents: contents, ts: Date.now()};
+		if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: contents, ts: Date.now()};
 	}
 	
 	if(!/\.history\//.test(file) && upload_history) {
@@ -716,19 +744,28 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					}
 				}
 			}
-			putFile(histname, {codec: options.codec}, contents, {edited: now, parentNames: parentNames}, function(err, histid, transactionId, blob) {
+			putFile(histname, {codec: options.codec}, contents, {edited: now, parentNames: parentNames}, function upload(err, transactionId, messageCount, blob, reencrypted) {
 				
 				if(err) {
 					cont(err);
 					return;
 				}
 				
+				if(options.password != null && !reencrypted) {
+					encrypt(options.password, contents, {iter: options.iter}, function(encrypted) {
+						var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
+						upload(null, transactionId, messageCount, blob, true);
+					});
+					return;
+				}
+				
 				// Copy history file to destination
-				var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
-				var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 				var req = new XMLHttpRequest();
-				req.open('PUT', '/object/' + id);
-				req.setRequestHeader('X-Transaction-Id', transactionId);
+				req.open('PUT', getObjectUrl(file, options));
+				if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
+				if(options.ACL) { req.setRequestHeader('X-ACL', options.ACL); }
+				if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
+				if(options.objectAuthkey) { req.setRequestHeader('X-Object-Authentication', options.objectAuthkey); }
 				req.addEventListener('readystatechange', function() {
 					if(this.readyState === 4) {
 						if(this.status === 200) {
@@ -755,21 +792,23 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		} else {
 			// Upload file
 			console.log('PUT', file);
-			var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
-			var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 			contents = codec[options.codec || 'utf8String'].toAB(contents);
-			encrypt(is_bootstrap_file ? private_key : files_key, contents, function(encrypted) {
+			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, options.password != null ? {iter: options.iter} : {}, function(encrypted) {
 				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
 				var req = new XMLHttpRequest();
-				req.open('PUT', '/object/' + id);
+				req.open('PUT', getObjectUrl(file, options));
 				var transactionId = getTransactionId(options);
-				req.setRequestHeader('X-Transaction-Id', transactionId);
+				var messageCount = options.messageCount;
+				if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
+				if(options.ACL) { req.setRequestHeader('X-ACL', options.ACL); }
+				if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
+				if(options.objectAuthkey) { req.setRequestHeader('X-Object-Authentication', options.objectAuthkey); }
 				req.addEventListener('readystatechange', function() {
 					if(this.readyState === 4) {
 						if(this.status === 200) {
 							if(upload_history) {
 								// We were uploading a *.history/* file
-								if(callback) callback(null, id, transactionId, blob);
+								if(callback) callback(null, transactionId, messageCount, blob);
 							} else {
 								// We were uploading a normal file
 								cont();
@@ -849,6 +888,18 @@ function parallel(fns, callback) {
 	});
 }
 
+function getTopLocation(urlArgs) {
+	var url = new URL(top.location);
+	if(url.hash) {
+		url.hash = '#' + url.hash.slice(1).split(';').filter(function(part) {
+			return part.split(':')[0] === urlArgs;
+		}).map(function(part) {
+			return part.replace(urlArgs + ':', '');
+		}).join(';');
+	}
+	return url.href;
+}
+
 function isHTML(extension) {
 	return extension === 'html' || extension === 'htm' || extension === 'xhtml';
 }
@@ -878,6 +929,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'document.relativeParent = ' + JSON.stringify(file) + ';',
 			'document.filenames = {};',
 			'document.apikey = ' + JSON.stringify(options.apikey || getAPIKey(options.permissions)) + ';',
+			'document.top_location = ' + JSON.stringify(getTopLocation((options.permissions || {}).urlArgs)) + ';',
 			'window.addEventListener("message", function(message) {',
 			'	if(message.data.action === "createObjectURL") {',
 			'		var arg = message.data.args[0], object;',
@@ -1363,6 +1415,8 @@ window.hasPermission = function(key, action, args) {
 			return false;
 		case 'listenForFileChanges':
 			return givesAccessToPath(permissions, args[0]);
+		case 'getObjectLocation':
+			return givesAccessToPath(permissions, args[0]) && permissions.getObjectLocations;
 		case 'pushRegister':
 		case 'pushUnregister':
 			return true;
