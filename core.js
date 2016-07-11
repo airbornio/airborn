@@ -275,6 +275,7 @@ function encrypt(key, plaintext, params, callback) {
 					cipher: 'aes',
 					ct: codec.base64.fromAB(concat),
 					iter: params.iter != null ? params.iter : 1000,
+					salt: params.salt,
 					iv: codec.base64.fromAB(iv),
 					ks: ks,
 					ts: ts,
@@ -752,7 +753,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				}
 				
 				if(options.password != null && !reencrypted) {
-					encrypt(options.password, contents, {iter: options.iter}, function(encrypted) {
+					encrypt(options.password, contents, {iter: options.iter, salt: options.salt}, function(encrypted) {
 						var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
 						upload(null, transactionId, messageCount, blob, true);
 					});
@@ -793,7 +794,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			// Upload file
 			console.log('PUT', file);
 			contents = codec[options.codec || 'utf8String'].toAB(contents);
-			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, options.password != null ? {iter: options.iter} : {}, function(encrypted) {
+			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, options.password != null ? {iter: options.iter, salt: options.salt} : {}, function(encrypted) {
 				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
 				var req = new XMLHttpRequest();
 				req.open('PUT', getObjectUrl(file, options));
