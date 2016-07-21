@@ -1506,7 +1506,6 @@
 	function createLocationUrl(url, base) {
 		var urlobj = new URL(url, 'file://' + (base || ''));
 		var obj = {
-			hash: urlobj.hash,
 			host: '',
 			hostname: '',
 			href: urlobj.href.substr(7),
@@ -1518,12 +1517,10 @@
 		};
 		Object.defineProperty(obj, 'hash', {
 			get: function() {
-				return urlobj.hash;
+				return window.location.hash;
 			},
 			set: function(hash) {
-				hash += '';
-				if(hash[0] !== '#') hash = '#' + hash;
-				window.history.pushState(undefined, undefined, hash);
+				window.location.hash = hash;
 			}
 		});
 		obj.reload = window.location.reload.bind(window.location);
@@ -1535,42 +1532,26 @@
 	}});
 	defineDummy('location', 'airborn_location');
 	
-	var hist = [{url: locationurl}];
-	var histIndex = 0;
+	function setState(state, url) {
+		locationurl = createLocationUrl(url, locationurl.href);
+		Object.defineProperty(History.prototype, 'state', {value: state, enumerable: true, configurable: true});
+	}
+	var history_replaceState = History.prototype.replaceState;
 	History.prototype.replaceState = function(state, title, url) {
-		locationurl = createLocationUrl(url, locationurl.href);
-		hist[histIndex] = {url: locationurl, state: state};
+		setState(state, url);
+		history_replaceState.call(this, {href: locationurl.href, state: state, _airborn: true}, '', '');
 	};
+	var history_pushState = History.prototype.pushState;
 	History.prototype.pushState = function(state, title, url) {
-		locationurl = createLocationUrl(url, locationurl.href);
-		hist[++histIndex] = {url: locationurl, state: state};
-		hist.length = histIndex + 1;
+		setState(state, url);
+		history_pushState.call(this, {href: locationurl.href, state: state, _airborn: true}, '', '');
 	};
-	var go = History.prototype.go;
-	History.prototype.go = function(n) {
-		histIndex += n;
-		if(histIndex < 0) {
-			go.call(window.history, histIndex);
-		} else if(histIndex > hist.length) {
-			go.call(window.history, hist.length - histIndex);
-		} else {
-			locationurl = hist[histIndex].url;
-			var evt = new Event('popstate');
-			evt.state = hist[histIndex].state;
-			window.dispatchEvent(evt);
+	window.addEventListener('popstate', function(evt) {
+		if(evt.state && evt.state._airborn) {
+			setState(evt.state.state, evt.state.href);
+			Object.defineProperty(evt, 'state', {value: evt.state.state, enumerable: true, configurable: true});
 		}
-	};
-	History.prototype.back = function() {
-		this.go(-1);
-	};
-	History.prototype.forward = function() {
-		this.go(1);
-	};
-	
-	window.addEventListener('hashchange', function() {
-		locationurl.hash = window.location.hash;
-		locationurl.href = locationurl.pathname + locationurl.search + locationurl.hash;
-	});
+	}, true);
 	
 	function WindowProxy(window) {
 		Object.defineProperty(this, 'airborn_top', {
