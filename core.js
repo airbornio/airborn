@@ -611,7 +611,7 @@ function maybeMerge(file, options, contents) {
 		}
 		if(haserrors) {
 			getFile(file.replace(/\.history\/$/, ''), {codec: 'raw'}, function(contents) {
-				putFile(file.replace(/\.history\/$/, ''), {codec: 'raw', parentNames: ends}, contents);
+				putFile(file.replace(/\.history\/$/, ''), {codec: 'raw', parentNames: ends, transactionId: options.transactionId}, contents);
 			});
 			// TODO: report error
 		} else {
@@ -638,7 +638,7 @@ function maybeMerge(file, options, contents) {
 					return [second];
 				});
 				
-				putFile(file.replace(/\.history\/$/, ''), {parentNames: ends}, merged, function() {
+				putFile(file.replace(/\.history\/$/, ''), {parentNames: ends, transactionId: options.transactionId}, merged, function() {
 					console.log('Merge put!');
 				});
 			});
@@ -697,7 +697,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			if(!dircontents.hasOwnProperty(basename) || !deepEquals(newattrs, dircontents[basename])) {
 				var newdircontents = extend({}, dircontents); // Don't modify getFileCache entry.
 				newdircontents[basename] = newattrs;
-				putFile(dirname, {codec: 'dir'}, newdircontents, {edited: upload_history ? now : undefined});
+				putFile(dirname, {codec: 'dir', transactionId: options.transactionId}, newdircontents, {edited: upload_history ? now : undefined});
 			}
 			filesToPut--;
 			if(transaction && !inTransaction && !filesToPut) window.endTransaction();
@@ -720,7 +720,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				filesToPut++;
 				getFile(file, {codec: 'raw', cache: false}, function(old, err) {
 					if(!err) {
-						putFile(file + '.history/v0' + file.match(/(\/|\.\w+)?$/)[0], {codec: 'raw'}, old, {created: undefined, edited: undefined});
+						putFile(file + '.history/v0' + file.match(/(\/|\.\w+)?$/)[0], {codec: 'raw', transactionId: options.transactionId}, old, {created: undefined, edited: undefined});
 					}
 					filesToPut--;
 					if(transaction && !inTransaction && !filesToPut) window.endTransaction();
@@ -745,7 +745,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					}
 				}
 			}
-			putFile(histname, {codec: options.codec}, contents, {edited: now, parentNames: parentNames}, function upload(err, transactionId, messageCount, blob, reencrypted) {
+			putFile(histname, {codec: options.codec, transactionId: options.transactionId}, contents, {edited: now, parentNames: parentNames}, function upload(err, transactionId, messageCount, blob, reencrypted) {
 				
 				if(err) {
 					cont(err);
@@ -1304,7 +1304,7 @@ window.installPackage = function(manifest_url, params, callback) {
 			var total = 0;
 			var target = '/Apps/' + basename(manifest.package_path).replace('-' + manifest.version, '').replace('.zip', '') + '/';
 			getFile(target, {codec: 'dir'}, function(contents) {
-				putFile(target, {codec: 'dir'}, contents || {}, {x: {marketplace: extend({}, params, {manifest_url: manifest_url})}});
+				putFile(target, {codec: 'dir', transactionId: 'packageinstall'}, contents || {}, {x: {marketplace: extend({}, params, {manifest_url: manifest_url})}});
 			});
 			keys.forEach(function(path) {
 				var file = zip.files[path];
@@ -1312,7 +1312,7 @@ window.installPackage = function(manifest_url, params, callback) {
 					total++;
 					putFile(
 						target + path,
-						{codec: 'arrayBuffer'},
+						{codec: 'arrayBuffer', transactionId: 'packageinstall'},
 						file.asArrayBuffer(),
 						{from: 'origin'}, // Don't merge to facilitate
 										  // "Reinstall" functionality.
@@ -1344,7 +1344,7 @@ window.update = function() {
 						keys.forEach(function(path) {
 							var file = zip.files[path];
 							if(!file.options.dir) {
-								putFile(target + path, {codec: 'arrayBuffer'}, file.asArrayBuffer(), {from: 'origin', parentFrom: 'origin'});
+								putFile(target + path, {codec: 'arrayBuffer', transactionId: 'airbornupdate'}, file.asArrayBuffer(), {from: 'origin', parentFrom: 'origin'});
 							}
 						});
 					}, 'arraybuffer');
