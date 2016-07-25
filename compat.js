@@ -605,7 +605,7 @@
 		var prefixLen = prefix.length;
 		var deviceStorage = this;
 		airborn.fs.listenForFileChanges(prefix, function(path, reason) {
-			if(path.substr(-1) !== '/') {
+			if(path.substr(-1) !== '/' && !/\.history\//.test(path)) {
 				var evt = new Event('change');
 				Object.defineProperty(evt, 'path', {value: toDeviceStoragePath(path)});
 				Object.defineProperty(evt, 'reason', {value: reason});

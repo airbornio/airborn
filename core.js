@@ -677,6 +677,9 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			options = {};
 		}
 	}
+	if(!callback) {
+		callback = function() {};
+	}
 	
 	var upload_history = account_info.tier >= 5;
 	var now = attrs.edited || transactionDate || new Date();
@@ -748,7 +751,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			putFile(histname, {codec: options.codec, transactionId: options.transactionId}, contents, {edited: now, parentNames: parentNames}, function upload(err, transactionId, messageCount, blob, reencrypted) {
 				
 				if(err) {
-					cont(err);
+					callback(err);
 					return;
 				}
 				
@@ -770,10 +773,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				req.addEventListener('readystatechange', function() {
 					if(this.readyState === 4) {
 						if(this.status === 200) {
-							cont();
+							callback();
+							notifyFileChange(file, is_new_file ? 'created' : 'modified');
 						} else {
 							console.log('error', this);
-							cont({status: this.status, statusText: this.statusText});
+							callback({status: this.status, statusText: this.statusText});
 						}
 					}
 				});
@@ -809,20 +813,15 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 						if(this.status === 200) {
 							if(upload_history) {
 								// We were uploading a *.history/* file
-								if(callback) callback(null, transactionId, messageCount, blob);
+								callback(null, transactionId, messageCount, blob);
 							} else {
 								// We were uploading a normal file
-								cont();
+								callback();
 							}
+							notifyFileChange(file, is_new_file ? 'created' : 'modified');
 						} else {
 							console.log('error', this);
-							if(upload_history) {
-								// We were uploading a *.history/* file
-								if(callback) callback({status: this.status, statusText: this.statusText});
-							} else {
-								// We were uploading a normal file
-								cont({status: this.status, statusText: this.statusText});
-							}
+							callback({status: this.status, statusText: this.statusText});
 						}
 					}
 				});
@@ -833,13 +832,6 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				});
 				req.send(blob);
 			});
-		}
-	}
-	
-	function cont(err) {
-		if(callback) callback(err);
-		if(!err) {
-			notifyFileChange(file, is_new_file ? 'created' : 'modified');
 		}
 	}
 };
