@@ -38,7 +38,7 @@ function endTransaction() {
 		if(/\.history\/.+/.test(_transaction[path][0])) {
 			transactions[transactionId]++;
 			var nonHistFileName = _transaction[path][0].split('.history/')[0];
-			if(!fileNamesSeen[nonHistFileName]) {
+			if(!fileNamesSeen[nonHistFileName] && _transaction[path][4].name === 'upload') {
 				fileNamesSeen[nonHistFileName] = true;
 				transactions[transactionId]++;
 			}
