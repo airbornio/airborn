@@ -484,8 +484,11 @@ function _getObjectLocation(file) {
 	var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
 	return sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
 }
+function _getUploadHistory(file) {
+	return account_info.tier >= 5 && startsWith('/Documents/', file);
+}
 window.getObjectLocation = function(file, fn) {
-	var upload_history = account_info.tier >= 5;
+	var upload_history = _getUploadHistory(file);
 	fn({
 		S3Prefix: S3Prefix,
 		object: _getObjectLocation(file),
@@ -681,7 +684,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		callback = function() {};
 	}
 	
-	var upload_history = account_info.tier >= 5;
+	var upload_history = _getUploadHistory(file);
 	var now = attrs.edited || transactionDate || new Date();
 	
 	var size, is_new_file;
