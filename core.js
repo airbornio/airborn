@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global _, jsyaml, esprima, estraverse, string, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
+/*global jsyaml, esprima, estraverse, string, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
 
 var core_version = 3;
 
@@ -509,7 +509,8 @@ window.getObjectLocation = function(file, fn) {
 
 function extend(target) {
 	[].slice.call(arguments, 1).forEach(function(obj) {
-		_.each(obj, function(value, key) {
+		Object.keys(obj).forEach(function(key) {
+			var value = obj[key];
 			if(value != null && value.constructor === Object) {
 				if(target.hasOwnProperty(key)) extend(target[key], value);
 				else target[key] = extend({}, value);
@@ -668,11 +669,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		options = {};
 		attrs = {};
 	} else if(typeof attrs === 'function' || attrs === undefined) {
-		if(_.isObject(options)) { // If contents is an object, you also need to pass options = {codec: 'dir'}.
+		if(options && typeof options === 'object') { // If contents is an object, you also need to pass options = {codec: 'dir'}.
 			progress = callback;
 			callback = attrs;
 			attrs = {};
-		} else if(_.isObject(contents)) { // 2nd argument is not an object, assume that's the contents.
+		} else if(contents && typeof contents === 'object') { // 2nd argument is not an object, assume that's the contents.
 			progress = callback;
 			callback = attrs;
 			attrs = contents;
@@ -1147,7 +1148,6 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 };
 
-getFile('/Core/lodash.min.js', eval);
 getFile('/Core/js-yaml.js', eval);
 getFile('/Core/3rdparty/jszip/jszip.min.js', eval);
 getFile('/Core/3rdparty/esprima.js', eval);

@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global _, $, barIconsWidth, apps, powerMenu, airborn, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
+/*global $, barIconsWidth, apps, powerMenu, airborn, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
@@ -713,7 +713,7 @@ openFile = function(path, action) {
 	airborn.fs.getFile(path); // Start downloading the file as soon as possible.
 	var options = arguments[arguments.length - 1];
 	var args;
-	if(_.isObject(options)) {
+	if(options && typeof options === 'object') {
 		args = [].slice.call(arguments, 0, -1);
 	} else {
 		args = [].slice.call(arguments);
