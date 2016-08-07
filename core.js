@@ -416,7 +416,7 @@ window.getFile = function(file, options, callback) {
 	}
 	req.addEventListener('readystatechange', cb);
 	if(!requestCache) {
-		req.open('GET', getObjectUrl(file, options));
+		req.open('GET', getObjectUrl('GET', file, options));
 		if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
 		req.send(null);
 	}
@@ -477,8 +477,13 @@ function notifyFileChange(path, reason) {
 	});
 }
 
-function getObjectUrl(file, options) {
-	return '/object/' + (options.object || _getObjectLocation(file)) + '#' + (options.S3Prefix && options.S3Prefix !== S3Prefix && !options.demo ? '1' : '0') + '.' + file;
+function getObjectUrl(method, file, options) {
+	return '/object/' + (options.object || _getObjectLocation(file)) +
+		// Chrome, when we prefetch a file and it returns a 404, caches
+		// that 404 even for subsequent PUT requests (crbug.com/635350).
+		// So we add a ? to the URL to make it actually request the PUT.
+		(method === 'PUT' ? '?' : '') +
+		'#' + (options.S3Prefix && options.S3Prefix !== S3Prefix && !options.demo ? '1' : '0') + '.' + file;
 }
 function _getObjectLocation(file) {
 	var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
@@ -769,7 +774,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				
 				// Copy history file to destination
 				var req = new XMLHttpRequest();
-				req.open('PUT', getObjectUrl(file, options));
+				req.open('PUT', getObjectUrl('PUT', file, options));
 				if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
 				if(options.ACL) { req.setRequestHeader('X-ACL', options.ACL); }
 				if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
@@ -805,7 +810,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, options.password != null ? {iter: options.iter, salt: options.salt} : {}, function(encrypted) {
 				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
 				var req = new XMLHttpRequest();
-				req.open('PUT', getObjectUrl(file, options));
+				req.open('PUT', getObjectUrl('PUT', file, options) + '?');
 				var transactionId = getTransactionId(options);
 				var messageCount = options.messageCount;
 				if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
