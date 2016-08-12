@@ -1653,6 +1653,40 @@
 	airborn.top_location = new URL(document.top_location);
 	delete document.top_location;
 	
+	window.MozActivity = function(options) {
+		var request = new DOMRequest();
+		if(options.name === 'pick') {
+			var input = document.createElement('input');
+			input.type = 'file';
+			input.accept = options.data.type;
+			input.style.display = 'none';
+			input.addEventListener('change', function() {
+				request.result = {
+					blob: input.files[0],
+				};
+				request.dispatchEvent(new Event('success'));
+			});
+			document.body.appendChild(input);
+			input.click();
+			document.body.removeChild(input);
+			// Neither Chrome nor Firefox seems to mind sending change
+			// events to a file input that is not in the document, and
+			// there is no cancel event, so we wanna clean up after
+			// ourselves. We should listen to focus events to detect
+			// cancel to send an error event to the MozActivity, but
+			// Firetext doesn't need it and it's a bit of a hassle
+			// (Chrome doesn't seem to fire a blur event) so we
+			// currently don't. An additional benefit of immediately
+			// removing the element might be that it reduces the
+			// potential disruption of adding an element into a web app
+			// that doesn't expect it.
+		} else {
+			request.error = new DOMError('NotSupportedError', 'That activity is not supported.');
+			request.dispatchEvent(new Event('error'));
+		}
+		return request;
+	};
+	
 	function MockWorker() {
 		EventTarget.call(this);
 	}
