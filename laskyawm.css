@@ -34,10 +34,12 @@ body:before {
 	height: 600px;
 	border-radius: 7px;
 	position: absolute !important;
-	top: 0;
-	left: 0;
-	box-shadow: 0px 0px 20px rgba(0, 0, 0, .3);
+	top: 25px;
+	left: 100px;
 	background-color: rgba(255, 255, 255, .2);
+	border: 1px solid transparent;
+	box-shadow: 0 0 20px rgba(0,0,0,0.2);
+	animation: 0.2s openWindow;
 }
 .window:before {
 	content: '';
@@ -48,6 +50,14 @@ body:before {
 	z-index: -1;
 	border-radius: 7px;
 }
+.window.transitioning {
+	transition: left 0.2s, right 0.2s, top 0.2s, bottom 0.2s, width 0.2s, height 0.2s;
+}
+.window.closing {
+	animation: 0.2s closeWindow forwards;
+}
+@keyframes openWindow { from { transform:scale(0.75); opacity: 0; } to { transform:scale(1); opacity: 1; }  }
+@keyframes closeWindow { from { transform:scale(1); opacity: 1; } to { transform:scale(0.75); opacity: 0; }  }
 .window .titlebar {
 	height: 25px;
 	border-top-left-radius: 7px;
@@ -110,8 +120,9 @@ body:before {
 .window .titlebar .tabbar:hover {
 	overflow-x: auto;
 }
-.window .titlebar .tabbar .tabtitlebar, .window .titlebar .addtab {
-	background-color: #DDD;
+.window .titlebar .tabbar .tabtitlebar {
+	color: #fff;
+	background: rgba(255,255,255,0.2);
 	display: inline-block;
 	height: 25px;
 	margin-left: 6px;
@@ -121,12 +132,27 @@ body:before {
 	overflow: hidden;
 	position: relative;
 	vertical-align: top;
+	font-weight: 100;
+}
+.window .titlebar .addtab {
+	color: #ffffff;
+	display: inline-block;
+	height: 25px;
+	margin-left: 8px;
+	line-height: 23px;
+	cursor: default;
+	overflow: hidden;
+	position: relative;
+	vertical-align: top;
+	font-weight: 100;
+	font-size: 20px;
 }
 .window .titlebar .tabbar .tabtitlebar:first-child {
 	margin-left: 0;
 }
 .window .titlebar .tabbar .tabtitlebar.focused {
 	background-color: white;
+	color: #000;
 }
 .window .titlebar .icon {
 	float: right;
@@ -178,7 +204,13 @@ body:before {
 	width: 50% !important;
 }
 .window.maximized:not(.minimized) {
+	border-radius: 0;
+	border-top: none;
+	border-bottom: none;
 	box-shadow: none;
+}
+.window.maximized::before {
+	border-radius: 0;
 }
 .window.minimized.minimized { /* same specificity as .maximized above */
 	top: -25px !important;
@@ -186,6 +218,9 @@ body:before {
 	max-height: 25px;
 	overflow: hidden;
 	background-color: white;
+}
+.window.maximized .titlebar {
+	border-radius: 0;
 }
 .window.minimized .titlebar .tabbar {
 	max-width: calc(100% - 112px);
