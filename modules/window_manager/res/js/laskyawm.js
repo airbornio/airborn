@@ -44,17 +44,17 @@ addCustomIframeFix('draggable');
 addCustomIframeFix('resizable');
 
 function clipResizableHandles(event, ui) {
-	var overflowx = ui.position.left + (ui.size ? ui.size.width : $(this).width()) - workspace_width();
-	var overflowy = ui.position.top + (ui.size ? ui.size.height : $(this).height()) - workspace_height();
-	$(this).find('.ui-resizable-ne, .ui-resizable-e, .ui-resizable-se').each(function() {
+	var overflowx = ui.position.left + (ui.size ? ui.size.width : parseInt(this[0].style.width) || 800) - workspace_width();
+	var overflowy = ui.position.top + (ui.size ? ui.size.height : parseInt(this[0].style.height) || 600) - workspace_height();
+	this.find('.ui-resizable-ne, .ui-resizable-e, .ui-resizable-se').each(function() {
 		if(overflowx > 0) $(this).css('right', overflowx);
 		else $(this).css('right', '');
 	});
-	$(this).find('.ui-resizable-sw, .ui-resizable-s, .ui-resizable-se').each(function() {
+	this.find('.ui-resizable-sw, .ui-resizable-s, .ui-resizable-se').each(function() {
 		if(overflowy > 0) $(this).css('bottom', overflowy);
 		else $(this).css('bottom', '');
 	});
-	$(this).find('.ui-resizable-nw, .ui-resizable-w, .ui-resizable-sw').each(function() {
+	this.find('.ui-resizable-nw, .ui-resizable-w, .ui-resizable-sw').each(function() {
 		if(ui.position.left < 0) $(this).css('left', -ui.position.left);
 		else $(this).css('left', '');
 	});
@@ -117,7 +117,7 @@ $.ui.plugin.add('draggable', 'minimize', {
 			this.removeClass('maximized-' + $(this).attr('data-pos'));
 			$(this).attr('data-pos', $('.hud').attr('data-pos'));
 			this.addClass('maximized maximized-' + $('.hud').attr('data-pos'));
-			clipResizableHandles.call(this, null, {position: $(this).position()});
+			clipResizableHandles.call($(this), null, {position: $(this).position()});
 		}
 		removeHUD();
 		forceMinimize();
@@ -393,22 +393,25 @@ openWindow = function(path, options, callback) {
 						$(div).removeClass('maximized-' + $(div).attr('data-pos'))
 							.attr('data-pos', 'max')
 							.addClass('maximized maximized-max');
-					clipResizableHandles.call(div, null, {position: $(div).position()});
+					clipResizableHandles.call($(div), null, {position: $(div).position()});
 					forceMinimize();
 				};
 				if(!options.targetDiv) {
 					var closeBtn = document.createElement('button');
 					closeBtn.className = 'close';
 					closeBtn.addEventListener('click', function() {
-						iframe.src = 'about:blank';
-						iframe.onload = function() {
-							setTimeout(function() { // Fix infinite spinning indicator in Firefox.
-								windowsContainer.removeChild(div);
-								childDivs.splice(childDivs.indexOf(div), 1);
-								childWindows.splice(childWindows.indexOf(iframeWin), 1);
-								forceMinimize();
-							});
-						};
+						div.classList.add('closing');
+						div.addEventListener('animationend', function() {
+							iframe.src = 'about:blank';
+							iframe.onload = function() {
+								setTimeout(function() { // Fix infinite spinning indicator in Firefox.
+									windowsContainer.removeChild(div);
+									childDivs.splice(childDivs.indexOf(div), 1);
+									childWindows.splice(childWindows.indexOf(iframeWin), 1);
+									forceMinimize();
+								});
+							};
+						});
 					});
 					closeBtn.addEventListener('mousedown', function(evt) {
 						evt.stopPropagation();
@@ -515,6 +518,11 @@ openWindow = function(path, options, callback) {
 					
 					$(div).resizable({customIframeFix: true, containment: '#windows', customContainment: true, forceMinimize: true, handles: 'all', unmaximize: true, clipResizableHandles: true});
 					
+					div.classList.add('opening');
+					div.addEventListener('animationend', function() {
+						div.classList.remove('opening');
+					});
+					
 					console.log(div);
 					windowsContainer.appendChild(div);
 					childDivs.push(div);
@@ -535,7 +543,7 @@ openWindow = function(path, options, callback) {
 						airborn_localStorage.lastApp = path;
 					}
 					
-					clipResizableHandles.call(div, null, {position: $(div).position()});
+					clipResizableHandles.call($(div), null, {position: $(div).position()});
 					
 					iframeWin = iframe.contentWindow;
 					childWindows.push(iframeWin);
@@ -608,12 +616,10 @@ function forceMinimize() {
 				};
 		}
 		
-		var $win = $(win);
-		var minimized = win.classList.contains('minimized');
-		var left = parseFloat(win.realLeft !== undefined ? win.realLeft : minimized ? win.style.left : $win.css('left')) || 0;
-		var top = parseFloat(minimized ? win.style.top : $win.css('top')) || 0;
-		var width = parseFloat(minimized ? win.style.width : $win.css('width')) || 800;
-		var height = parseFloat(minimized ? win.style.height : $win.css('height')) || 600;
+		var left = parseFloat(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
+		var top = parseFloat(win.style.top) || 0;
+		var width = parseFloat(win.style.width) || 800;
+		var height = parseFloat(win.style.height) || 600;
 		return {
 			x1: windows.length < 20 ? Math.max(0, Math.min(workspace_width(), left)) : left,
 			y1: windows.length < 20 ? Math.max(0, Math.min(workspace_height(), top)) : top,
@@ -706,7 +712,7 @@ function updateZIndex(hovered) {
 
 function positionMinimized() {
 	var full = {};
-	var minMinimizedLeft = deviceType === 'mobile' ? 100 : 50;
+	var minMinimizedLeft = 100;
 	[].slice.call(childDivs).reverse().forEach(function(win) {
 		var moved;
 		if(win.classList.contains('minimized')) {
@@ -769,7 +775,7 @@ function focusTab(tab) {
 
 window.addEventListener('resize', function() {
 	forceMinimize();
-	$('.window').each(function(i, win) { clipResizableHandles.call(win, null, {position: $(win).position()}); });
+	$('.window').each(function(i, win) { clipResizableHandles.call($(win), null, {position: $(win).position()}); });
 }, false);
 
 window.addEventListener('scroll', function() {
