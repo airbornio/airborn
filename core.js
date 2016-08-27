@@ -84,52 +84,52 @@ sjcl.codec.arrayBuffer = {
 	fromBits: function (arr, padding, padding_count) {
 		var out, i, ol, tmp, smallest;
 		padding_count = padding_count || 8
-		
+
 		ol = sjcl.bitArray.bitLength(arr)/8
-		
+
 		//check to make sure the bitLength is divisible by 8, if it isn't
 		//we can't do anything since arraybuffers work with bytes, not bits
 		if ( sjcl.bitArray.bitLength(arr)%8 !== 0 ) {
 			throw new sjcl.exception.invalid("Invalid bit size, must be divisble by 8 to fit in an arraybuffer correctly")
 		}
-		
+
 		if (padding && ol%padding_count !== 0){
 			ol += padding_count - (ol%padding_count)
 		}
-		
-		
+
+
 		//padded temp for easy copying
 		tmp = new DataView(new ArrayBuffer(arr.length*4))
 		for (i=0; i<arr.length; i++) {
 			tmp.setUint32(i*4, (arr[i]<<32)) //get rid of the higher bits
 		}
-		
+
 		//now copy the final message if we are not going to 0 pad
 		out = new DataView(new ArrayBuffer(ol))
-		
+
 		//save a step when the tmp and out bytelength are ===
 		if (out.byteLength === tmp.byteLength){
 			return tmp.buffer
 		}
-		
+
 		smallest = tmp.byteLength < out.byteLength ? tmp.byteLength : out.byteLength
 		for(i=0; i<smallest; i++){
 			out.setUint8(i,tmp.getUint8(i))
 		}
-		
-		
+
+
 		return out.buffer
 	},
-	
+
 	toBits: function (buffer) {
 		var i, out=[], len, inView, tmp;
 		inView = new DataView(buffer);
 		len = inView.byteLength - inView.byteLength%4;
-		
+
 		for (var i = 0; i < len; i+=4) {
 			out.push(inView.getUint32(i));
 		}
-		
+
 		if (inView.byteLength%4 != 0) {
 			tmp = new DataView(new ArrayBuffer(4));
 			for (var i = 0, l = inView.byteLength%4; i < l; i++) {
@@ -142,9 +142,9 @@ sjcl.codec.arrayBuffer = {
 		}
 		return out;
 	},
-	
-	
-	
+
+
+
 	/** Prints a hex output of the buffer contents, akin to hexdump **/
 	hexDumpBuffer: function(buffer){
 		var stringBufferView = new DataView(buffer)
@@ -153,12 +153,12 @@ sjcl.codec.arrayBuffer = {
 			n = n + '';
 			return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
 		}
-		
+
 		for (var i = 0; i < stringBufferView.byteLength; i+=2) {
 			if (i%16 == 0) string += ('\n'+(i).toString(16)+'\t')
 			string += ( pad(stringBufferView.getUint16(i).toString(16),4) + ' ')
 		}
-		
+
 		if ( typeof console === undefined ){
 			console = console || {log:function(){}} //fix for IE
 		}
@@ -374,7 +374,7 @@ window.getFile = function(file, options, callback) {
 	if(callback === undefined) {
 		callback = function() {};
 	}
-	
+
 	if(handleFromCache()) return;
 	function handleFromCache() {
 		if(options.cache === false) return;
@@ -396,7 +396,7 @@ window.getFile = function(file, options, callback) {
 			return true;
 		}
 	}
-	
+
 	var requestCache = window.getRequestCache[file];
 	var req;
 	if(requestCache) {
@@ -411,7 +411,7 @@ window.getFile = function(file, options, callback) {
 		req.open('GET', '/object/' + sjcl.codec.hex.fromBits(files_hmac.mac(file)) + '#' + (options.codec || '') + '.' + file);
 		req.send(null);
 	}
-	
+
 	function cb() {
 		if(req.readyState === 4) {
 			window.getRequestCache[file] = null;
@@ -495,12 +495,12 @@ function extend(target) {
 /* jshint ignore:start *//* jscs: disable */
 function deepEquals(a, b) {
 	if (b == a) return true;
-	
+
 	var p;
 	for (p in a) {
 		if (typeof (b[p]) == 'undefined') { return false; }
 	}
-	
+
 	for (p in a) {
 		if (a[p]) {
 			switch (typeof (a[p])) {
@@ -514,11 +514,11 @@ function deepEquals(a, b) {
 				return false;
 		}
 	}
-	
+
 	for (p in b) {
 		if (typeof (a[p]) == 'undefined') { return false; }
 	}
-	
+
 	return true;
 }
 /* jshint ignore:end *//* jscs: enable */
@@ -529,7 +529,7 @@ function maybeMerge(file, options, contents) {
 		// TODO: report error
 		return;
 	}
-	
+
 	function seq(name) { return parseInt(name.substr(1), 10); }
 	function from(name) { return name.match(/^v\d+(?:-(.+))?(?:\/|\.\w+)?$/)[1] || ''; }
 	var ends = {};
@@ -606,12 +606,12 @@ function maybeMerge(file, options, contents) {
 					// TODO: report error
 					return;
 				}
-				
+
 				var merged = string.merge3(parent, first, second, function(first, second) {
 					// TODO: report error
 					return [second];
 				});
-				
+
 				putFile(file.replace(/\.history\/$/, ''), {parentNames: ends}, merged, function() {
 					console.log('Merge put!');
 				});
@@ -631,7 +631,7 @@ var debounceObj = {};
 window.putFile = function(file, options, contents, attrs, callback, progress) {
 	if(!options.finishingTransaction) window.startTransaction();
 	debounce(window.endTransaction, 100, debounceObj);
-	
+
 	if(typeof contents === 'function' || contents === undefined) {
 		progress = attrs;
 		callback = contents;
@@ -651,10 +651,10 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			options = {};
 		}
 	}
-	
+
 	var upload_history = account_info.tier >= 5;
 	var now = attrs.edited || transactionDate || new Date();
-	
+
 	var size, is_new_file;
 	if(!options.finishingTransaction && file !== '/') {
 		// Add file to parent directories
@@ -664,7 +664,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		filesToPut++;
 		getFile(dirname, {codec: 'dir'}, function(dircontents) {
 			if(!dircontents) dircontents = {};
-			
+
 			size = basename.substr(-1) === '/' ? undefined : codec[options.codec || 'utf8String'].toAB(contents).byteLength;
 			is_new_file = !dircontents.hasOwnProperty(basename);
 			var newattrs = extend({}, is_new_file ? {created: now} : dircontents[basename], {edited: upload_history ? now : undefined, size: upload_history ? size : undefined}, attrs);
@@ -677,11 +677,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			if(transaction && !inTransaction && !filesToPut) window.endTransaction();
 		});
 	}
-	
+
 	if(!/\/\.history\//.test(file)) {
 		window.getFileCache[file] = {codec: options.codec, contents: contents, ts: Date.now()};
 	}
-	
+
 	if(!/\.history\//.test(file) && upload_history) {
 		// Add to file history
 		filesToPut++;
@@ -697,7 +697,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					if(transaction && !inTransaction && !filesToPut) window.endTransaction();
 				});
 			}
-			
+
 			var histname =
 				file + '.history/v' +
 				(history ? Math.max.apply(Math, Object.keys(history).map(function(name) { return parseInt(name.substr(1), 10); })) + 1 : 1) +
@@ -717,12 +717,12 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				}
 			}
 			putFile(histname, {codec: options.codec}, contents, {edited: now, parentNames: parentNames}, function(err, histid, transactionId, blob) {
-				
+
 				if(err) {
 					cont(err);
 					return;
 				}
-				
+
 				// Copy history file to destination
 				var is_bootstrap_file = startsWith('/key', file) || startsWith('/hmac', file);
 				var id = sjcl.codec.hex.fromBits((is_bootstrap_file ? private_hmac : files_hmac).mac(file));
@@ -740,7 +740,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					}
 				});
 				req.send(blob);
-				
+
 			}, progress);
 			filesToPut--;
 			if(transaction && !inTransaction && !filesToPut) window.endTransaction();
@@ -748,7 +748,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 	} else {
 		if(transaction) {
 			transaction[file] = [file, options, contents, attrs, callback, progress];
-			
+
 			if(/\.history\/$/.test(file)) {
 				maybeMerge(file, options, extend({}, contents));
 			}
@@ -795,7 +795,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			});
 		}
 	}
-	
+
 	function cont(err) {
 		if(callback) callback(err);
 		if(!err) {
@@ -873,7 +873,33 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'</head>',
 			'<body>',
 			'<script>',
-			'if(window.parent === window.top || window.matchMedia("only screen and (max-device-width: 640px)").matches) document.write("Loading…");',
+			'if(window.parent === window.top || window.matchMedia("only screen and (max-device-width: 640px)").matches) document.write([',
+			'	\'<div class="loading-airborn"><div class="airborn-logo"></div>Loading Airborn OS</div>\',',
+			'	\'<style>\',',
+			'	\'.loading-airborn {\',',
+			'	\'	position: fixed;\',',
+			'	\'	top: 0;\',',
+			'	\'	bottom: 0;\',',
+			'	\'	left: 0;\',',
+			'	\'	right: 0;\',',
+			'	\'	background: url(http://dev.airborn.io/images/background.png);\',',
+			'	\'	text-align: center;\',',
+			'	\'	color: #fff;\',',
+			'	\'	font-size: 40px;\',',
+			'	\'	font-weight: 100;\',',
+			'	\'	padding: 60px;\',',
+			'	\'}\',',
+			'	\'.loading-airborn .airborn-logo {\',',
+			'	\'	background: url(http://dev.airborn.io/images/logo.png);\',',
+			'	\'	width: 248px;\',',
+			'	\'	height: 43px;\',',
+			'	\'	display: inline-block;\',',
+			'	\'	position: absolute;\',',
+			'	\'	bottom: 60px;\',',
+			'	\'	left: 60px;\',',
+			'	\'}\',',
+			'	\'</style>\',',
+			'].join("\\n"));',
 			'document.rootParent = ' + JSON.stringify(options.rootParent) + ';',
 			'document.relativeParent = ' + JSON.stringify(file) + ';',
 			'document.filenames = {};',
@@ -894,7 +920,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'	if(message.data.progress) {',
 			'		if(window.parent !== window.top) window.parent.postMessage({action: "wm.setProgress", args: [message.data.result[0] / message.data.result[1]]}, "*");',
 			'	} else {',
-			'		document.open();',
+			'		return;document.open();',
 			'		document.write(message.data.result[0]);',
 			'		document.close();',
 			'		if(navigator.userAgent.indexOf("Firefox") !== -1) history.replaceState({}, "", ""); // Make refresh iframe work in Firefox',
@@ -995,7 +1021,7 @@ window.prepareString = function(contents, options, callback, progress, createObj
 				if(!rSchema.test(match[3])) {
 					matches.push(match);
 				}
-				
+
 				j += match.index;
 				match.pos = i + j;
 				j++;
@@ -1008,13 +1034,13 @@ window.prepareString = function(contents, options, callback, progress, createObj
 			if(!rSchema.test(match[3])) {
 				matches.push(match);
 			}
-			
+
 			i += match.index;
 			match.pos = i;
 			i++;
 		}
 	}
-	
+
 	if(matches.length) {
 		matches.forEach(function(match) { // We don't process matches immediately for when getFile calls callback immediately.
 			prepareUrl(match[3], options, function(data, err) {
@@ -1043,7 +1069,7 @@ window.prepareString = function(contents, options, callback, progress, createObj
 		var total = matches.length;
 		matches.forEach(function(match) {
 			if('progressDone' in match) {
-				done += match.progressDone; 
+				done += match.progressDone;
 				total += match.progressTotal;
 			}
 		});
@@ -1074,7 +1100,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	});
 	if(isHTML(extension) || extension === 'css' || extension === 'js' || extension === 'svg') prepareFile(path, _options, cb, progress, createObjectURL);
 	else getFile(path, {codec: 'arrayBuffer'}, cb);
-	
+
 	function cb(c, err) {
 		var data;
 		if(!err) {
@@ -1116,7 +1142,7 @@ window.openWindow = function(path, callback) {
 		div.addEventListener('scroll', function() {
 			div.scrollTo(0, 0);
 		});
-		var iframe = document.createElement('iframe'); 
+		var iframe = document.createElement('iframe');
 		iframe.sandbox = 'allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
 		iframe.setAttribute('allowfullscreen', 'true');
 		iframe.src = url;
@@ -1204,12 +1230,12 @@ window.pushRegister = function(callback) {
 	pushUrl.then(function(url) {
 		var registrationId = Math.round(Math.random() * Date.now()).toString(16);
 		var endpoint = url + '?registrationId=' + registrationId;
-		
+
 		if(!pushHandlers[registrationId]) {
 			pushHandlers[registrationId] = [];
 		}
 		pushHandlers[registrationId].push(callback);
-		
+
 		callback({
 			event: 'registered',
 			result: endpoint
@@ -1408,7 +1434,7 @@ function renameGlobalVariables(file, source, variables) {
 		source = source.substr(0, replaces[i].range[0]) + variables[replaces[i].name] + source.substr(replaces[i].range[1]);
 	}
 	return source;
-	
+
 	function enter(node) {
 		if(createsNewScope(node)) {
 			if(node.type === 'FunctionDeclaration') {

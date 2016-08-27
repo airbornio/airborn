@@ -1,0 +1,23 @@
+.loading-airborn {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: url(/images/background.png);
+  text-align: center;
+  color: #fff;
+  font-size: 40px;
+  font-weight: 100;
+  padding: 60px;
+}
+
+.loading-airborn .airborn-logo {
+  background: url(/images/logo.png);
+  width: 248px;
+  height: 43px;
+  display: inline-block;
+  position: absolute;
+  bottom: 60px;
+  left: 60px;
+}
