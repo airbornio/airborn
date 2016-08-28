@@ -44,7 +44,7 @@ window.addEventListener('message', function(message) {
 				message.source.postMessage({action: 'createObjectURL', args: [data], messageID: ++messageID}, '*');
 				messageCallbacks[messageID] = callback;
 			}));
-		} else {
+		} else if(message.data.action.substr(0, 3) !== 'wm.') {
 			throw new TypeError('Unknown action: ' + message.data.action);
 		}
 	} else {

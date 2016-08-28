@@ -8,14 +8,27 @@ GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/core.js')), functi
 	getFile('/Core/startup.js', function(contents) {
 		window.eval(contents);
 	});
+	
+	getFile('/Core/loader.js', function(contents) {
+		window.eval(contents);
+		
+		document.getElementById('container').style.display = 'none';
+		var iframe = document.getElementsByTagName('iframe')[0];
+		if(iframe && iframe.getAttribute('src') === 'content') iframe.style.display = 'none';
+	});
 });
 
-document.getElementById('container').style.display = 'none';
-var iframe = document.getElementsByTagName('iframe')[0];
-if(iframe) iframe.style.display = 'none';
+var loginButton = document.getElementById('login');
+if(loginButton) {
+	loginButton.disabled = true;
+	if(window.lang && window.lang.loggingIn) {
+		loginButton.value = window.lang.loggingIn;
+	}
+}
 
 [
 	'/Core/startup.js',
+	'/Core/loader.js',
 	'/settings',
 	'/Core/compat.js',
 	'/Apps/firetext/index.html',
