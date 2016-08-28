@@ -5,6 +5,10 @@
 GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/core.js')), function(response) {
 	window.eval(sjcl.decrypt(files_key, response));
 	
+	getFile('/Core/loader.js', function(contents) {
+		window.eval(contents);
+	});
+	
 	getFile('/Core/startup.js', function(contents) {
 		window.eval(contents);
 	});
