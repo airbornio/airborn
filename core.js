@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global jsyaml, esprima, estraverse, string, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, resolve: true, basename: true, deepEquals: true */
+/*global jsyaml, esprima, estraverse, string, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, deepEquals: true */
 
 var core_version = 3;
 
@@ -11,7 +11,7 @@ var transaction = null;
 var transactionDate;
 var transactionIdPrefix;
 var filesToPut;
-function startTransaction() {
+window.startTransaction = function() {
 	inTransaction = true;
 	if(!transaction) {
 		transaction = {};
@@ -19,9 +19,8 @@ function startTransaction() {
 		transactionIdPrefix = Math.round(Math.random() * Date.now()).toString(16);
 		filesToPut = 0;
 	}
-}
-window.startTransaction = startTransaction;
-function endTransaction() {
+};
+window.endTransaction = function() {
 	console.trace(inTransaction, filesToPut, transaction);
 	if(!transaction) return;
 	inTransaction = false;
@@ -65,8 +64,7 @@ function endTransaction() {
 		}
 		putFile.apply(window, _transaction[path]);
 	});
-}
-window.endTransaction = endTransaction;
+};
 function getTransactionId(options) {
 	return transactionIdPrefix + ':' + (options.transactionId || '');
 }
@@ -664,8 +662,8 @@ function debounce(fn, time, obj) {
 }
 var debounceObj = {};
 window.putFile = function(file, options, contents, attrs, callback, progress) {
-	if(!options.finishingTransaction) window.startTransaction();
-	debounce(window.endTransaction, 100, debounceObj);
+	if(!options.finishingTransaction) startTransaction();
+	debounce(endTransaction, 100, debounceObj);
 	
 	if(typeof contents === 'function' || contents === undefined) {
 		progress = attrs;
@@ -1314,8 +1312,7 @@ window.installPackage = function(manifest_url, params, callback) {
 						target + path,
 						{codec: 'arrayBuffer', transactionId: 'packageinstall'},
 						file.asArrayBuffer(),
-						{from: 'origin'}, // Don't merge to facilitate
-										  // "Reinstall" functionality.
+						{from: 'origin'}, // Don't merge to facilitate "Reinstall" functionality.
 						function() {
 							uploaded++;
 							if(uploaded === total) {
