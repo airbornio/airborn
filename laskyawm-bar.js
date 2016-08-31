@@ -10,7 +10,7 @@
 	var barElement = document.createElement('div');
 	barElement.id = 'bar';
 	document.body.appendChild(barElement);
-
+	
 	// Add icon panel
 	var barIcons = window.barIcons = document.createElement('div');
 	barIcons.id = 'barIcons';

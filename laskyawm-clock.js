@@ -15,7 +15,7 @@
 	
 	// Add to bar
 	window.bar.addItem(clock);
-
+	
 	// Prevent freeze
 	var updateTimeout;
 	
@@ -26,7 +26,7 @@
 		// Get time
 		var currentTime = new Date();
 		clock.textContent = currentTime.toLocaleTimeString(navigator.languages || navigator.language, {hour: 'numeric', minute: 'numeric'}).replace(/(:..):../, '$1');
-
+		
 		// Keep up-to-date
 		updateTimeout = setTimeout(updateTime, 60000 - (currentTime.getSeconds() * 1000) - currentTime.getMilliseconds());
 	}

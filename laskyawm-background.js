@@ -81,7 +81,7 @@ function updateBackground(timer) {
 	
 	var context = canvas.getContext('2d');
 	context.rect(0, 0, size, size);
-
+	
 	var gradient = context.createLinearGradient(0, 0, 0, size);
 	secondPalette.forEach(function(color, i) {
 		gradient.addColorStop(i / secondPalette.length, color);

@@ -322,7 +322,7 @@ openWindow = function(path, options, callback) {
 				var titlebarDiv = document.createElement('div');
 				titlebarDiv.className = 'titlebar';
 				div.appendChild(titlebarDiv);
-						
+				
 				tabs = document.createElement('div');
 				tabs.className = 'tabs';
 				div.appendChild(tabs);

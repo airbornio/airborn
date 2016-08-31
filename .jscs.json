@@ -24,7 +24,10 @@
 		"mark": "'",
 		"escape": true
 	},
-	"validateIndentation": "\t",
+	"validateIndentation": {
+		"value": "\t",
+		"allExcept": []
+	},
 	"disallowKeywordsOnNewLine": ["finally", "catch"],
 	"disallowYodaConditions": true,
 	"disallowNewlineBeforeBlockStatements": true
