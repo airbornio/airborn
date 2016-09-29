@@ -577,24 +577,9 @@ function forceMinimize() {
 		};
 	}).reverse();
 	
-	for(var i = 0, len = windows.length; i < len; i++) {
+	for(var i = windows.length; --i >= 0;) {
 		var win = windows[i];
-		for(var amount = 0, sign = 1, area = 0; amount <= i; amount++, sign *= -1) {
-			for(var b = 0; b < Math.pow(2, i); b++) {
-				if(b.toString(2).replace(/0/g, '').length === amount) {
-					var x1 = win.x1, y1 = win.y1, x2 = win.x2, y2 = win.y2;
-					for(var j = 0; j < len; j++) {
-						if(Math.pow(2, j) & b) {
-							if(windows[j].x1 > x1) x1 = windows[j].x1;
-							if(windows[j].y1 > y1) y1 = windows[j].y1;
-							if(windows[j].x2 < x2) x2 = windows[j].x2;
-							if(windows[j].y2 < y2) y2 = windows[j].y2;
-						}
-					}
-					area += sign * O(x1, y1, x2, y2);
-				}
-			}
-		}
+		var area = add(1, i, win.x1, win.y1, win.x2, win.y2, windows);
 		if(area === 0) {
 			win.div.classList.add('force-minimized');
 			win.div.classList.add('minimized');
@@ -605,6 +590,23 @@ function forceMinimize() {
 	}
 	
 	positionMinimized();
+}
+
+function add(sign, i, _x1, _y1, _x2, _y2, windows) {
+	var area = sign * O(_x1, _y1, _x2, _y2);
+	
+	for(var j = i; --j >= 0;) {
+		var x1 = _x1, y1 = _y1, x2 = _x2, y2 = _y2;
+		
+		if(windows[j].x1 > x1) x1 = windows[j].x1;
+		if(windows[j].y1 > y1) y1 = windows[j].y1;
+		if(windows[j].x2 < x2) x2 = windows[j].x2;
+		if(windows[j].y2 < y2) y2 = windows[j].y2;
+		
+		area += add(-sign, j, x1, y1, x2, y2, windows);
+	}
+	
+	return area;
 }
 
 function O(x1, y1, x2, y2) {
