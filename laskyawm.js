@@ -534,7 +534,7 @@ openWindow('/Apps/firetext/', {}, function(win, tab, div) {
 function forceMinimize() {
 	var windows = childDivs.filter(function(win) {
 		return !win.classList.contains('minimized') || win.classList.contains('force-minimized');
-	}).map(function(win) {
+	}).map(function(win, i, windows) {
 		if(win.classList.contains('maximized') || deviceType === 'mobile') {
 			if(win.classList.contains('maximized-max') || deviceType === 'mobile')
 				return {
@@ -569,27 +569,53 @@ function forceMinimize() {
 		var width = parseFloat(minimized ? win.style.width : $win.css('width')) || 800;
 		var height = parseFloat(minimized ? win.style.height : $win.css('height')) || 600;
 		return {
-			x1: Math.max(workspace_start_left, Math.min(window.innerWidth, left)),
-			y1: Math.max(workspace_start_top, Math.min(window.innerHeight, top)),
-			x2: Math.max(workspace_start_left, Math.min(window.innerWidth, left + width)),
-			y2: Math.max(workspace_start_top, Math.min(window.innerHeight, top + height)),
+			x1: windows.length < 20 ? Math.max(workspace_start_left, Math.min(window.innerWidth, left)) : left,
+			y1: windows.length < 20 ? Math.max(workspace_start_top, Math.min(window.innerHeight, top)) : top,
+			x2: windows.length < 20 ? Math.max(workspace_start_left, Math.min(window.innerWidth, left + width)) : left + width,
+			y2: windows.length < 20 ? Math.max(workspace_start_top, Math.min(window.innerHeight, top + height)) : top + height,
 			div: win
 		};
 	}).reverse();
 	
-	for(var i = windows.length; --i >= 0;) {
-		var win = windows[i];
-		var area = add(1, i, win.x1, win.y1, win.x2, win.y2, windows);
-		if(area === 0) {
-			win.div.classList.add('force-minimized');
-			win.div.classList.add('minimized');
-		} else if(win.div.classList.contains('force-minimized')) {
-			win.div.classList.remove('force-minimized');
-			win.div.classList.remove('minimized');
+	var i, win;
+	if(windows.length < 20) {
+		// Calculate visible area of windows.
+		for(i = windows.length; --i >= 0;) {
+			win = windows[i];
+			forceMinimizeWin(win.div, add(1, i, win.x1, win.y1, win.x2, win.y2, windows) === 0);
+		}
+	} else {
+		// Ray cast screen for visible windows. We cast rays in a 10x10
+		// grid instead of every pixel to trade some accuracy for a lot
+		// of performance.
+		for(var x = workspace_start_left; x < window.innerWidth; x += 10) {
+			for(var y = workspace_start_top; y < window.innerHeight; y += 10) {
+				for(i = 0; i < windows.length; i++) {
+					win = windows[i];
+					if(x >= win.x1 && x <= win.x2 && y >= win.y1 && y <= win.y2) {
+						win.visible = true;
+						break;
+					}
+				}
+			}
+		}
+		for(i = 0; i < windows.length; i++) {
+			win = windows[i];
+			forceMinimizeWin(win.div, !win.visible);
 		}
 	}
 	
 	positionMinimized();
+}
+
+function forceMinimizeWin(div, minimize) {
+	if(minimize) {
+		div.classList.add('force-minimized');
+		div.classList.add('minimized');
+	} else if(div.classList.contains('force-minimized')) {
+		div.classList.remove('force-minimized');
+		div.classList.remove('minimized');
+	}
 }
 
 function add(sign, i, _x1, _y1, _x2, _y2, windows) {
