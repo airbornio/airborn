@@ -133,7 +133,7 @@
 			callback.apply(this, getFileCache[file][JSON_options]);
 			return;
 		}
-		var mainDirectory = file.substr(0, rootParent.replace(/[^/]*$/, '').length) === rootParent.replace(/[^/]*$/, '') ? rootParent.replace(/[^/]*$/, '') : (file.match(/\/[^\/]*\//) || ['/'])[0];
+		var mainDirectory = file.substr(0, rootParent.length) === rootParent ? rootParent : (file.match(/\/[^\/]*\//) || ['/'])[0];
 		if(!listeningForDirectory[mainDirectory]) {
 			listeningForDirectory[mainDirectory] = true;
 			airborn.fs.listenForFileChanges(mainDirectory, function(path) {
@@ -255,7 +255,7 @@
 	var relativeParent = document.relativeParent;
 	delete document.relativeParent;
 	Object.defineProperty(document, 'baseURI', {get: function() { return relativeParent.replace(/\/Apps\/[^\/]+/, ''); }});
-	var appData = (rootParent.match(/\/Apps\/.+?\//) || [rootParent])[0].replace('Apps', 'AppData');
+	var appData = rootParent.replace('Apps', 'AppData');
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;
@@ -286,7 +286,7 @@
 				var req = this;
 				url = url.replace(/^file:(?:\/\/)?/, '');
 				url = url.replace(rArgs, '');
-				url = rootParent.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
+				url = rootParent + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				if(url.substr(-1) === '/') url += 'index.html';
 				airborn.fs.getFile(url, {codec: codec}, function(contents, err) {
 					defineWithPrefixed(req, 'readyState', 'airborn_readyState', {get: function() { return 4; }});
@@ -315,7 +315,7 @@
 				var req = this;
 				url = url.replace(/^file:(?:\/\/)?/, '');
 				url = url.replace(rArgs, '');
-				url = rootParent.replace(/[^/]*$/, '') + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
+				url = rootParent + airborn.path.resolve('/', url).substr(1).replace(/^(\.\.\/)+/, '');
 				if(url.substr(-1) === '/') url += 'index.html';
 				airborn.fs.getFile(airborn.path.dirname(url), {codec: 'dir'}, function(contents, err) {
 					var getResponseHeader = req.getResponseHeader;
@@ -406,6 +406,7 @@
 			return [].join.call(arguments, '');
 		},
 		resolve: function(from, to) {
+			if(to === '') return from;
 			if(to[0] === '/') return airborn.path.resolve('/', to.substr(1));
 			var resolved = from.replace(/[^/]*$/, '') + to;
 			var rParentOrCurrent = /([^./]+\/\.\.\/|\/\.(?=\/))/g;

@@ -265,7 +265,7 @@ openWindow = function(path, options, callback) {
 		
 		var launch_path = manifest.launch_path ? manifest.launch_path.replace(/^\//, '') : path.match(/[^/]+(?=\/$)/)[0] + '.html';
 		var _path = path + launch_path;
-		var appData = _path.match('/Apps/.+?/')[0].replace('Apps', 'AppData');
+		var appData = path.replace('Apps', 'AppData');
 		
 		var csp = manifest.csp || "default-src *; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'";
 		if(csp.indexOf('-src ') !== -1) csp = csp.replace(/-src /g, '-src data: ');
@@ -293,7 +293,7 @@ openWindow = function(path, options, callback) {
 			urlArgs: (_path.match('/Apps/(.+?)/') || [])[1],
 			getObjectLocations: (manifest.permissions || {})['get-object-locations'],
 		};
-		airborn.fs.prepareUrl('/', {rootParent: _path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
+		airborn.fs.prepareUrl('/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
 			var div = options.targetDiv || document.createElement('div');
 			var iframeWin;
 			
