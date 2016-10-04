@@ -41,7 +41,7 @@ window.addEventListener('message', function(message) {
 			}, function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
 			}, function(data, callback) {
-				message.source.postMessage({action: 'createObjectURL', args: [data], messageID: ++messageID}, '*');
+				message.source.postMessage({inReplyTo: message.data.messageID, action: 'createObjectURL', args: [data], messageID: ++messageID}, '*');
 				messageCallbacks[messageID] = callback;
 			}));
 		} else if(message.data.action.substr(0, 3) !== 'wm.') {
