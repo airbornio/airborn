@@ -521,6 +521,8 @@
 				elementInnerHTMLDescriptor.set.call(this, html);
 				if(this.ownerDocument.contains(this)) {
 					findNewElements(this);
+				} else {
+					setTimeout(findNewElements, 0, this);
 				}
 			}
 		});
@@ -533,6 +535,8 @@
 				this.innerHTML = html;
 				if(this.ownerDocument.contains(this)) {
 					findNewElements(this);
+				} else {
+					setTimeout(findNewElements, 0, this);
 				}
 			}
 		});
