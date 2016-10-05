@@ -492,6 +492,10 @@ openWindow = function(path, options, callback) {
 					document.body.appendChild(div);
 					childDivs.push(div);
 					
+					if(manifest.window_size === 'maximize' && deviceType !== 'mobile') {
+						$(div).addClass('maximized maximized-max');
+					}
+					
 					clipResizableHandles.call(div, null, {position: $(div).position()});
 					
 					iframeWin = iframe.contentWindow;
@@ -525,10 +529,7 @@ $(document).on('mouseleave', '.window', function() {
 	updateZIndex();
 });
 
-openWindow('/Apps/firetext/', {}, function(win, tab, div) {
-	if(deviceType !== 'mobile') $(div).addClass('maximized maximized-max');
-	clipResizableHandles.call(div, null, {position: $(div).position()});
-});
+openWindow('/Apps/firetext/', {});
 
 
 function forceMinimize() {
