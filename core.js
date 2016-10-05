@@ -1454,12 +1454,15 @@ function renameGlobalVariables(file, source, variables) {
 		leave: leave
 	});
 	replaces.sort(function(a, b) {
-		return b.range[0] - a.range[0];
+		return a.range[0] - b.range[0];
 	});
+	var replaced = [];
+	var lastEnd = 0;
 	for(var i = 0; i < replaces.length; i++) {
-		source = source.substr(0, replaces[i].range[0]) + variables[replaces[i].name] + source.substr(replaces[i].range[1]);
+		replaced.push(source.substring(lastEnd, replaces[i].range[0]), variables[replaces[i].name]);
+		lastEnd = replaces[i].range[1];
 	}
-	return source;
+	return replaced.join('') + source.substr(lastEnd);
 	
 	function enter(node) {
 		if(createsNewScope(node)) {
