@@ -525,12 +525,6 @@ $(document).on('mouseleave', '.window', function() {
 	updateZIndex();
 });
 
-openWindow('/Apps/firetext/', {}, function(win, tab, div) {
-	if(deviceType !== 'mobile') $(div).addClass('maximized maximized-max');
-	clipResizableHandles.call(div, null, {position: $(div).position()});
-});
-
-
 function forceMinimize() {
 	var windows = childDivs.filter(function(win) {
 		return !win.classList.contains('minimized') || win.classList.contains('force-minimized');
