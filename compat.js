@@ -823,6 +823,14 @@
 		});
 		flushStorage();
 	};
+	Storage_.prototype.key = function(i) {
+		return Object.keys(this)[i];
+	};
+	Object.defineProperty(Storage_.prototype, 'length', {
+		get: function() {
+			return Object.keys(this).length;
+		}
+	});
 	var localStorage = new Storage_(document.airborn_localStorage);
 	delete document.airborn_localStorage;
 	defineWithPrefixed(window, 'localStorage', 'airborn_localStorage', {
