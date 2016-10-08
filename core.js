@@ -1165,7 +1165,7 @@ window.openWindow = function(path, callback) {
 		div.className = 'window';
 		div.style.overflow = 'hidden';
 		div.addEventListener('scroll', function() {
-			div.scrollTo(0, 0);
+			div.scrollLeft = div.scrollTop = 0;
 		});
 		var iframe = document.createElement('iframe'); 
 		iframe.sandbox = 'allow-scripts allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox';
