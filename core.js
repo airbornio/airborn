@@ -1432,6 +1432,9 @@ window.hasPermission = function(key, action, args) {
 // From: http://tobyho.com/2013/12/02/fun-with-esprima/
 function renameGlobalVariables(file, source, variables) {
 	if(typeof esprima === 'undefined' || typeof estraverse === 'undefined') return source;
+	if(source.substr(-22) === '//# airbornos:prepared') {
+		return source;
+	}
 	var variablesContained = Object.keys(variables).filter(function(variable) {
 		return new RegExp('(?:^|[^"\'])\\b' + variable + '\\b').test(source);
 	});
@@ -1462,7 +1465,7 @@ function renameGlobalVariables(file, source, variables) {
 		replaced.push(source.substring(lastEnd, replaces[i].range[0]), variables[replaces[i].name]);
 		lastEnd = replaces[i].range[1];
 	}
-	return replaced.join('') + source.substr(lastEnd);
+	return replaced.join('') + source.substr(lastEnd) + '\n//# airbornos:prepared';
 	
 	function enter(node) {
 		if(createsNewScope(node)) {
