@@ -4,7 +4,7 @@
 
 setTitle('');
 
-openWindow('/Core/laskyawm.html', function(iframe) {
+openWindow('/laskyawm.html', function(iframe) {
 	iframe.addEventListener('load', function firstLoad() {
 		iframe.removeEventListener('load', firstLoad);
 		iframe.addEventListener('load', function secondLoad() {

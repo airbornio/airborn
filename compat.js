@@ -255,7 +255,7 @@
 	var relativeParent = document.relativeParent;
 	delete document.relativeParent;
 	Object.defineProperty(document, 'baseURI', {get: function() { return relativeParent.replace(/\/Apps\/[^\/]+/, ''); }});
-	var appData = rootParent.replace('Apps', 'AppData');
+	var appData = rootParent.replace('Apps', 'AppData').replace('Core', 'CoreData');
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;

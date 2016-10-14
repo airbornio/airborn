@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, barIconsWidth, apps, powerMenu, airborn, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
+/*global $, barIconsWidth, apps, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
@@ -496,6 +496,17 @@ openWindow = function(path, options, callback) {
 						$(div).addClass('maximized maximized-max');
 					}
 					
+					if(manifest.window_size === 'maximize') {
+						// This is kind of a weird condition but the same built-
+						// in apps which we want to start maximized are the apps
+						// we want to remember to start as the first app next
+						// time. This is because we consider those apps "real
+						// apps" and the Marketplace just a "tool". Eventually
+						// we should just remember the entire session instead
+						// and offer to restart those apps.
+						airborn_localStorage.lastApp = path;
+					}
+					
 					clipResizableHandles.call(div, null, {position: $(div).position()});
 					
 					iframeWin = iframe.contentWindow;
@@ -529,7 +540,7 @@ $(document).on('mouseleave', '.window', function() {
 	updateZIndex();
 });
 
-openWindow('/Apps/firetext/', {});
+openWindow(airborn_localStorage.lastApp || '/Apps/firetext/', {});
 
 
 function forceMinimize() {

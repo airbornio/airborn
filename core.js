@@ -1160,7 +1160,7 @@ getFile('/Core/merge.js', eval);
 var mainWindow;
 
 window.openWindow = function(path, callback) {
-	prepareUrl(path, {__compat: false, rootParent: '/', appData: '/CoreData/laskyawm-'}, function(url) {
+	prepareUrl(path, {__compat: false, rootParent: '/Core/', appData: '/CoreData/'}, function(url) {
 		var div = document.createElement('div');
 		div.className = 'window';
 		div.style.overflow = 'hidden';
