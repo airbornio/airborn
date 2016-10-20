@@ -493,6 +493,7 @@ openWindow = function(path, options, callback) {
 					childDivs.push(div);
 					
 					if(manifest.window_size === 'maximize' && deviceType !== 'mobile') {
+						$(div).attr('data-pos', 'max');
 						$(div).addClass('maximized maximized-max');
 					}
 					
