@@ -44,7 +44,11 @@ window.addEventListener('message', function(message) {
 				message.source.postMessage({inReplyTo: message.data.messageID, action: 'createObjectURL', args: [data], messageID: ++messageID}, '*');
 				messageCallbacks[messageID] = callback;
 			}));
-		} else if(message.data.action.substr(0, 3) !== 'wm.') {
+		} else if(message.data.action.substr(0, 3) === 'wm.') {
+			if(message.data.action === 'wm.hideProgress') {
+				window.wmLoaded = true;
+			}
+		} else {
 			throw new TypeError('Unknown action: ' + message.data.action);
 		}
 	} else {

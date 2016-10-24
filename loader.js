@@ -1,4 +1,9 @@
 (function() {
+	if(window.wmLoaded) {
+		console.log('wmLoaded was true, not showing loader');
+		return;
+	}
+	
 	var loaderNode = document.createElement('div');
 	loaderNode.id = 'loading';
 	loaderNode.innerHTML = [
