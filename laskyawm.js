@@ -41,9 +41,13 @@ function clipResizableHandles(event, ui) {
 		if(overflowx > 0) $(this).css('right', overflowx);
 		else $(this).css('right', '');
 	});
-	$(this).find('.ui-resizable-s, .ui-resizable-se').each(function() {
+	$(this).find('.ui-resizable-sw, .ui-resizable-s, .ui-resizable-se').each(function() {
 		if(overflowy > 0) $(this).css('bottom', overflowy);
 		else $(this).css('bottom', '');
+	});
+	$(this).find('.ui-resizable-nw, .ui-resizable-w, .ui-resizable-sw').each(function() {
+		if(ui.position.left < workspace_start_left) $(this).css('left', workspace_start_left - ui.position.left);
+		else $(this).css('left', '');
 	});
 }
 function addClipResizableHandles(plugin, evt) {
@@ -486,7 +490,7 @@ openWindow = function(path, options, callback) {
 					
 					titlebarDiv.ondblclick = toggleMaximized;
 					
-					$(div).resizable({customIframeFix: true, forceMinimize: true, handles: 'e, s, ne, se', unmaximize: true, clipResizableHandles: true});
+					$(div).resizable({customIframeFix: true, forceMinimize: true, handles: 'all', unmaximize: true, clipResizableHandles: true});
 					
 					console.log(div);
 					document.body.appendChild(div);
