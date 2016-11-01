@@ -966,7 +966,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		delete _options.csp;
 		parallel([
 			function(cb) {
-				prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/', compat: false}, cb, function() {}, createObjectURL);
+				prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/', compat: false, selfContained: options.selfContained}, cb, function() {}, createObjectURL);
 			},
 			function(cb) {
 				prepareFile(file, _options, cb, progress, createObjectURL);
@@ -978,7 +978,23 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			}
 		], function(compat, c, localStorage, err) {
 			if(err) return callback('');
-			callback(c.replace(/^\uFEFF/, '').replace(/(?=<script|<\/head|<!--|$)/i, '<script>document.airborn_localStorage = ' + localStorage.replace(/<\/(script)/ig, '<\\\/$1') + ';</script>' + (options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') + compat));
+			callback(c
+				.replace(/^\uFEFF/, '')
+				.replace(/(?=<script|<\/head|<!--|$)/i,
+					'<script>' +
+					'document.airborn_localStorage = ' + localStorage.replace(/<\/(script)/ig, '<\\\/$1') + ';' +
+					(options.selfContained ? [
+						'document.rootParent = ' + JSON.stringify(options.rootParent) + ';',
+						'document.relativeParent = ' + JSON.stringify(file) + ';',
+						'document.filenames = {};',
+						'document.apikey = null;',
+						'document.top_location = window.location;',
+					].join('\n') : '') +
+					'</script>' +
+					(options.csp ? '<meta http-equiv="Content-Security-Policy" content="' + options.csp.replace(/"/g, '&quot;') + '">' : '') +
+					compat
+				)
+			);
 		});
 	} else if(extension === 'js') {
 		getFile(file, function(contents, err) {
@@ -1130,7 +1146,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	function cb(c, err) {
 		var data;
 		if(!err) {
-			if(isHTML(extension) || args || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51 || (location.protocol === 'https:' && navigator.userAgent.indexOf('Chrome') !== -1)) {
+			if(isHTML(extension) || args || options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51 || (location.protocol === 'https:' && navigator.userAgent.indexOf('Chrome') !== -1)) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
