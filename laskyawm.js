@@ -4,8 +4,17 @@
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
-var workspace_start_top = deviceType === 'mobile' ? 50 : 25;
+var workspace_start_top = deviceType === 'mobile' ? 0 : 25;
 var workspace_start_left = deviceType === 'mobile' ? 0 : 100;
+function workspace_height() { return window.innerHeight - workspace_start_top; }
+function workspace_width() { return window.innerWidth - workspace_start_left; }
+
+
+var windowsContainer = document.createElement('div');
+windowsContainer.id = 'windows';
+windowsContainer.style.top = workspace_start_top;
+windowsContainer.style.left = workspace_start_left;
+document.body.appendChild(windowsContainer);
 
 var childDivs = [];
 var childWindows = [];
@@ -35,8 +44,8 @@ addCustomIframeFix('draggable');
 addCustomIframeFix('resizable');
 
 function clipResizableHandles(event, ui) {
-	var overflowx = ui.position.left + (ui.size ? ui.size.width : $(this).width()) - window.innerWidth;
-	var overflowy = ui.position.top + (ui.size ? ui.size.height : $(this).height()) - window.innerHeight;
+	var overflowx = ui.position.left + (ui.size ? ui.size.width : $(this).width()) - workspace_width();
+	var overflowy = ui.position.top + (ui.size ? ui.size.height : $(this).height()) - workspace_height();
 	$(this).find('.ui-resizable-ne, .ui-resizable-e, .ui-resizable-se').each(function() {
 		if(overflowx > 0) $(this).css('right', overflowx);
 		else $(this).css('right', '');
@@ -46,7 +55,7 @@ function clipResizableHandles(event, ui) {
 		else $(this).css('bottom', '');
 	});
 	$(this).find('.ui-resizable-nw, .ui-resizable-w, .ui-resizable-sw').each(function() {
-		if(ui.position.left < workspace_start_left) $(this).css('left', workspace_start_left - ui.position.left);
+		if(ui.position.left < 0) $(this).css('left', -ui.position.left);
 		else $(this).css('left', '');
 	});
 }
@@ -63,7 +72,7 @@ addClipResizableHandles('resizable', 'resize');
 
 function addHUD(pos, div) {
 	var $hud = $('.hud');
-	if(!$hud.length) $hud = $('<div>').appendTo('body');
+	if(!$hud.length) $hud = $('<div>').appendTo(windowsContainer);
 	$hud.attr('class', 'hud hud-' + pos);
 	$hud.attr('data-pos', pos);
 	$hud.css('z-index', div.css('z-index') - 1);
@@ -138,6 +147,14 @@ $.ui.plugin.add('resizable', 'unmaximize', {
 			this.css(this.css(['top', 'left', 'width', 'height']));
 			this.removeClass('maximized');
 		}
+	}
+});
+$.ui.plugin.add('resizable', 'customContainment', {
+	start: function() {
+		/* Only contain resizing at the top and left side of the window */
+		var that = $(this).resizable('instance');
+		that.parentData.width =
+		that.parentData.height = 1 << 16;
 	}
 });
 
@@ -306,14 +323,14 @@ openWindow = function(path, options, callback) {
 				div.className = 'window';
 				var left, top;
 				if(options.originDiv) {
-					left = parseInt(options.originDiv.style.left) || workspace_start_left;
-					top = parseInt(options.originDiv.style.top) || workspace_start_top;
+					left = parseInt(options.originDiv.style.left) || 0;
+					top = parseInt(options.originDiv.style.top) || 0;
 				} else {
-					left = workspace_start_left;
-					top = workspace_start_top;
+					left = 0;
+					top = 0;
 				}
 				var positions = childDivs.map(function(div) {
-					return (parseInt(div.style.left) || workspace_start_left) + ',' + (parseInt(div.style.top) || workspace_start_top);
+					return (parseInt(div.style.left) || 0) + ',' + (parseInt(div.style.top) || 0);
 				});
 				while(positions.indexOf(left + ',' + top) !== -1) {
 					left += 25;
@@ -321,7 +338,7 @@ openWindow = function(path, options, callback) {
 				}
 				div.style.left = left + 'px';
 				div.style.top = top + 'px';
-				$(div).draggable({customIframeFix: true, containment: [-Infinity, workspace_start_top, Infinity, Infinity], snap: 'html, .window', scroll: false, minimize: true, forceMinimize: true, cursor: 'move', clipResizableHandles: true});
+				$(div).draggable({customIframeFix: true, containment: [-Infinity, workspace_start_top, Infinity, Infinity], snap: '#windows, .window', scroll: false, minimize: true, forceMinimize: true, cursor: 'move', clipResizableHandles: true});
 				
 				var titlebarDiv = document.createElement('div');
 				titlebarDiv.className = 'titlebar';
@@ -386,7 +403,7 @@ openWindow = function(path, options, callback) {
 						iframe.src = 'about:blank';
 						iframe.onload = function() {
 							setTimeout(function() { // Fix infinite spinning indicator in Firefox.
-								document.body.removeChild(div);
+								windowsContainer.removeChild(div);
 								childDivs.splice(childDivs.indexOf(div), 1);
 								childWindows.splice(childWindows.indexOf(iframeWin), 1);
 								forceMinimize();
@@ -490,10 +507,10 @@ openWindow = function(path, options, callback) {
 					
 					titlebarDiv.ondblclick = toggleMaximized;
 					
-					$(div).resizable({customIframeFix: true, forceMinimize: true, handles: 'all', unmaximize: true, clipResizableHandles: true});
+					$(div).resizable({customIframeFix: true, containment: '#windows', customContainment: true, forceMinimize: true, handles: 'all', unmaximize: true, clipResizableHandles: true});
 					
 					console.log(div);
-					document.body.appendChild(div);
+					windowsContainer.appendChild(div);
 					childDivs.push(div);
 					
 					if(manifest.window_size === 'maximize' && deviceType !== 'mobile') {
@@ -555,41 +572,41 @@ function forceMinimize() {
 		if(win.classList.contains('maximized') || deviceType === 'mobile') {
 			if(win.classList.contains('maximized-max') || deviceType === 'mobile')
 				return {
-					x1: workspace_start_left,
-					y1: workspace_start_top,
-					x2: window.innerWidth,
-					y2: window.innerHeight,
+					x1: 0,
+					y1: 0,
+					x2: workspace_width(),
+					y2: workspace_height(),
 					div: win
 				};
 			else if(win.classList.contains('maximized-left'))
 				return {
-					x1: workspace_start_left,
-					y1: workspace_start_top,
-					x2: Math.ceil((window.innerWidth + workspace_start_left) / 2),
-					y2: window.innerHeight,
+					x1: 0,
+					y1: 0,
+					x2: Math.ceil(workspace_width() / 2),
+					y2: workspace_height(),
 					div: win
 				};
 			else if(win.classList.contains('maximized-right'))
 				return {
-					x1: Math.ceil((window.innerWidth + workspace_start_left) / 2),
-					y1: workspace_start_top,
-					x2: window.innerWidth,
-					y2: window.innerHeight,
+					x1: Math.ceil(workspace_width() / 2),
+					y1: 0,
+					x2: workspace_width(),
+					y2: workspace_height(),
 					div: win
 				};
 		}
 		
 		var $win = $(win);
 		var minimized = win.classList.contains('minimized');
-		var left = parseFloat(win.realLeft !== undefined ? win.realLeft : minimized ? win.style.left : $win.css('left')) || workspace_start_left;
-		var top = parseFloat(minimized ? win.style.top : $win.css('top')) || workspace_start_top;
+		var left = parseFloat(win.realLeft !== undefined ? win.realLeft : minimized ? win.style.left : $win.css('left')) || 0;
+		var top = parseFloat(minimized ? win.style.top : $win.css('top')) || 0;
 		var width = parseFloat(minimized ? win.style.width : $win.css('width')) || 800;
 		var height = parseFloat(minimized ? win.style.height : $win.css('height')) || 600;
 		return {
-			x1: windows.length < 20 ? Math.max(workspace_start_left, Math.min(window.innerWidth, left)) : left,
-			y1: windows.length < 20 ? Math.max(workspace_start_top, Math.min(window.innerHeight, top)) : top,
-			x2: windows.length < 20 ? Math.max(workspace_start_left, Math.min(window.innerWidth, left + width)) : left + width,
-			y2: windows.length < 20 ? Math.max(workspace_start_top, Math.min(window.innerHeight, top + height)) : top + height,
+			x1: windows.length < 20 ? Math.max(0, Math.min(workspace_width(), left)) : left,
+			y1: windows.length < 20 ? Math.max(0, Math.min(workspace_height(), top)) : top,
+			x2: windows.length < 20 ? Math.max(0, Math.min(workspace_width(), left + width)) : left + width,
+			y2: windows.length < 20 ? Math.max(0, Math.min(workspace_height(), top + height)) : top + height,
 			div: win
 		};
 	}).reverse();
@@ -605,8 +622,8 @@ function forceMinimize() {
 		// Ray cast screen for visible windows. We cast rays in a 10x10
 		// grid instead of every pixel to trade some accuracy for a lot
 		// of performance.
-		for(var x = workspace_start_left; x < window.innerWidth; x += 10) {
-			for(var y = workspace_start_top; y < window.innerHeight; y += 10) {
+		for(var x = 0; x < workspace_width(); x += 10) {
+			for(var y = 0; y < workspace_height(); y += 10) {
 				for(i = 0; i < windows.length; i++) {
 					win = windows[i];
 					if(x >= win.x1 && x <= win.x2 && y >= win.y1 && y <= win.y2) {
@@ -677,22 +694,22 @@ function updateZIndex(hovered) {
 
 function positionMinimized() {
 	var full = {};
-	var minMinimizedLeft = deviceType === 'mobile' ? 100 : 150;
+	var minMinimizedLeft = deviceType === 'mobile' ? 100 : 50;
 	[].slice.call(childDivs).reverse().forEach(function(win) {
 		var moved;
 		if(win.classList.contains('minimized')) {
 			var left =
 				win.classList.contains('maximized') || deviceType === 'mobile' ?
-					(win.classList.contains('maximized-max') || deviceType === 'mobile' || win.classList.contains('maximized-left') ? workspace_start_left :
-					win.classList.contains('maximized-right') ? Math.floor((window.innerWidth + workspace_start_left) / 2) :
+					(win.classList.contains('maximized-max') || deviceType === 'mobile' || win.classList.contains('maximized-left') ? 0 :
+					win.classList.contains('maximized-right') ? Math.floor(workspace_width() / 2) :
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 			var minimizedLeft, pushLeft;
 			if(left < minMinimizedLeft) {
 				minimizedLeft = minMinimizedLeft;
 				moved = true;
-			} else if(left > window.innerWidth - barIconsWidth - 260) {
-				minimizedLeft = window.innerWidth - barIconsWidth - 260;
+			} else if(left > workspace_width() - barIconsWidth - 260) {
+				minimizedLeft = workspace_width() - barIconsWidth - 260;
 				moved = true;
 				pushLeft = true;
 			} else {
@@ -707,7 +724,7 @@ function positionMinimized() {
 			}
 			if(moved) {
 				if(!win.realLeft) win.realLeft = win.style.left;
-				win.style.cssText += '; left: ' + (pushLeft ? window.innerWidth - barIconsWidth - 260 : minimizedLeft) + 'px !important;';
+				win.style.cssText += '; left: ' + (pushLeft ? workspace_width() - barIconsWidth - 260 : minimizedLeft) + 'px !important;';
 			}
 			full[minimizedLeft] = win;
 		}

@@ -24,13 +24,18 @@ body:before {
 	height: 100%;
 	z-index: -1000;
 }
+#windows {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+}
 .window {
 	width: 800px;
 	height: 600px;
 	border-radius: 7px;
 	position: absolute !important;
-	top: 25px;
-	left: 100px;
+	top: 0;
+	left: 0;
 	box-shadow: 0px 0px 20px rgba(0, 0, 0, .3);
 	background-color: rgba(255, 255, 255, .2);
 }
@@ -156,26 +161,26 @@ body:before {
 	opacity: .7;
 }
 .window.maximized, .hud {
-	top: 25px !important;
-	height: calc(100% - 25px) !important;
+	top: 0 !important;
+	height: 100% !important;
 }
 .window.maximized.maximized-max, .hud-max {
-	left: 100px !important;
-	width: calc(100% - 100px) !important;
+	left: 0 !important;
+	width: 100% !important;
 }
 .window.maximized.maximized-left, .hud-left {
-	left: 100px !important;
-	width: calc(50% - 50px) !important;
+	left: 0 !important;
+	width: 50% !important;
 }
 .window.maximized.maximized-right, .hud-right {
-	left: calc(50% + 50px) !important;
-	width: calc(50% - 50px) !important;
+	left: 50% !important;
+	width: 50% !important;
 }
 .window.maximized:not(.minimized) {
 	box-shadow: none;
 }
 .window.minimized.minimized { /* same specificity as .maximized above */
-	top: 0 !important;
+	top: -25px !important;
 	width: 250px !important;
 	max-height: 25px;
 	overflow: hidden;

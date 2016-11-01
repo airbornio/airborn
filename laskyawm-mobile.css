@@ -1,10 +1,12 @@
+#windows {
+	pointer-events: none;
+}
 .window {
 	width: 100% !important;
 	height: 100% !important;
 	left: 0 !important;
 	top: 0 !important;
 	background-color: transparent !important;
-	pointer-events: none;
 }
 .window:before {
 	opacity: 1;
@@ -50,8 +52,7 @@
 	border-bottom-left-radius: 7px;
 	box-shadow: inset 7px 0 5px -7px #888;
 }
-.window:not(.minimized):nth-of-type(5):nth-last-of-type(2) .titlebar:after, /* Firefox */
-.window:not(.minimized):nth-of-type(6):nth-last-of-type(1) .titlebar:after { /* Chrome */
+.window:not(.minimized):nth-of-type(1):nth-last-of-type(1) .titlebar:after {
 	background-color: #485C68;
 }
 .window .titlebar button {
@@ -77,6 +78,7 @@
 	border-top-right-radius: 7px;
 }
 .window.minimized.minimized {
+	top: 0 !important;
 	width: 60px !important;
 	max-height: 50px;
 }
