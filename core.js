@@ -1086,7 +1086,6 @@ window.prepareString = function(contents, options, callback, progress, createObj
 	if(matches.length) {
 		matches.forEach(function(match) { // We don't process matches immediately for when getFile calls callback immediately.
 			prepareUrl(match[3], options, function(data, err) {
-				if(options.webworker) data = data.replace(/'/g, "\\'");
 				if(!err) match[5] = data;
 				filesDownloaded++;
 				updateProgress();
@@ -1153,7 +1152,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 				else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
 				else data = ';base64,' + codec.base64.fromAB(c);
 				data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path) + ';charset=utf-8' + data;
-				callback(data + args);
+				callback(data.replace(/'/g, '%27') + args);
 			} else {
 				if(extension === 'js') data = c + '\n//# sourceURL=' + path;
 				else if(extension === 'css') data = c + '\n/*# sourceURL=' + path + ' */';
