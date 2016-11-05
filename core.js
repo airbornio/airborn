@@ -216,13 +216,13 @@ codec.dir.fromAB = function(ab) {
 
 codec.base64 = {
 	fromAB: function(ab) {
-		var binary = '';
 		var bytes = new Uint8Array(ab);
 		var len = bytes.byteLength;
+		var binary = new Array(len);
 		for(var i = 0; i < len; i++) {
-			binary += String.fromCharCode(bytes[i]);
+			binary[i] = String.fromCharCode(bytes[i]);
 		}
-		return btoa(binary);
+		return btoa(binary.join(''));
 	},
 	toAB: function(string) {
 		var binary = atob(string);
