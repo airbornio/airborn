@@ -1122,10 +1122,6 @@ var rArgs = /[?#].*$/;
 window.prepareUrl = function(url, options, callback, progress, createObjectURL) {
 	var args = (url.match(rArgs) || [''])[0];
 	url = url.replace(rArgs, '');
-	if(url === '') {
-		callback(args);
-		return;
-	}
 	if(startsWith('//', url)) {
 		callback('https:' + url + args);
 		return;
@@ -1134,6 +1130,10 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 		url = ''; // resolve to relativeParent
 	}
 	var path = resolve(options.relativeParent, url, options.rootParent);
+	if(args && path === options.relativeParent) {
+		callback(args);
+		return;
+	}
 	var extension = path.substr(path.lastIndexOf('.') + 1);
 	var _options = {};
 	Object.keys(options).forEach(function(key) {
@@ -1145,7 +1145,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	function cb(c, err) {
 		var data;
 		if(!err) {
-			if(isHTML(extension) || args || options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51 || (location.protocol === 'https:' && navigator.userAgent.indexOf('Chrome') !== -1)) {
+			if(args || options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
