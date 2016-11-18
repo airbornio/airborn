@@ -568,9 +568,9 @@
 		if(noSchema) {
 			console.log(_url);
 			windowsOpened.push(win);
-			prepareUrl(_url, function(url) {
+			airborn.fs.prepareUrl(_url, {rootParent: rootParent, relativeParent: relativeParent, appData: appData, apikey: apikey, bootstrap: false, selfContained: true}, function(url) {
 				console.log(url);
-				win.location.href = url.replace(/window\.top/g, 'window.opener').replace(/window\.parent\.postMessage.+?%0A/g, '');
+				win.location.href = url.replace(/window\.top/g, '(window.opener || window.top)');
 			});
 		}
 		return win;

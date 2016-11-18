@@ -987,7 +987,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 						'document.rootParent = ' + JSON.stringify(options.rootParent) + ';',
 						'document.relativeParent = ' + JSON.stringify(file) + ';',
 						'document.filenames = {};',
-						'document.apikey = null;',
+						'document.apikey = ' + JSON.stringify(options.apikey) + ';',
 						'document.top_location = window.location;',
 					].join('\n') : '') +
 					'</script>' +
