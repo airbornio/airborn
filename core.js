@@ -1049,7 +1049,7 @@ window.prepareString = function(contents, options, callback, progress, createObj
 	var i = 0,
 		match, matches = [],
 		rURL,
-		rSchema = /^[a-z]+:/i,
+		rSchema = /^(?!airbornstorage)[a-z]+:/i,
 		filesDownloaded = 0;
 	if(options.webworker) {
 		var rImportScripts = /importScripts\s*\([\s\S]*?\)/;
@@ -1119,6 +1119,7 @@ window.prepareString = function(contents, options, callback, progress, createObj
 };
 
 var rArgs = /[?#].*$/;
+var rHMAC = /([?&#])hmac=(\w+)&?/;
 window.prepareUrl = function(url, options, callback, progress, createObjectURL) {
 	var args = (url.match(rArgs) || [''])[0];
 	url = url.replace(rArgs, '');
@@ -1129,7 +1130,21 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	if(url === '/') {
 		url = ''; // resolve to relativeParent
 	}
-	var path = resolve(options.relativeParent, url, options.rootParent);
+	var path;
+	if(startsWith('airbornstorage:', url)) {
+		/* Note: we specifically calculate the HMAC including the
+		 * "airbornstorage:" bit to make sure that this HMAC can't be
+		 * observed on the network.
+		 */
+		if(_getObjectLocation(url) !== (args.match(rHMAC) || [])[2]) {
+			console.warn('Access denied: HMAC for airbornstorage: URL is incorrect:', url + args);
+			callback(url + args);
+			return;
+		}
+		path = url.substr(15);
+	} else {
+		path = resolve(options.relativeParent, url, options.rootParent);
+	}
 	if(args && path === options.relativeParent) {
 		callback(args);
 		return;
@@ -1429,7 +1444,7 @@ window.hasPermission = function(key, action, args) {
 		case 'listenForFileChanges':
 			return givesAccessToPath(permissions, args[0]);
 		case 'getObjectLocation':
-			return givesAccessToPath(permissions, args[0]) && permissions.getObjectLocations;
+			return givesAccessToPath(permissions, args[0].replace(/^airbornstorage:/, '')) && permissions.getObjectLocations;
 		case 'pushRegister':
 		case 'pushUnregister':
 			return true;

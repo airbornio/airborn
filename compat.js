@@ -208,7 +208,8 @@
 	var filenames = document.filenames;
 	delete document.filenames;
 	var rArgs = /[?#].*$/;
-	var rSchema = /^[a-z]+:/i;
+	var rSchema = /^(?!airbornstorage)[a-z]+:/i;
+	var rAnySchema = /^[a-z]+:/i;
 	function getURLFilename(url, relativeTo) {
 		var args = (url.match(rArgs) || [''])[0];
 		url = url.replace(rArgs, '');
@@ -218,16 +219,20 @@
 		} else {
 			var startIndex = url.indexOf('filename=');
 			if(startIndex === -1) {
-				if(rSchema.test(url)) {
-					return url;
+				if(rAnySchema.test(url)) {
+					return url + args;
 				}
-				filename = url;
+				return airborn.path.resolve(relativeTo, url) + args;
 			} else {
 				filename = url.substr(startIndex + 9); // 'filename='.length == 9
 				filename = decodeURIComponent(filename.substr(0, filename.indexOf(';')));
 			}
 		}
-		return airborn.path.resolve(relativeTo, filename.replace(/^\/Apps\/[^/]+/, '')) + args;
+		if(filename[0] !== '/' || filename.substr(0, rootParent.length) === rootParent) {
+			return airborn.path.resolve(relativeTo, filename.replace(rootParentWithoutSlash, '')) + args;
+		} else {
+			return 'airbornstorage:' + filename + args;
+		}
 	}
 	
 	function defineWithPrefixed(obj, prop, rewrittenProp, descriptor) {
@@ -254,8 +259,9 @@
 	delete document.rootParent;
 	var relativeParent = document.relativeParent;
 	delete document.relativeParent;
-	Object.defineProperty(document, 'baseURI', {get: function() { return relativeParent.replace(/\/Apps\/[^\/]+/, ''); }});
+	Object.defineProperty(document, 'baseURI', {get: function() { return relativeParent.replace(rootParentWithoutSlash, ''); }});
 	var appData = rootParent.replace('Apps', 'AppData').replace('Core', 'CoreData');
+	var rootParentWithoutSlash = rootParent.substr(0, rootParent.length - 1);
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;
@@ -294,7 +300,7 @@
 					defineWithPrefixed(req, 'response', 'airborn_response', {get: function() {
 						if(responseType === 'document') {
 							var doc = document.implementation.createHTMLDocument('');
-							Object.defineProperty(doc, 'baseURI', {get: function() { return url.replace(/\/Apps\/[^\/]+/, ''); }});
+							Object.defineProperty(doc, 'baseURI', {get: function() { return url.replace(rootParentWithoutSlash, ''); }});
 							doc.documentElement.innerHTML = contents;
 							return doc;
 						}
@@ -1558,7 +1564,7 @@
 		obj.reload = window.location.reload.bind(window.location);
 		return obj;
 	}
-	var locationurl = createLocationUrl(relativeParent.replace(/^\/Apps\/[^/]+/, ''));
+	var locationurl = createLocationUrl(relativeParent.replace(rootParentWithoutSlash, ''));
 	Object.defineProperty(window, 'airborn_location', {get: function() {
 		return locationurl;
 	}});
