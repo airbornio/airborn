@@ -520,11 +520,7 @@
 			},
 			set: function(html) {
 				elementInnerHTMLDescriptor.set.call(this, html);
-				if(this.ownerDocument.contains(this)) {
-					findNewElements(this);
-				} else {
-					setTimeout(findNewElements, 0, this);
-				}
+				findNewElements(this);
 			}
 		});
 	} catch(e) { // Safari
@@ -534,11 +530,7 @@
 			},
 			set: function(html) {
 				this.innerHTML = html;
-				if(this.ownerDocument.contains(this)) {
-					findNewElements(this);
-				} else {
-					setTimeout(findNewElements, 0, this);
-				}
+				findNewElements(this);
 			}
 		});
 	}
