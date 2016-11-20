@@ -447,6 +447,10 @@
 			function() {
 				var imgCompleteDescriptor = Object.getOwnPropertyDescriptor(this, 'complete');
 				Object.defineProperty(this, 'complete', {get: function() { return false; }, configurable: true});
+				function onError(evt) {
+					evt.stopImmediatePropagation();
+				}
+				this.addEventListener('error', onError);
 				
 				return function() {
 					if(imgCompleteDescriptor) {
@@ -454,6 +458,7 @@
 					} else {
 						delete this.complete;
 					}
+					this.removeEventListener('error', onError);
 				}
 			}
 		],
@@ -547,9 +552,7 @@
 				'[' + attrName + ']:not([' + attrName + '^="blob:"]):not([' + attrName + '^="data:"]):not([' + attrName + '^="http:"]):not([' + attrName + '^="https:"])'
 			), function(elm) {
 				var attr = elm.getAttribute(attrName);
-				if(attr && !rSchema.test(attr)) prepareUrl(attr, function(url, err) {
-					if(!err) elm.setAttribute(attrName, url);
-				});
+				if(attr && !rSchema.test(attr)) elm['airborn_' + attrName] = attr;
 			});
 		});
 	}
