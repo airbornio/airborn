@@ -890,7 +890,7 @@ function parallel(fns, callback) {
 
 function getTopLocation(urlArgs) {
 	var url = new URL(top.location);
-	if(url.hash) {
+	if(url.hash && urlArgs !== true) {
 		url.hash = '#' + url.hash.slice(1).split(';').filter(function(part) {
 			return part.split(':')[0] === urlArgs;
 		}).map(function(part) {
@@ -1190,7 +1190,7 @@ getFile('/Core/merge.js', eval);
 var mainWindow;
 
 window.openWindow = function(path, callback) {
-	prepareUrl(path, {__compat: false, rootParent: '/Core/', appData: '/CoreData/'}, function(url) {
+	prepareUrl(path, {__compat: false, rootParent: '/Core/', appData: '/CoreData/', permissions: {urlArgs: true}}, function(url) {
 		var div = document.createElement('div');
 		div.className = 'window';
 		div.style.overflow = 'hidden';

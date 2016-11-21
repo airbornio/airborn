@@ -562,7 +562,13 @@ $(document).on('mouseleave', '.window', function() {
 	updateZIndex();
 });
 
-openWindow(airborn_localStorage.lastApp || '/Apps/firetext/', {});
+var hashArgumentOpenApp = airborn.top_location.hash.match(/[#&;]open=([^&;]+)/);
+openWindow(
+	hashArgumentOpenApp ? '/Apps/' + hashArgumentOpenApp[1].replace(/[./]/g, '') + '/' :
+	airborn_localStorage.lastApp ||
+	'/Apps/firetext/',
+	{}
+);
 
 
 function forceMinimize() {
