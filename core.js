@@ -1160,14 +1160,14 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	function cb(c, err) {
 		var data;
 		if(!err) {
-			if(args || options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51) {
+			if(options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
 				else if(typeof c === 'string') data = ',' + encodeURIComponent(c);
 				else data = ';base64,' + codec.base64.fromAB(c);
 				data = 'data:' + mimeTypes[extension] + ';filename=' + encodeURIComponent(path) + ';charset=utf-8' + data;
-				callback(data.replace(/'/g, '%27') + args);
+				callback(data.replace(/'/g, '%27'));
 			} else {
 				if(extension === 'js') data = c + '\n//# sourceURL=' + path;
 				else if(extension === 'css') data = c + '\n/*# sourceURL=' + path + ' */';
