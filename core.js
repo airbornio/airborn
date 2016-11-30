@@ -1434,10 +1434,14 @@ window.hasPermission = function(key, action, args) {
 		case 'putFile':
 			return givesAccessToPath(permissions, args[0], 'write');
 		case 'prepareFile':
-			return givesAccessToPath(permissions, args[1].rootParent) && givesAccessToPath(permissions, args[0]);
+			return givesAccessToPath(permissions, args[1].rootParent) && givesAccessToPath(permissions, args[0]) && !Object.keys(args[1]).some(function(key) {
+				return key.replace(/^_+/, '') === 'permissions';
+			});
 		case 'prepareString':
 		case 'prepareUrl':
-			return givesAccessToPath(permissions, args[1].rootParent);
+			return givesAccessToPath(permissions, args[1].rootParent) && !Object.keys(args[1]).some(function(key) {
+				return key.replace(/^_+/, '') === 'permissions';
+			});
 		case 'startTransaction':
 		case 'endTransaction':
 			return false;
