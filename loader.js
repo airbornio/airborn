@@ -100,6 +100,7 @@
 			updateLoader(evt.data.args[0]);
 		} else if(evt.data.action === 'wm.hideProgress') {
 			loaderNode.style.opacity = 0;
+			loaderNode.style.pointerEvents = 'none';
 			loaderNode.addEventListener('transitionend', function() {
 				document.body.removeChild(loaderNode);
 			});
