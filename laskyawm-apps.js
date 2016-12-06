@@ -1,6 +1,15 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, airborn, openWindow */
+/*global $, airborn, openWindow, deviceType */
+
+var appIconSize = (deviceType === 'mobile' ? 32 : 64) * (window.devicePixelRatio || 1);
+function getIconUrl(icons) {
+	if(!icons) return;
+	return icons[Object.keys(icons).sort(function(a, b) {
+		if(a >= appIconSize && b >= appIconSize) return a - b;
+		return b - a;
+	})[0]];
+}
 
 var apps;
 
@@ -70,7 +79,7 @@ function loadApps() {
 				airborn.fs.getFile('/Apps/' + line + 'manifest.webapp', function(manifest) {
 					manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 					var name = manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
-					var icon = manifest.icons && (manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
+					var icon = getIconUrl(manifest.icons);
 					if(icon) {
 						airborn.fs.prepareUrl(icon, {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
 							allApps[line] = {name: name, path: line, iconUrl: url};

@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, barIconsWidth, apps, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
+/*global $, barIconsWidth, apps, getIconUrl, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
@@ -208,7 +208,7 @@ window.addEventListener('message', function(message) {
 							} else {
 								airborn.fs.getFile(tab.path + 'manifest.webapp', function(manifest) {
 									manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
-									var icon = manifest.icons && (manifest.icons['32'] || manifest.icons['64'] || manifest.icons['128'] || manifest.icons['256'] || manifest.icons['512']);
+									var icon = getIconUrl(manifest.icons);
 									if(icon) {
 										airborn.fs.prepareUrl(icon, {relativeParent: tab.path, rootParent: tab.path}, function(url) {
 											cont(url);
