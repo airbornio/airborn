@@ -111,7 +111,6 @@
 	top: 54px;
 }
 .barMenu > div {
-	vertical-align: top;
 	line-height: 32px;
 	height: 32px;
 	margin: 2px;
@@ -119,6 +118,7 @@
 .barMenu > div > img {
 	width: 32px;
 	height: 32px;
+	vertical-align: -9px;
 }
 #sidebar {
 	display: none;
