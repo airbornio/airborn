@@ -459,7 +459,7 @@ openWindow = function(path, options, callback) {
 					
 					var title = document.createElement('span');
 					title.className = 'title';
-					title.textContent = 'Loading…'; // This element needs at least a nbsp
+					title.textContent = manifest.name; // This element needs at least a nbsp
 					tabtitlebar.appendChild(title);
 					
 					var titleloader = document.createElement('div');
@@ -484,6 +484,12 @@ openWindow = function(path, options, callback) {
 					
 					var icon = document.createElement('img');
 					icon.className = 'icon';
+					var iconUrl = getIconUrl(manifest.icons);
+					if(iconUrl) {
+						airborn.fs.prepareUrl(iconUrl, {relativeParent: path, rootParent: path}, function(url) {
+							icon.src = tab.icon = url;
+						});
+					}
 					titlebarDiv.appendChild(icon);
 					
 					var focus = function() {
