@@ -282,7 +282,7 @@ function encrypt(key, plaintext, params, callback) {
 			});
 		}).then(callback, error);
 	} catch(e) {
-		error();
+		error(e);
 	}
 	function error() {
 		// Web Crypto or the algorithm may be unsupported, try sjcl.
@@ -327,22 +327,24 @@ function decrypt(key, str, callback) {
 			});
 		}).then(callback, error);
 	} catch(e) {
-		error();
+		error(e);
 	}
 	function error(e) {
 		// Web Crypto or the algorithm may be unsupported, try sjcl.
-		var decrypted;
+		var decrypted, error;
 		var utf8String_fromBits = sjcl.codec.utf8String.fromBits;
 		sjcl.codec.utf8String.fromBits = function(bits) { return bits; };
 		try {
 			decrypted = sjcl.decrypt(key, str, {raw: 1});
 		} catch(e2) {
-			callback(null, e);
-			return;
-		} finally {
-			sjcl.codec.utf8String.fromBits = utf8String_fromBits;
+			error = e;
 		}
-		callback(sjcl.codec.arrayBuffer.fromBits(decrypted));
+		sjcl.codec.utf8String.fromBits = utf8String_fromBits;
+		if(error) {
+			callback(null, error);
+		} else {
+			callback(sjcl.codec.arrayBuffer.fromBits(decrypted));
+		}
 	}
 }
 
@@ -1160,7 +1162,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	function cb(c, err) {
 		var data;
 		if(!err) {
-			if(options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51) {
+			if(options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51 || (isHTML(extension) && navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/))) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');

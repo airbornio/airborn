@@ -1577,22 +1577,48 @@
 		locationurl = createLocationUrl(url, locationurl.href);
 		Object.defineProperty(History.prototype, 'state', {value: state, enumerable: true, configurable: true});
 	}
-	var history_replaceState = History.prototype.replaceState;
-	History.prototype.replaceState = function(state, title, url) {
-		setState(state, url);
-		history_replaceState.call(this, {href: locationurl.href, state: state, _airborn: true}, '', '');
-	};
-	var history_pushState = History.prototype.pushState;
-	History.prototype.pushState = function(state, title, url) {
-		setState(state, url);
-		history_pushState.call(this, {href: locationurl.href, state: state, _airborn: true}, '', '');
-	};
-	window.addEventListener('popstate', function(evt) {
-		if(evt.state && evt.state._airborn) {
-			setState(evt.state.state, evt.state.href);
-			Object.defineProperty(evt, 'state', {value: evt.state.state, enumerable: true, configurable: true});
-		}
-	}, true);
+	if(navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/)) {
+		var hist = [{href: locationurl.href, state: null}];
+		var curr = 0;
+		History.prototype.replaceState = function(state, title, url) {
+			setState(state, url);
+			hist[curr] = {href: locationurl.href, state: state};
+			window.location.hash = '#_airborn_state_' + curr;
+		};
+		History.prototype.pushState = function(state, title, url) {
+			curr++;
+			History.prototype.replaceState.apply(this, arguments);
+		};
+		window.addEventListener('popstate', function(evt) {
+			if(window.location.hash.substr(0, 16) === '#_airborn_state_') {
+				if(curr === +window.location.hash.substr(16)) {
+					evt.stopImmediatePropagation();
+					return;
+				}
+				curr = +window.location.hash.substr(16);
+				var state = hist[curr];
+				setState(state.state, state.href);
+				Object.defineProperty(evt, 'state', {value: state.state, enumerable: true, configurable: true});
+			}
+		}, true);
+	} else {
+		var history_replaceState = History.prototype.replaceState;
+		History.prototype.replaceState = function(state, title, url) {
+			setState(state, url);
+			history_replaceState.call(this, {href: locationurl.href, state: state, _airborn: true}, '', '');
+		};
+		var history_pushState = History.prototype.pushState;
+		History.prototype.pushState = function(state, title, url) {
+			setState(state, url);
+			history_pushState.call(this, {href: locationurl.href, state: state, _airborn: true}, '', '');
+		};
+		window.addEventListener('popstate', function(evt) {
+			if(evt.state && evt.state._airborn) {
+				setState(evt.state.state, evt.state.href);
+				Object.defineProperty(evt, 'state', {value: evt.state.state, enumerable: true, configurable: true});
+			}
+		}, true);
+	}
 	
 	function WindowProxy(window) {
 		Object.defineProperty(this, 'airborn_top', {
