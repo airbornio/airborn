@@ -47,7 +47,7 @@ document.body.addEventListener('click', function(evt) {
 		app = app.parentElement;
 		if(!app || app.parentElement === app) return;
 	}
-	openWindow(app.title, {
+	openWindow(app.dataset.path, {
 		originDiv: $('.window.focused')[0]
 	});
 });
@@ -107,7 +107,8 @@ function loadApps() {
 				icon.src = props.iconUrl || '';
 				app.insertBefore(icon, app.firstChild);
 				app.tabIndex = '0';
-				app.title = '/Apps/' + props.path;
+				app.title = props.name;
+				app.dataset.path = '/Apps/' + props.path;
 				fragment.appendChild(app);
 			});
 			apps.innerHTML = '';
