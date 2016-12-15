@@ -1424,7 +1424,7 @@ window.isValidAPIKey = function(key) {
 	return APIKeys[key] !== undefined;
 };
 function givesAccessToPath(permissions, path, type) {
-	return permissions[type || 'read'].some(function(allowed) {
+	return (permissions[type || 'read'] || []).some(function(allowed) {
 		return startsWith(allowed, path);
 	});
 }
