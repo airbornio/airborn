@@ -70,6 +70,7 @@ function getTransactionId(options) {
 }
 
 var sjcl = parent.sjcl;
+var pako = parent.pako;
 var private_key = parent.private_key;
 var private_hmac = parent.private_hmac;
 var files_hmac = parent.files_hmac;
@@ -191,11 +192,13 @@ codec.utf8String = {
 	toAB: function(string) { return encoder.encode(string).buffer; }
 };
 
-codec.json = codec.prettyjson = {
-	fromAB: function(ab) { return JSON.parse(codec.utf8String.fromAB(ab)); },
+codec.json = {
 	toAB: function(obj) { return codec.utf8String.toAB(JSON.stringify(obj)); }
 };
-codec.prettyjson.toAB = function(obj) { return codec.utf8String.toAB(JSON.stringify(obj, null, '\t')); };
+codec.prettyjson = {
+	toAB: function(obj) { return codec.utf8String.toAB(JSON.stringify(obj, null, '\t')); }
+};
+codec.json.fromAB = codec.prettyjson.fromAB = function(ab) { return JSON.parse(codec.utf8String.fromAB(ab)); };
 
 var currentFilename;
 codec.dir = codec.yaml = {
@@ -248,7 +251,7 @@ function encrypt(key, plaintext, params, callback) {
 			ctr[0] = L - 1;
 			ctr.set(new Uint8Array(iv, 0, 15 - L), 1);
 			var ks = 128;
-			var adata = codec.utf8String.toAB('');
+			var adata = codec.json.toAB(params.adata);
 			var ts = 64;
 			var tag = _computeTag(key, plaintext, iv, adata, ts, L);
 			return Promise.all([
@@ -286,11 +289,12 @@ function encrypt(key, plaintext, params, callback) {
 	}
 	function error() {
 		// Web Crypto or the algorithm may be unsupported, try sjcl.
+		if(params.adata) params.adata = sjcl.codec.utf8String.toBits(JSON.stringify(params.adata));
 		callback(sjcl.encrypt(key, sjcl.codec.arrayBuffer.toBits(plaintext), params));
 	}
 }
 
-function decrypt(key, str, callback) {
+function decrypt(key, str, outparams, callback) {
 	try {
 		subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['decrypt']).then(function(_key) {
 			var obj = JSON.parse(str);
@@ -323,6 +327,7 @@ function decrypt(key, str, callback) {
 				if(!sjcl.bitArray.equal(sjcl.codec.arrayBuffer.toBits(tag), tag2)) {
 					throw new sjcl.exception.corrupt("ccm: tag doesn't match");
 				}
+				outparams.adata = codec.json.fromAB(codec.base64.toAB(obj.adata));
 				return plaintext;
 			});
 		}).then(callback, error);
@@ -335,7 +340,7 @@ function decrypt(key, str, callback) {
 		var utf8String_fromBits = sjcl.codec.utf8String.fromBits;
 		sjcl.codec.utf8String.fromBits = function(bits) { return bits; };
 		try {
-			decrypted = sjcl.decrypt(key, str, {raw: 1});
+			decrypted = sjcl.decrypt(key, str, {raw: 1}, outparams);
 		} catch(e2) {
 			error = e;
 		}
@@ -343,6 +348,7 @@ function decrypt(key, str, callback) {
 		if(error) {
 			callback(null, error);
 		} else {
+			outparams.adata = outparams.adata.length ? JSON.parse(sjcl.codec.utf8String.fromBits(outparams.adata)) : undefined;
 			callback(sjcl.codec.arrayBuffer.fromBits(decrypted));
 		}
 	}
@@ -427,8 +433,11 @@ window.getFile = function(file, options, callback) {
 			if(handleFromCache()) return; // We might've PUT a newer version by now.
 			if(req.status === 200) {
 				currentFilename = file;
-				var decrypted, error;
+				var decrypted, outparams = {}, error;
 				var cont = function() {
+					if(outparams.gz) {
+						decrypted = pako.ungzip(new Uint8Array(decrypted)).buffer;
+					}
 					try {
 						decrypted = codec[options.codec || 'utf8String'].fromAB(decrypted);
 					} catch(e) {
@@ -441,9 +450,9 @@ window.getFile = function(file, options, callback) {
 						callback(decrypted);
 					}
 				};
-				decrypt(options.password != null ? options.password : files_key, req.response, function(_decrypted, e) {
+				decrypt(options.password != null ? options.password : files_key, req.response, outparams, function(_decrypted, e) {
 					if(e) {
-						decrypt(password, req.response, function(_decrypted, e2) {
+						decrypt(password, req.response, outparams, function(_decrypted, e2) {
 							if(e2) {
 								error = {status: 0, statusText: e.message};
 							} else {
@@ -765,7 +774,12 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				}
 				
 				if(options.password != null && !reencrypted) {
-					encrypt(options.password, contents, {iter: options.iter, salt: options.salt}, function(encrypted) {
+					var adata;
+					if(options.compress !== false) {
+						contents = pako.gzip(new Uint8Array(contents)).buffer;
+						adata = {gz: 1};
+					}
+					encrypt(options.password, contents, {adata: adata, iter: options.iter, salt: options.salt}, function(encrypted) {
 						var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
 						upload(null, transactionId, messageCount, blob, true);
 					});
@@ -807,7 +821,12 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			// Upload file
 			console.log('PUT', file);
 			contents = codec[options.codec || 'utf8String'].toAB(contents);
-			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, options.password != null ? {iter: options.iter, salt: options.salt} : {}, function(encrypted) {
+			var adata;
+			if(options.compress !== false) {
+				contents = pako.gzip(new Uint8Array(contents)).buffer;
+				adata = {gz: 1};
+			}
+			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, extend({adata: adata}, options.password != null ? {iter: options.iter, salt: options.salt} : {}), function(encrypted) {
 				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
 				var req = new XMLHttpRequest();
 				req.open('PUT', getObjectUrl('PUT', file, options) + '?');
