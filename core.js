@@ -153,10 +153,13 @@ codec.base64 = {
 };
 
 var subtle = window.crypto.subtle || window.crypto.webkitSubtle;
-
+var subtleKeys = {};
 function encrypt(key, plaintext, params, callback) {
 	try {
-		subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['encrypt']).then(function(_key) {
+		if(!subtleKeys[key]) {
+			subtleKeys[key] = subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['encrypt', 'decrypt']);
+		}
+		subtleKeys[key].then(function(_key) {
 			var iv = sjcl.codec.arrayBuffer.fromBits(sjcl.random.randomWords(4,0));
 			var ivLength = iv.byteLength;
 			var plaintextLength = plaintext.byteLength;
@@ -210,7 +213,10 @@ function encrypt(key, plaintext, params, callback) {
 
 function decrypt(key, str, outparams, callback) {
 	try {
-		subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['decrypt']).then(function(_key) {
+		if(!subtleKeys[key]) {
+			subtleKeys[key] = subtle.importKey('raw', sjcl.codec.arrayBuffer.fromBits(key), {name: 'AES-CTR'}, false, ['encrypt', 'decrypt']);
+		}
+		subtleKeys[key].then(function(_key) {
 			var obj = JSON.parse(str);
 			var ct = codec.base64.toAB(obj.ct);
 			var iv = codec.base64.toAB(obj.iv);
