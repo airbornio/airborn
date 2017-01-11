@@ -206,7 +206,7 @@ function encrypt(key, plaintext, params, callback) {
 	}
 	function error() {
 		// Web Crypto or the algorithm may be unsupported, try sjcl.
-		if(params.adata) params.adata = sjcl.codec.arrayBuffer.toBits(codec.json.toAB(params.adata));
+		params.adata = params.adata ? sjcl.codec.arrayBuffer.toBits(codec.json.toAB(params.adata)) : [];
 		callback(sjcl.encrypt(key, sjcl.codec.arrayBuffer.toBits(plaintext), params));
 	}
 }
@@ -693,8 +693,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				if(options.password != null && !reencrypted) {
 					var adata;
 					if(options.compress !== false) {
-						contents = pako.gzip(new Uint8Array(contents)).buffer;
-						adata = {gz: 1};
+						var compressed = pako.gzip(new Uint8Array(contents)).buffer;
+						if(compressed.byteLength < contents.byteLength) {
+							contents = compressed;
+							adata = {gz: 1};
+						}
 					}
 					encrypt(options.password, contents, {adata: adata, iter: options.iter, salt: options.salt}, function(encrypted) {
 						var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
@@ -740,8 +743,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			contents = codec[options.codec || 'utf8String'].toAB(contents);
 			var adata;
 			if(options.compress !== false) {
-				contents = pako.gzip(new Uint8Array(contents)).buffer;
-				adata = {gz: 1};
+				var compressed = pako.gzip(new Uint8Array(contents)).buffer;
+				if(compressed.byteLength < contents.byteLength) {
+					contents = compressed;
+					adata = {gz: 1};
+				}
 			}
 			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, extend({adata: adata}, options.password != null ? {iter: options.iter, salt: options.salt} : {}), function(encrypted) {
 				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
