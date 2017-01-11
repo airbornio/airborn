@@ -170,7 +170,7 @@ function encrypt(key, plaintext, params, callback) {
 			var ks = 128;
 			var adata = codec.json.toAB(params.adata);
 			var ts = 64;
-			var tag = _computeTag(key, plaintext, iv, adata, ts, L);
+			var tag = _computeTag(key, plaintext, iv, adata, ts, plaintextLength, L);
 			return Promise.all([
 				subtle.encrypt({
 					name: 'AES-CTR',
@@ -243,7 +243,7 @@ function decrypt(key, str, outparams, callback) {
 			]).then(function(result) {
 				var tag = result[0];
 				var plaintext = result[1];
-				var tag2 = _computeTag(key, plaintext, iv, adata, ts, L);
+				var tag2 = _computeTag(key, plaintext, iv, adata, ts, plaintextLength, L);
 				if(!sjcl.bitArray.equal(sjcl.codec.arrayBuffer.toBits(tag), tag2)) {
 					throw new sjcl.exception.corrupt("ccm: tag doesn't match");
 				}
@@ -280,15 +280,11 @@ function _computeL(plaintextLength, ivLength) {
 	return L;
 }
 
-function _computeTag(key, plaintext, iv, adata, ts, L) {
-	var _sjcl_computeTag = sjcl.mode.ccm.r; // Minified name.
-	var tag = _sjcl_computeTag(new sjcl.cipher.aes(key), sjcl.codec.arrayBuffer.toBits(plaintext), sjcl.codec.arrayBuffer.toBits(iv.slice(0, 15 - L)), sjcl.codec.arrayBuffer.toBits(adata), ts, L);
-	/* Less CPU-intensive version for updated sjcl.
+function _computeTag(key, plaintext, iv, adata, ts, plaintextLength, L) {
 	var _sjcl_computeTag = sjcl.arrayBuffer.ccm.r; // Minified name.
 	var paddedPlaintext = new Uint8Array(plaintextLength + (16 - plaintextLength % 16));
 	paddedPlaintext.set(new Uint8Array(plaintext), 0);
 	var tag = _sjcl_computeTag(new sjcl.cipher.aes(key), paddedPlaintext.buffer, sjcl.codec.arrayBuffer.toBits(iv.slice(0, 15 - L)), sjcl.codec.arrayBuffer.toBits(adata), ts / 8, plaintextLength, L);
-	*/
 	return tag;
 }
 
