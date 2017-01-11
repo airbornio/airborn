@@ -27,10 +27,10 @@ if(loginButton) {
 }
 
 [
-	'/Core/startup.js',
-	'/Core/loader.js',
+	'/Core/laskyawm.html',
+	'/Core/laskyawm.css',
+	'/Core/jquery-ui.min.css',
 	'/settings',
-	'/Core/compat.js',
 	'/Apps/firetext/index.html',
 	'/Apps/firetext/styles.css'
 ].forEach(function(url) {
