@@ -186,9 +186,9 @@ function updateBackground(timer) {
 	// To fix the problem, we preload the subresources in an <img> before loading it in the svg.
 	loadImage(dataUrl, function() {
 		
-		// Chrome doesn't support svg favicons, so render to a png. (https://code.google.com/p/chromium/issues/detail?id=294179)
-		// compat.js does that anyways, but we don't use that on the Airborn OS website, where this file is also used.
-		loadImage('data:image/svg+xml,' + encodeURIComponent([
+		// Chrome doesn't support svg favicons, (https://code.google.com/p/chromium/issues/detail?id=294179)
+		// but compat.js renders the favicon to a png for us.
+		favicon.href = 'data:image/svg+xml,' + encodeURIComponent([
 			'<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32">',
 				'<defs>',
 					'<mask id="backgroundMask">',
@@ -198,15 +198,7 @@ function updateBackground(timer) {
 				'<image x="' + -(size * 25 / 4) + '" y="' + -(size * 25 / 4) + '" width="' + size * 25 + '" height="' + size * 25 + '" xlink:href="' + dataUrl + '" mask="url(#backgroundMask)" />',
 				'<image x="0" y="0" width="32" height="32" xlink:href="' + faviconForeground.src + '" />',
 			'</svg>'
-		].join('\n')), function() {
-			var canvas = document.createElement('canvas');
-			canvas.width = canvas.height = 32;
-			
-			var ctx = canvas.getContext('2d');
-			ctx.drawImage(this, 0, 0, 32, 32);
-			
-			favicon.href = canvas.toDataURL('image/png');
-		});
+		].join('\n'));
 		
 	});
 	
