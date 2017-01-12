@@ -1122,7 +1122,6 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 };
 
 getFile('/Core/js-yaml.js', eval);
-getFile('/Core/3rdparty/jszip/jszip.min.js', eval);
 getFile('/Core/3rdparty/esprima.js', eval);
 getFile('/Core/3rdparty/estraverse.js', eval);
 getFile('/Core/merge.js', eval);
@@ -1258,39 +1257,50 @@ function corsReq(url, callback, responseType) {
 	req.send();
 }
 
+function includeJSZip(callback) {
+	getFile('/Core/3rdparty/jszip/jszip.min.js', function(contents) {
+		if(!window.JSZip) window.eval(contents);
+		if(callback) callback();
+	});
+}
+
 window.installPackage = function(manifest_url, params, callback) {
 	if(typeof params === 'function') {
 		callback = params;
 		params = {};
 	}
+	includeJSZip();
 	corsReq(manifest_url, function() {
 		var manifest = JSON.parse(this.responseText);
 		corsReq(manifest.package_path, function() {
-			var zip = new JSZip(this.response);
-			var keys = Object.keys(zip.files);
-			var uploaded = 0;
-			var total = 0;
-			var target = '/Apps/' + basename(manifest.package_path).replace('-' + manifest.version, '').replace('.zip', '') + '/';
-			getFile(target, {codec: 'dir'}, function(contents) {
-				putFile(target, {codec: 'dir', transactionId: 'packageinstall'}, contents || {}, {x: {marketplace: extend({}, params, {manifest_url: manifest_url})}});
-			});
-			keys.forEach(function(path) {
-				var file = zip.files[path];
-				if(!file.options.dir) {
-					total++;
-					putFile(
-						target + path,
-						{codec: 'arrayBuffer', transactionId: 'packageinstall'},
-						file.asArrayBuffer(),
-						{from: 'origin'}, // Don't merge to facilitate "Reinstall" functionality.
-						function() {
-							uploaded++;
-							if(uploaded === total) {
-								callback({installState: 'installed'});
+			var response = this.response;
+			includeJSZip(function() {
+				var zip = new JSZip(response);
+				var keys = Object.keys(zip.files);
+				var uploaded = 0;
+				var total = 0;
+				var target = '/Apps/' + basename(manifest.package_path).replace('-' + manifest.version, '').replace('.zip', '') + '/';
+				getFile(target, {codec: 'dir'}, function(contents) {
+					putFile(target, {codec: 'dir', transactionId: 'packageinstall'}, contents || {}, {x: {marketplace: extend({}, params, {manifest_url: manifest_url})}});
+				});
+				keys.forEach(function(path) {
+					var file = zip.files[path];
+					if(!file.options.dir) {
+						total++;
+						putFile(
+							target + path,
+							{codec: 'arrayBuffer', transactionId: 'packageinstall'},
+							file.asArrayBuffer(),
+							{from: 'origin'}, // Don't merge to facilitate "Reinstall" functionality.
+							function() {
+								uploaded++;
+								if(uploaded === total) {
+									callback({installState: 'installed'});
+								}
 							}
-						}
-					);
-				}
+						);
+					}
+				});
 			});
 		}, 'arraybuffer');
 	});
@@ -1304,15 +1314,19 @@ window.update = function() {
 				if((settings.core && settings.core.notifyOfUpdates === false) || (document.hasFocus() && confirm(
 					'There is an update for Airborn OS. Do you want to install it now? You can continue using Aiborn while and after updating. The update will apply next time you open Airborn OS.\nIf you click Cancel, you will be asked again in 1 hour or next time you open Airborn OS.'
 				))) {
+					includeJSZip();
 					corsReq('/v2/current', function() {
-						var zip = new JSZip(this.response);
-						var keys = Object.keys(zip.files);
-						var target = '/';
-						keys.forEach(function(path) {
-							var file = zip.files[path];
-							if(!file.options.dir) {
-								putFile(target + path, {codec: 'arrayBuffer', transactionId: 'airbornupdate'}, file.asArrayBuffer(), {from: 'origin', parentFrom: 'origin'});
-							}
+						var response = this.response;
+						includeJSZip(function() {
+							var zip = new JSZip(response);
+							var keys = Object.keys(zip.files);
+							var target = '/';
+							keys.forEach(function(path) {
+								var file = zip.files[path];
+								if(!file.options.dir) {
+									putFile(target + path, {codec: 'arrayBuffer', transactionId: 'airbornupdate'}, file.asArrayBuffer(), {from: 'origin', parentFrom: 'origin'});
+								}
+							});
 						});
 					}, 'arraybuffer');
 				}
