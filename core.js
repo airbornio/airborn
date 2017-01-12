@@ -1100,7 +1100,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	function cb(c, err) {
 		var data;
 		if(!err) {
-			if(options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51 || (isHTML(extension) && navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/))) {
+			if(options.selfContained || (navigator.userAgent.match(/Firefox\/(\d+)/) || [])[1] >= 51 || (navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/))) {
 				if(extension === 'js') data = ',' + encodeURIComponent(c + '\n//# sourceURL=') + path;
 				else if(extension === 'css') data = ',' + encodeURIComponent(c + '\n/*# sourceURL=' + path + ' */');
 				else if(isHTML(extension)) data = ',' + encodeURIComponent(c + '\n<!--# sourceURL=' + path + ' -->');
