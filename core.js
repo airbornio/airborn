@@ -346,37 +346,32 @@ window.getFile = function(file, options, callback) {
 			if(handleFromCache()) return; // We might've PUT a newer version by now.
 			if(req.status === 200) {
 				currentFilename = file;
-				var decrypted, outparams = {}, error;
-				var cont = function() {
+				var outparams = {};
+				new Promise(function(resolve, reject) {
+					decrypt(options.password != null ? options.password : files_key, req.response, outparams, function(decrypted, e) {
+						if(e) {
+							decrypt(password, req.response, outparams, function(decrypted, e2) {
+								if(e2) {
+									reject(e);
+								} else {
+									resolve(decrypted);
+								}
+							});
+						} else {
+							resolve(decrypted);
+						}
+					});
+				}).then(function(decrypted) {
 					if(outparams.adata && outparams.adata.gz) {
-						decrypted = pako.ungzip(new Uint8Array(decrypted)).buffer;
+						return pako.ungzip(new Uint8Array(decrypted)).buffer;
 					}
-					try {
-						decrypted = codec[options.codec || 'utf8String'].fromAB(decrypted);
-					} catch(e) {
-						error = {status: 0, statusText: e.message};
-					}
-					if(error) {
-						callback(null, error);
-					} else {
-						if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: decrypted, ts: Date.now()};
-						callback(decrypted);
-					}
-				};
-				decrypt(options.password != null ? options.password : files_key, req.response, outparams, function(_decrypted, e) {
-					if(e) {
-						decrypt(password, req.response, outparams, function(_decrypted, e2) {
-							if(e2) {
-								error = {status: 0, statusText: e.message};
-							} else {
-								decrypted = _decrypted;
-							}
-							cont();
-						});
-					} else {
-						decrypted = _decrypted;
-						cont();
-					}
+					return decrypted;
+				}).then(function(decompressed) {
+					var encoded = codec[options.codec || 'utf8String'].fromAB(decompressed); // Can throw
+					if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: encoded, ts: Date.now()};
+					callback(encoded);
+				}).catch(function(e) {
+					callback(null, e.status ? e : {status: 0, statusText: e.message});
 				});
 			} else {
 				console.error('GET', file);
