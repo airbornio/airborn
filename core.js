@@ -363,6 +363,17 @@ window.getFile = function(file, options, callback) {
 					});
 				}).then(function(decrypted) {
 					if(outparams.adata && outparams.adata.gz) {
+						if(outparams.adata.rel) {
+							return new Promise(function(resolve, reject) {
+								getFile(outparams.adata.rel, {rawObjectLocation: true, codec: 'arrayBuffer'}, function(contents, e) {
+									if(e) {
+										reject(e);
+										return;
+									}
+									resolve(pako.inflate(new Uint8Array(decrypted), {dictionary: _getRelativeDictionary(contents)}).buffer);
+								});
+							});
+						}
 						return pako.ungzip(new Uint8Array(decrypted)).buffer;
 					}
 					return decrypted;
@@ -395,6 +406,9 @@ function notifyFileChange(path, reason) {
 }
 
 function getObjectUrl(method, file, options) {
+	if(options.rawObjectLocation) {
+		return '/object/' + file;
+	}
 	return '/object/' + (options.object || _getObjectLocation(file)) +
 		// Chrome, when we prefetch a file and it returns a 404, caches
 		// that 404 even for subsequent PUT requests (crbug.com/635350).
@@ -656,9 +670,12 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				});
 			}
 			
+			var histprevnames = history && Object.keys(history);
+			var histprevnrs = history && histprevnames.map(function(name) { return parseInt(name.substr(1), 10); });
+			var histprevnr = history ? Math.max.apply(Math, histprevnrs) : 0;
 			var histname =
 				file + '.history/v' +
-				(history ? Math.max.apply(Math, Object.keys(history).map(function(name) { return parseInt(name.substr(1), 10); })) + 1 : 1) +
+				(histprevnr + 1) +
 				(options.from ? '-' + options.from : '') +
 				file.match(/(\/|\.\w+)?$/)[0];
 			var parentNames = options.parentNames;
@@ -674,7 +691,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					}
 				}
 			}
-			putFile(histname, {codec: options.codec, transactionId: options.transactionId}, contents, {edited: now, parentNames: parentNames}, function upload(err, transactionId, messageCount, blob, reencrypted) {
+			putFile(histname, {codec: options.codec, transactionId: options.transactionId, histprevname: history && file + '.history/' + histprevnames[histprevnrs.indexOf(histprevnr)]}, contents, {edited: now, parentNames: parentNames}, function upload(err, transactionId, messageCount, blob, reencrypted) {
 				
 				if(err) {
 					callback(err);
@@ -732,10 +749,31 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			// Upload file
 			console.log('PUT', file);
 			contents = codec[options.codec || 'utf8String'].toAB(contents);
-			var adata;
-			if(options.compress !== false) {
-				var compressed = pako.gzip(new Uint8Array(contents)).buffer;
+			var compressed, adata, histprevcached;
+			if(options.histprevname && (histprevcached = window.getFileCache[options.histprevname])) {
+				var histprevcachedbuf = codec[histprevcached.codec || 'utf8String'].toAB(histprevcached.contents);
+				compressed = pako.deflate(new Uint8Array(contents), {dictionary: _getRelativeDictionary(histprevcachedbuf)}).buffer;
+				if(compressed.byteLength * (histprevcached.chainLength + 1 || 2) < (histprevcached.compressionRatio || 1) * contents.byteLength) {
+					// We try to ensure that to download a particular history
+					// entry, you never have to download more than 2x the data
+					// that that entry compressed on its own would take (1x for
+					// the original version, compressed, and at most 1x for the
+					// chain of versions relative to that). This calculation
+					// ignores metadata, headers and latency in the
+					// consideration.
+					// However, we don't know what the size of the entry
+					// compressed on its own would be, so we estimate based on
+					// the compression ratio of the first version in the chain.
+					window.getFileCache[file].compressionRatio = histprevcached.compressionRatio;
+					window.getFileCache[file].chainLength = (histprevcached.chainLength || 0) + 1;
+					contents = compressed;
+					adata = {gz: 1, rel: _getObjectLocation(options.histprevname)};
+				}
+			}
+			if(options.compress !== false && !adata) {
+				compressed = pako.gzip(new Uint8Array(contents)).buffer;
 				if(compressed.byteLength < contents.byteLength) {
+					window.getFileCache[file].compressionRatio = compressed.byteLength / contents.byteLength;
 					contents = compressed;
 					adata = {gz: 1};
 				}
@@ -777,6 +815,20 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		}
 	}
 };
+
+function _getRelativeDictionary(contents) {
+	// "The current implementation of deflate will use at most the window size
+	// minus 262 bytes of the provided dictionary." (http://zlib.net/manual.html#Advanced)
+	// Furthermore, deflate uses the end of the dictionary, while for us, the
+	// beginning of the previous version is more likely to be useful.
+	
+	// It's a shame that we can't make the window size larger than 32kB (the
+	// size of `contents`, for example). Also, zlib/pako searches for matches in
+	// the dictionary backwards, which is in this case of course less efficient
+	// than searching forwards. These two things are the downside of the hack
+	// that is using zlib with a dictionary for delta compression.
+	return new Uint8Array(contents, 0, Math.min(contents.byteLength, (1 << 15) - 262));
+}
 
 var mimeTypes = {
 	js: 'text/javascript',
