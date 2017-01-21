@@ -1578,6 +1578,18 @@
 		Object.defineProperty(History.prototype, 'state', {value: state, enumerable: true, configurable: true});
 	}
 	if(navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/)) {
+		var _history = window.history;
+		window.History = function() {};
+		try {
+			Object.defineProperty(window, 'history', {value: new window.History(), enumerable: true, configurable: true}); // Safari 10
+		} catch(e) {
+			window.history = new window.History(); // Safari 9
+		}
+		['go', 'back', 'forward'].forEach(function(name) {
+			window.History.prototype[name] = function() {
+				_history[name].apply(_history, arguments);
+			};
+		});
 		var hist = [{href: locationurl.href, state: null}];
 		var curr = 0;
 		History.prototype.replaceState = function(state, title, url) {
@@ -1589,16 +1601,18 @@
 			curr++;
 			History.prototype.replaceState.apply(this, arguments);
 		};
-		window.addEventListener('popstate', function(evt) {
+		window.addEventListener('hashchange', function(evt) {
 			if(window.location.hash.substr(0, 16) === '#_airborn_state_') {
+				evt.stopImmediatePropagation();
 				if(curr === +window.location.hash.substr(16)) {
-					evt.stopImmediatePropagation();
 					return;
 				}
 				curr = +window.location.hash.substr(16);
 				var state = hist[curr];
 				setState(state.state, state.href);
-				Object.defineProperty(evt, 'state', {value: state.state, enumerable: true, configurable: true});
+				var popstateevt = new Event('popstate');
+				Object.defineProperty(popstateevt, 'state', {value: state.state, enumerable: true, configurable: true});
+				window.dispatchEvent(popstateevt);
 			}
 		}, true);
 	} else {
