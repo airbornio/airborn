@@ -12,9 +12,10 @@ GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/core.js')), functi
 	getFile('/Core/loader.js', function(contents) {
 		window.eval(contents);
 		
-		document.getElementById('container').style.display = 'none';
+		var container = document.getElementById('container');
+		if(container) container.parentElement.removeChild(container);
 		var iframe = document.getElementsByTagName('iframe')[0];
-		if(iframe && iframe.getAttribute('src') === 'content') iframe.style.display = 'none';
+		if(iframe && iframe.getAttribute('src') === 'content') iframe.parentElement.removeChild(iframe);
 	});
 });
 
