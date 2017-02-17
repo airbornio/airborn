@@ -23,18 +23,20 @@ bar.addItem(togglePowerMenu);
 powerMenu = document.createElement('div');
 powerMenu.id = 'powerMenu';
 powerMenu.className = 'barMenu';
-var plans = document.createElement('div');
-plans.tabIndex = '0';
-plans.textContent = 'Plans';
-if(deviceType === 'desktop') {
-	plans.style.borderBottom = '1px solid #aaa';
-	plans.style.paddingBottom = '5px';
-	plans.style.marginBottom = '6px';
-}
-plans.addEventListener('click', function() {
-	window.open(airborn.top_location.origin + '/plans');
+['Plans', 'Feedback'].forEach(function(page) {
+	var link = document.createElement('div');
+	link.tabIndex = '0';
+	link.textContent = page;
+	if(deviceType === 'desktop') {
+		link.style.borderBottom = '1px solid #aaa';
+		link.style.paddingBottom = '5px';
+		link.style.marginBottom = '6px';
+	}
+	link.addEventListener('click', function() {
+		window.open(airborn.top_location.origin + '/' + page.toLowerCase());
+	});
+	powerMenu.appendChild(link);
 });
-powerMenu.appendChild(plans);
 var logout = document.createElement('div');
 logout.tabIndex = '0';
 logout.textContent = 'Log Out';
