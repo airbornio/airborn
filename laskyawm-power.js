@@ -32,7 +32,7 @@ if(deviceType === 'desktop') {
 	plans.style.marginBottom = '6px';
 }
 plans.addEventListener('click', function() {
-	window.open('https://www.airbornos.com/plans');
+	window.open(airborn.top_location.origin + '/plans');
 });
 powerMenu.appendChild(plans);
 var logout = document.createElement('div');
@@ -47,3 +47,20 @@ document.body.appendChild(powerMenu);
 document.documentElement.addEventListener('click', function(evt) {
 	if(evt.target !== powerMenu && evt.target !== togglePowerMenu) $(powerMenu).hide();
 });
+
+if(airborn.top_location.pathname === '/demo') {
+	var register = document.createElement('div');
+	register.tabIndex = '0';
+	register.textContent = 'Register';
+	register.addEventListener('click', function() {
+		window.open(airborn.top_location.origin + '/register');
+	});
+	if(deviceType === 'mobile') {
+		powerMenu.insertBefore(register, powerMenu.firstChild);
+	} else {
+		register.style.cursor = 'pointer';
+		register.style.textDecoration = 'underline';
+		register.style.marginLeft = '10px';
+		bar.addItem(register);
+	}
+}
