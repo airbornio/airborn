@@ -7,7 +7,7 @@
 	var loaderNode = document.createElement('div');
 	loaderNode.id = 'loading';
 	loaderNode.innerHTML = [
-		'<img class="airborn-logo" src="images/logo-small.png">',
+		'<img class="airborn-logo" src="images/logo.png">',
 		'<canvas id="loading-canvas" width="240" height="240"></canvas>',
 		'<p>Loading…</p>',
 		'<style>',
