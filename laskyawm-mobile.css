@@ -74,15 +74,6 @@
 .window .tabs {
 	height: calc(100% - 50px);
 }
-.window .tab {
-	/* Safari Mobile: allow scrolling in apps.
-	 * By default, Safari Mobile resizes iframes to fit their contents.
-	 * To "counteract" this, we make the iframe's container scrollable.
-	 * (http://stackoverflow.com/questions/23083462#23123845)
-	 */
-	overflow: scroll;
-	-webkit-overflow-scrolling: touch;
-}
 .window iframe {
 	border-top-right-radius: 7px;
 }

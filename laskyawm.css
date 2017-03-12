@@ -141,6 +141,14 @@ body:before {
 	height: 100%;
 	left: -100000px;
 	position: absolute;
+	
+	/* Safari Mobile: allow scrolling in apps.
+	 * By default, Safari Mobile resizes iframes to fit their contents.
+	 * To "counteract" this, we make the iframe's container scrollable.
+	 * (http://stackoverflow.com/questions/23083462#23123845)
+	 */
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
 }
 .window .tab.focused {
 	left: 0;
