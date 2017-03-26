@@ -78,7 +78,13 @@ function loadApps() {
 				total++;
 				airborn.fs.getFile('/Apps/' + line + 'manifest.webapp', function(manifest) {
 					manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
-					var name = manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
+					var name;
+					if(manifest.locales) {
+						(navigator.languages || [navigator.language]).some(function(lang) {
+							return (name = manifest.locales[lang] && manifest.locales[lang].name || lang === manifest.default_locale && manifest.name);
+						});
+					}
+					name = name || manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
 					var icon = getIconUrl(manifest.icons);
 					if(icon) {
 						airborn.fs.prepareUrl(icon, {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
