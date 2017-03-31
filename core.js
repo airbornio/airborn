@@ -792,11 +792,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					adata = {gz: 1};
 				}
 			}
+			var transactionId = getTransactionId(options); // Have to get this synchronously to avoid getting the next transactionId.
 			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, extend({adata: adata}, options.password != null ? {iter: options.iter, salt: options.salt} : {}), function(encrypted) {
 				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
 				var req = new XMLHttpRequest();
 				req.open('PUT', getObjectUrl('PUT', file, options) + '?');
-				var transactionId = getTransactionId(options);
 				var messageCount = options.messageCount;
 				if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
 				if(options.ACL) { req.setRequestHeader('X-ACL', options.ACL); }
