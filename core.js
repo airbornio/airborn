@@ -241,14 +241,25 @@ function decrypt(key, str, outparams, callback) {
 					length: ks,
 				}, _key, new DataView(ct, 0, plaintextLength))
 			]).then(function(result) {
-				var tag = result[0];
+				var tag = sjcl.codec.arrayBuffer.toBits(result[0]);
 				var plaintext = result[1];
 				var tag2 = _computeTag(key, plaintext, iv, adata, ts, plaintextLength, L);
-				if(!sjcl.bitArray.equal(sjcl.codec.arrayBuffer.toBits(tag), tag2)) {
-					throw new sjcl.exception.corrupt("ccm: tag doesn't match");
+				if(sjcl.bitArray.equal(tag, tag2)) {
+					return cont();
 				}
-				if(obj.adata) outparams.adata = codec.json.fromAB(codec.base64.toAB(obj.adata));
-				return plaintext;
+				if(plaintextLength % 16 === 0) {
+					var paddedPlaintext = new Uint8Array(plaintextLength + 16);
+					paddedPlaintext.set(new Uint8Array(plaintext), 0);
+					var tag3 = _computeTag(key, paddedPlaintext.buffer, iv, adata, ts, plaintextLength, L);
+					if(sjcl.bitArray.equal(tag, tag3)) {
+						return cont();
+					}
+				}
+				throw new sjcl.exception.corrupt("ccm: tag doesn't match");
+				function cont() {
+					if(obj.adata) outparams.adata = codec.json.fromAB(codec.base64.toAB(obj.adata));
+					return plaintext;
+				}
 			});
 		}).then(callback, error);
 	} catch(e) {
@@ -282,9 +293,12 @@ function _computeL(plaintextLength, ivLength) {
 
 function _computeTag(key, plaintext, iv, adata, ts, plaintextLength, L) {
 	var _sjcl_computeTag = sjcl.arrayBuffer.ccm.r; // Minified name.
-	var paddedPlaintext = new Uint8Array(plaintextLength + (16 - plaintextLength % 16));
-	paddedPlaintext.set(new Uint8Array(plaintext), 0);
-	var tag = _sjcl_computeTag(new sjcl.cipher.aes(key), paddedPlaintext.buffer, sjcl.codec.arrayBuffer.toBits(iv.slice(0, 15 - L)), sjcl.codec.arrayBuffer.toBits(adata), ts / 8, plaintextLength, L);
+	if(plaintextLength % 16 !== 0) {
+		var paddedPlaintext = new Uint8Array(plaintextLength + (16 - plaintextLength % 16));
+		paddedPlaintext.set(new Uint8Array(plaintext), 0);
+		plaintext = paddedPlaintext.buffer;
+	}
+	var tag = _sjcl_computeTag(new sjcl.cipher.aes(key), plaintext, sjcl.codec.arrayBuffer.toBits(iv.slice(0, 15 - L)), sjcl.codec.arrayBuffer.toBits(adata), ts / 8, plaintextLength, L);
 	return tag;
 }
 
