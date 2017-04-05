@@ -1232,7 +1232,6 @@ window.installPackage = function(manifest_url, params, callback) {
 							target + path,
 							{codec: 'arrayBuffer', transactionId: 'packageinstall'},
 							file.asArrayBuffer(),
-							{from: 'origin'}, // Don't merge to facilitate "Reinstall" functionality.
 							function() {
 								uploaded++;
 								if(uploaded === total) {
@@ -1265,7 +1264,7 @@ window.update = function() {
 							keys.forEach(function(path) {
 								var file = zip.files[path];
 								if(!file.options.dir) {
-									putFile(target + path, {codec: 'arrayBuffer', transactionId: 'airbornupdate'}, file.asArrayBuffer(), {from: 'origin', parentFrom: 'origin'});
+									putFile(target + path, {codec: 'arrayBuffer', transactionId: 'airbornupdate'}, file.asArrayBuffer());
 								}
 							});
 						});
