@@ -1,6 +1,5 @@
 /* This file is licensed under the Affero General Public License. */
-
-/*global jsyaml, esprima, estraverse, string, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, deepEquals: true */
+/*global jsyaml, esprima, estraverse, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, deepEquals: true */
 
 var core_version = 3;
 
@@ -463,7 +462,7 @@ function extend(target) {
 			var value = obj[key];
 			if(value != null && value.constructor === Object) {
 				if(target.hasOwnProperty(key)) extend(target[key], value);
-				else target[key] = extend({}, value);
+				else target[key] = value;
 			}
 			else if(value === undefined) delete target[key];
 			else target[key] = value;
@@ -502,103 +501,6 @@ function deepEquals(a, b) {
 	return true;
 }
 /* jshint ignore:end *//* jscs: enable */
-
-function maybeMerge(file, options, contents) {
-	if(options.codec !== 'dir') {
-		console.error("Can't merge when codec !== 'dir'.");
-		// TODO: report error
-		return;
-	}
-	
-	function seq(name) { return parseInt(name.substr(1), 10); }
-	function from(name) { return name.match(/^v\d+(?:-(.+))?(?:\/|\.\w+)?$/)[1] || ''; }
-	var ends = {};
-	var seqs = [];
-	Object.keys(contents).sort(function(a, b) { return seq(a) - seq(b); }).forEach(function(name) {
-		var _seq = seq(name);
-		var _from = from(name);
-		if(!seqs[_seq]) {
-			seqs[_seq] = [];
-		}
-		seqs[_seq].push(name);
-		if(!contents[name].parentNames) {
-			var prev = name.replace(/^v(\d)+(?:-.+)?(?:\/|\.\w+)?$/, function(match, _seq) { return parseInt(_seq, 10) - 1; });
-			if(contents.hasOwnProperty(prev)) {
-				contents[name].parentNames = [prev];
-			} else {
-				contents[name].parentNames = seqs[_seq - 1] && [seqs[_seq - 1][0]];
-			}
-		}
-		if(contents[name].parentNames) {
-			contents[name].parentNames.forEach(function(parentName) {
-				delete ends[parentName];
-				if(!contents[parentName].childFroms) {
-					contents[parentName].childFroms = [];
-				}
-				if(contents[parentName].childFroms.indexOf(_from) === -1) {
-					contents[parentName].childFroms.push(_from);
-				}
-			});
-		}
-		ends[name] = true;
-	});
-	ends = Object.keys(ends);
-	if(ends.length > 1) {
-		var parent;
-		var haserrors;
-		ends.forEach(function(end, i) {
-			var parentNames, parentName = end;
-			var otherFrom = from(ends[1 - i]);
-			do {
-				parentNames = contents[parentName].parentNames;
-				parentName = parentNames[1] && from(parentNames[1]) === otherFrom ? parentNames[1] : parentNames[0];
-			} while(contents[parentName].parentNames && contents[parentName].childFroms.indexOf(otherFrom) === -1);
-			if((parent && parentName !== parent) || !parentName) {
-				console.error("Can't merge without a common ancestor.");
-				haserrors = true;
-			}
-			parent = parentName;
-		});
-		if(ends.length > 2) {
-			console.error("Can't merge with more than two parents.");
-			haserrors = true;
-		}
-		if(haserrors) {
-			getFile(file.replace(/\.history\/$/, ''), {codec: 'raw'}, function(contents) {
-				putFile(file.replace(/\.history\/$/, ''), {codec: 'raw', parentNames: ends, transactionId: options.transactionId}, contents);
-			});
-			// TODO: report error
-		} else {
-			console.log('Merge:', parent, ends[0], ends[1]);
-			parallel([
-				function(cb) {
-					getFile(file + parent, cb);
-				},
-				function(cb) {
-					getFile(file + ends[0], cb);
-				},
-				function(cb) {
-					getFile(file + ends[1], cb);
-				}
-			], function(parent, first, second, err) {
-				if(err) {
-					console.log("Can't merge: error downloading files");
-					// TODO: report error
-					return;
-				}
-				
-				var merged = string.merge3(parent, first, second, function(first, second) {
-					// TODO: report error
-					return [second];
-				});
-				
-				putFile(file.replace(/\.history\/$/, ''), {parentNames: ends, transactionId: options.transactionId}, merged, function() {
-					console.log('Merge put!');
-				});
-			});
-		}
-	}
-}
 
 function debounce(fn, time, obj) {
 	if(obj.timeout) clearTimeout(obj.timeout);
@@ -684,28 +586,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				});
 			}
 			
-			var histprevnames = history && Object.keys(history);
-			var histprevnrs = history && histprevnames.map(function(name) { return parseInt(name.substr(1), 10); });
-			var histprevnr = history ? Math.max.apply(Math, histprevnrs) : 0;
 			var histname =
 				file + '.history/v' +
-				(histprevnr + 1) +
-				(options.from ? '-' + options.from : '') +
+				(history ? Math.max.apply(Math, Object.keys(history).map(function(name) { return parseInt(name.substr(1), 10); })) + 1 : 1) +
 				file.match(/(\/|\.\w+)?$/)[0];
-			var parentNames = options.parentNames;
-			if(history && options.parentFrom) {
-				var keys = Object.keys(history);
-				var postfix =
-					options.parentFrom +
-					file.match(/(\/|\.\w+)?$/)[0];
-				for(var i = keys.length - 1; i >= 0; i--) {
-					if(keys[i].substr(-postfix.length) === postfix) {
-						parentNames = [keys[i]];
-						break;
-					}
-				}
-			}
-			putFile(histname, {codec: options.codec, transactionId: options.transactionId, histprevname: history && file + '.history/' + histprevnames[histprevnrs.indexOf(histprevnr)]}, contents, {edited: now, parentNames: parentNames}, function upload(err, transactionId, messageCount, blob, reencrypted) {
+			putFile(histname, {codec: options.codec, transactionId: options.transactionId}, contents, {edited: now}, function upload(err, transactionId, messageCount, blob, reencrypted) {
 				
 				if(err) {
 					callback(err);
@@ -755,10 +640,6 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 	} else {
 		if(transaction) {
 			transaction[file] = [file, options, contents, attrs, callback, progress];
-			
-			if(/\.history\/$/.test(file)) {
-				maybeMerge(file, options, extend({}, contents));
-			}
 		} else {
 			// Upload file
 			console.log('PUT', file);
@@ -1185,7 +1066,6 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 getFile('/Core/js-yaml.js', eval);
 getFile('/Core/3rdparty/esprima.js', eval);
 getFile('/Core/3rdparty/estraverse.js', eval);
-getFile('/Core/merge.js', eval);
 
 var mainWindow;
 
