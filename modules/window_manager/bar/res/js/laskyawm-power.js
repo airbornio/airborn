@@ -9,7 +9,7 @@ togglePowerMenu.id = 'togglePowerMenu';
 togglePowerMenu.className = 'barButton';
 togglePowerMenu.type = 'image';
 togglePowerMenu.alt = 'Log Out…';
-airborn.fs.prepareUrl('/Core/power.png', {rootParent: '/'}, function(url) {
+airborn.fs.prepareUrl('/Core/modules/window_manager/bar/res/img/power.png', {rootParent: '/'}, function(url) {
 	togglePowerMenu.src = url;
 	togglePowerMenu.addEventListener('load', function() {
 		bar.updateWidth();
