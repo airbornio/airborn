@@ -794,7 +794,7 @@ openFile = function(path, action) {
 		options = {};
 	}
 	showProgress(options);
-	airborn.fs.getFile('/Core/filetypes', function(contents) {
+	airborn.fs.getFile('/Core/modules/config/filetypes', function(contents) {
 		var apppath;
 		if(action[0] === '/') {
 			apppath = action;
