@@ -62,14 +62,20 @@ window.endTransaction = function() {
 	(function transactionChunk() {
 		var finished = 0;
 		for(; i < len; i++) {
-			var path = _transactionPaths[i];
+			let path = _transactionPaths[i];
 			_transaction[path][1].finishingTransaction = true;
 			_transaction[path][1].messageCount = transactions[_transaction[path][1].fullTransactionId];
 			if(/\/\.history\//.test(_transaction[path][0])) {
 				window.getFileCache[_transaction[path][0]] = {codec: _transaction[path][1].codec, contents: _transaction[path][2], ts: Date.now()};
 			}
 			let callback = _transaction[path][4];
-			_transaction[path][4] = function() { // jshint ignore:line
+			_transaction[path][4] = function(err) { // jshint ignore:line
+				if(err && 'status' in err) {
+					setTimeout(function() {
+						putFile.apply(window, _transaction[path]);
+					}, 5000);
+					return;
+				}
 				if(++finished === chunkSize) {
 					transactionChunk();
 				}
