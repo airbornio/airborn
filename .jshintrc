@@ -13,5 +13,6 @@
 	"sub": true,
 	
 	"browser": true,
-	"devel": true
+	"devel": true,
+	"esversion": 6
 }

@@ -28,8 +28,10 @@ window.endTransaction = function() {
 	transaction = null;
 	var transactions = {};
 	var fileNamesSeen = {};
-	Object.keys(_transaction).forEach(function(path) {
-		var transactionId = getTransactionId(_transaction[path][1]);
+	var _transactionPaths = Object.keys(_transaction);
+	_transactionPaths.forEach(function(path) {
+		var transactionId = transactionIdPrefix + ':' + (_transaction[path][1].transactionId || '');
+		_transaction[path][1].fullTransactionId = transactionId;
 		if(!transactions[transactionId]) {
 			transactions[transactionId] = 0;
 		}
@@ -55,18 +57,32 @@ window.endTransaction = function() {
 			}));
 		}
 	});
-	Object.keys(_transaction).forEach(function(path) {
-		_transaction[path][1].finishingTransaction = true;
-		_transaction[path][1].messageCount = transactions[getTransactionId(_transaction[path][1])];
-		if(/\/\.history\//.test(_transaction[path][0])) {
-			window.getFileCache[_transaction[path][0]] = {codec: _transaction[path][1].codec, contents: _transaction[path][2], ts: Date.now()};
+	var i = 0, len = _transactionPaths.length;
+	const chunkSize = 50;
+	(function transactionChunk() {
+		var finished = 0;
+		for(; i < len; i++) {
+			var path = _transactionPaths[i];
+			_transaction[path][1].finishingTransaction = true;
+			_transaction[path][1].messageCount = transactions[_transaction[path][1].fullTransactionId];
+			if(/\/\.history\//.test(_transaction[path][0])) {
+				window.getFileCache[_transaction[path][0]] = {codec: _transaction[path][1].codec, contents: _transaction[path][2], ts: Date.now()};
+			}
+			let callback = _transaction[path][4];
+			_transaction[path][4] = function() { // jshint ignore:line
+				if(++finished === chunkSize) {
+					transactionChunk();
+				}
+				callback.apply(this, arguments);
+			};
+			putFile.apply(window, _transaction[path]);
+			if((i + 1) % chunkSize === 0) {
+				i++;
+				break;
+			}
 		}
-		putFile.apply(window, _transaction[path]);
-	});
+	})();
 };
-function getTransactionId(options) {
-	return transactionIdPrefix + ':' + (options.transactionId || '');
-}
 
 var sjcl = parent.sjcl;
 var pako = parent.pako;
@@ -638,7 +654,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 			if(transaction && !inTransaction && !filesToPut) window.endTransaction();
 		});
 	} else {
-		if(transaction) {
+		if(!options.finishingTransaction) {
 			transaction[file] = [file, options, contents, attrs, callback, progress];
 		} else {
 			// Upload file
@@ -673,11 +689,11 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 					adata = {gz: 1};
 				}
 			}
-			var transactionId = getTransactionId(options); // Have to get this synchronously to avoid getting the next transactionId.
 			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, extend({adata: adata}, options.password != null ? {iter: options.iter, salt: options.salt} : {}), function(encrypted) {
 				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
 				var req = new XMLHttpRequest();
 				req.open('PUT', getObjectUrl('PUT', file, options) + '?');
+				var transactionId = options.fullTransactionId;
 				var messageCount = options.messageCount;
 				if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
 				if(options.ACL) { req.setRequestHeader('X-ACL', options.ACL); }
