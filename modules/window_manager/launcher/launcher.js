@@ -11,31 +11,27 @@ function getIconUrl(icons) {
 	})[0]];
 }
 
-var apps;
-
 var toggleApps = document.createElement('div');
 toggleApps.id = 'toggleApps';
 toggleApps.className = 'barButton';
 toggleApps.textContent = 'Apps';
 toggleApps.tabIndex = '0';
 toggleApps.addEventListener('click', function() {
-	$(apps).toggle();
+	$(sidebar).toggle();
+	updateLauncherUI();
 });
 toggleApps.addEventListener('keypress', function(evt) {
 	if(evt.which === 13 || evt.which === 32) {
-		$(apps).toggle();
+		$(sidebar).toggle();
+		updateLauncherUI();
 	}
 });
 document.body.appendChild(toggleApps);
 
-apps = document.createElement('div');
-apps.id = 'apps';
-apps.className = 'barMenu';
-apps.textContent = 'Loading…';
-document.body.appendChild(apps);
-
 var sidebar = document.createElement('div');
 sidebar.id = 'sidebar';
+$(sidebar).hide();
+updateLauncherUI();
 document.body.appendChild(sidebar);
 
 loadApps();
@@ -60,7 +56,8 @@ document.body.addEventListener('keypress', function(evt) {
 		if(!app || app.parentElement === app) return;
 	}
 	app.click();
-	$(apps).hide();
+	$(sidebar).hide();
+	updateLauncherUI();
 });
 
 function updateSidebarHeight() {
@@ -111,14 +108,13 @@ function loadApps() {
 				app.textContent = props.name.replace(/ /g, '\u00a0');
 				var icon = document.createElement('img');
 				icon.src = props.iconUrl || '';
+				app.insertBefore(document.createElement('br'), app.firstChild);
 				app.insertBefore(icon, app.firstChild);
 				app.tabIndex = '0';
 				app.title = props.name;
 				app.dataset.path = '/Apps/' + props.path;
 				fragment.appendChild(app);
 			});
-			apps.innerHTML = '';
-			apps.appendChild(fragment.cloneNode(true));
 			sidebar.innerHTML = '';
 			sidebar.appendChild(fragment);
 		}
@@ -130,5 +126,18 @@ airborn.fs.listenForFileChanges('/Apps/', function(path) {
 });
 
 document.documentElement.addEventListener('click', function(evt) {
-	if(evt.target !== apps && evt.target !== toggleApps) $(apps).hide();
+	if(evt.target !== sidebar && evt.target !== toggleApps) {
+		$(sidebar).hide();
+		updateLauncherUI();
+	}
 });
+
+function updateLauncherUI() {
+	if ($(sidebar).is(":hidden")) {
+		$('#windows').removeClass('launcher-active');
+		$('#toggleApps').removeClass('launcher-active');
+	} else {
+		$('#windows').addClass('launcher-active');
+		$('#toggleApps').addClass('launcher-active');
+	}
+}

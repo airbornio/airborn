@@ -1,11 +1,11 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, barIconsWidth, apps, getIconUrl, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
+/*global $, barIconsWidth, getIconUrl, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
 var workspace_start_top = deviceType === 'mobile' ? 0 : 25;
-var workspace_start_left = deviceType === 'mobile' ? 0 : 100;
+var workspace_start_left = 0;
 function workspace_height() { return window.innerHeight - workspace_start_top; }
 function workspace_width() { return window.innerWidth - workspace_start_left; }
 
@@ -172,7 +172,6 @@ window.addEventListener('message', function(message) {
 					});
 				});
 			} else if(message.data.action === 'wm.reportClicked') {
-				$(apps).hide();
 				$(powerMenu).hide();
 			} else if(message.data.action === 'wm.setTitle') {
 				childDivs.forEach(function(div) {

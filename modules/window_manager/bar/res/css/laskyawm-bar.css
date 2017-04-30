@@ -20,6 +20,9 @@
 	text-align: center;
 	display: inline-block;
 }
+#toggleApps.launcher-active {
+	border-bottom: 2px solid white;
+}
 #barIcons {
 	float: right;
 }
@@ -77,12 +80,20 @@
 }
 
 #sidebar {
-	width: 100px;
+	width: 100%;
 	overflow: auto;
 	background: rgba(255, 255, 255, .2);
-	direction: rtl; /* Move scrollbar to the left. */
+	direction: ltr;
 	position: absolute;
 	z-index: 900;
+	display: grid;
+	grid-gap: 10px;
+	grid-auto-columns: 150px;
+	grid-template-columns: repeat(auto-fit, 150px);
+	grid-template-rows: repeat(auto-fit,150px);
+	justify-content: center;
+	padding: 50px;
+	animation: 0.2s showLauncher;
 }
 #sidebar:before {
 	content: '';
@@ -99,12 +110,20 @@
 	cursor: pointer;
 	padding: 5px;
 	direction: ltr;
-	color: #E6E6E6;
-	text-shadow: 1px 1px 1px black;
+	color: #fff;
+	font-size: 20px;
 	animation: 0.2s showAppIcon;
+	font-weight: 100;
 }
 @keyframes showAppIcon { from { transform:scale(0.75); opacity: 0; } to { transform:scale(1); opacity: 1; }  }
+@keyframes showLauncher { from { opacity: 0; } to { opacity: 1; }  }
 #sidebar .app img {
-	width: 64px;
-	height: 64px;
+	width: 80px;
+	height: 80px;
+	margin-bottom: 10px;
+}
+#windows.launcher-active {
+	filter: blur(6px);
+	transition: filter 0.2s;
+	pointer-events: none;
 }
