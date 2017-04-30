@@ -20,7 +20,7 @@ window.startTransaction = function() {
 	}
 };
 window.endTransaction = function() {
-	console.trace(inTransaction, filesToPut, transaction);
+	console.log(inTransaction, filesToPut, transaction);
 	if(!transaction) return;
 	inTransaction = false;
 	if(filesToPut) return;
