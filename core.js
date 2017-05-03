@@ -533,8 +533,10 @@ function debounce(fn, time, obj) {
 }
 var debounceObj = {};
 window.putFile = function(file, options, contents, attrs, callback, progress) {
-	if(!options.finishingTransaction) startTransaction();
-	debounce(endTransaction, 100, debounceObj);
+	if(!options.finishingTransaction) {
+		startTransaction();
+		debounce(endTransaction, 100, debounceObj);
+	}
 	
 	if(typeof contents === 'function' || contents === undefined) {
 		progress = attrs;
