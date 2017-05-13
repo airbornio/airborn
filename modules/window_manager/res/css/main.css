@@ -246,11 +246,11 @@ body:before {
 }
 .window.minimized.hover {
 	z-index: 1000 !important;
-	max-height: 120px;
+	max-height: calc(var(--preview-scale) * (var(--height) - 25px) + 25px);
 }
 .window.minimized .tabs {
 	display: none;
-	transform: scale(0.298);
+	transform: scale(var(--preview-scale));
 	transform-origin: top left;
 }
 .window.minimized.hover .tabs {
