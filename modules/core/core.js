@@ -864,7 +864,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 			'</script>',
 			'</body>',
 			'</html>',
-			'<!--# sourceURL = /Core/core.js > inline at line ' + inline_linenr + ' -->'
+			'<!--# sourceURL = /Core/modules/core/core.js > inline at line ' + inline_linenr + ' -->'
 		].join('\n');
 		callback(data);
 	} else if(isHTML(extension) && (options.compat !== false || options.csp)) {
@@ -872,7 +872,7 @@ window.prepareFile = function(file, options, callback, progress, createObjectURL
 		delete _options.csp;
 		parallel([
 			function(cb) {
-				prepareString('\n<script src="/Core/compat.js"></script>\n', {rootParent: '/', compat: false, selfContained: options.selfContained}, cb, function() {}, createObjectURL);
+				prepareString('\n<script src="/Core/modules/webapi/webapi.js"></script>\n', {rootParent: '/', compat: false, selfContained: options.selfContained}, cb, function() {}, createObjectURL);
 			},
 			function(cb) {
 				prepareFile(file, _options, cb, progress, createObjectURL);
@@ -1087,9 +1087,9 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 	}
 };
 
-getFile('/Core/js-yaml.js', eval);
-getFile('/Core/3rdparty/esprima.js', eval);
-getFile('/Core/3rdparty/estraverse.js', eval);
+getFile('/Core/lib/yaml/js-yaml.js', eval);
+getFile('/Core/lib/esprima/esprima.js', eval);
+getFile('/Core/lib/estraverse/estraverse.js', eval);
 
 var mainWindow;
 
@@ -1136,7 +1136,7 @@ window.setIcon = function(href) {
 var pushUrl, pushHandlers = {};
 function pushInit() {
 	return new Promise(function(resolve/*, reject*/) {
-		getFile('/Core/3rdparty/socket.io/socket.io.js', function(contents) {
+		getFile('/Core/lib/socket.io/socket.io.js', function(contents) {
 			eval(contents);
 			var socket = io();
 			var url;
@@ -1223,7 +1223,7 @@ function corsReq(url, callback, responseType) {
 }
 
 function includeJSZip(callback) {
-	getFile('/Core/3rdparty/jszip/jszip.min.js', function(contents) {
+	getFile('/Core/lib/jszip/jszip.min.js', function(contents) {
 		if(!window.JSZip) window.eval(contents);
 		if(callback) callback();
 	});

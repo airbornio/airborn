@@ -4,7 +4,7 @@
 
 setTitle('');
 
-openWindow('/laskyawm.html', function(iframe) {
+openWindow('/modules/window_manager/index.html', function(iframe) {
 	iframe.addEventListener('load', function firstLoad() {
 		iframe.removeEventListener('load', firstLoad);
 		iframe.addEventListener('load', function secondLoad() {

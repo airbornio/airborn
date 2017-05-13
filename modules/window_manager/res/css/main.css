@@ -69,22 +69,22 @@ body:before {
 	background-repeat: no-repeat;
 }
 .window .titlebar .close {
-	background-image: url(close.png);
+	background-image: url(res\img\close.png);
 }
 .window .titlebar .minimize {
-	background-image: url(minimize.png);
+	background-image: url(res\img\minimize.png);
 }
 .window.minimized .titlebar .minimize {
-	background-image: url(unminimize.png);
+	background-image: url(res\img\unminimize.png);
 }
 .window.minimized .titlebar .maximize {
 	display: none;
 }
 .window .titlebar .maximize {
-	background-image: url(maximize.png);
+	background-image: url(res\img\maximize.png);
 }
 .window.maximized .titlebar .maximize {
-	background-image: url(unmaximize.png);
+	background-image: url(res\img\unmaximize.png);
 }
 .window .titlebar button:hover {
 	border-color: rgba(204, 204, 204, 0.5);
