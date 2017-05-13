@@ -91,7 +91,6 @@
 	grid-auto-columns: 150px;
 	grid-template-columns: repeat(auto-fit, 150px);
 	grid-template-rows: repeat(auto-fit,150px);
-	justify-content: center;
 	padding: 50px;
 	animation: 0.2s showLauncher;
 }
