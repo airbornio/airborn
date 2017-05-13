@@ -14,6 +14,7 @@ var windowsContainer = document.createElement('div');
 windowsContainer.id = 'windows';
 windowsContainer.style.top = workspace_start_top;
 windowsContainer.style.left = workspace_start_left;
+windowsContainer.style.setProperty('--workspace-start-top', workspace_start_top + 'px');
 document.body.appendChild(windowsContainer);
 
 var childDivs = [];
@@ -44,8 +45,8 @@ addCustomIframeFix('draggable');
 addCustomIframeFix('resizable');
 
 function clipResizableHandles(event, ui) {
-	var overflowx = ui.position.left + (ui.size ? ui.size.width : parseInt(this[0].style.width) || 800) - workspace_width();
-	var overflowy = ui.position.top + (ui.size ? ui.size.height : parseInt(this[0].style.height) || 600) - workspace_height();
+	var overflowx = ui.position.left + (ui.size ? ui.size.width : parseInt(this[0].style.getPropertyValue('--width')) || 800) - workspace_width();
+	var overflowy = ui.position.top + (ui.size ? ui.size.height : parseInt(this[0].style.getPropertyValue('--height')) || 600) - workspace_height();
 	this.find('.ui-resizable-ne, .ui-resizable-e, .ui-resizable-se').each(function() {
 		if(overflowx > 0) $(this).css('right', overflowx);
 		else $(this).css('right', '');
@@ -137,7 +138,9 @@ $.ui.plugin.add('draggable', 'forceMinimize', {
 	}
 });
 $.ui.plugin.add('resizable', 'forceMinimize', {
-	resize: function() {
+	resize: function(evt, ui) {
+		this[0].style.setProperty('--width', ui.size.width + 'px');
+		this[0].style.setProperty('--height', ui.size.height + 'px');
 		setTimeout(forceMinimize);
 	}
 });
@@ -617,8 +620,8 @@ function forceMinimize() {
 		
 		var left = parseFloat(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 		var top = parseFloat(win.style.top) || 0;
-		var width = parseFloat(win.style.width) || 800;
-		var height = parseFloat(win.style.height) || 600;
+		var width = parseFloat(win.style.getPropertyValue('--width')) || 800;
+		var height = parseFloat(win.style.getPropertyValue('--height')) || 600;
 		return {
 			x1: windows.length < 20 ? Math.max(0, Math.min(workspace_width(), left)) : left,
 			y1: windows.length < 20 ? Math.max(0, Math.min(workspace_height(), top)) : top,

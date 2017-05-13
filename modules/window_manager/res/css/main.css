@@ -30,8 +30,10 @@ body:before {
 	bottom: 0;
 }
 .window {
-	width: 800px;
-	height: 600px;
+	--width: 800px;
+	--height: 600px;
+	width: var(--width) !important;
+	height: var(--height) !important;
 	border-radius: 7px;
 	position: absolute !important;
 	top: 25px;
@@ -40,6 +42,8 @@ body:before {
 	border: 1px solid transparent;
 	box-shadow: 0 0 20px rgba(0,0,0,0.2);
 	transition: opacity 0.2s, left 0.2s, right 0.2s, top 0.2s, bottom 0.2s, width 0.2s, height 0.2s;
+	overflow: hidden;
+	overflow: -moz-hidden-unscrollable; /* Disable scolling on focus of input outside viewport in Firefox. */
 }
 .window:before {
 	content: '';
@@ -162,7 +166,11 @@ body:before {
 	height: 16px;
 }
 .window .tabs {
-	height: calc(100% - 25px);
+	/* Don't transition iframe size. */
+	width: var(--width);
+	height: var(--height);
+	
+	padding-bottom: 25px;
 }
 .window .tab {
 	width: 100%;
@@ -195,22 +203,24 @@ body:before {
 .hud {
 	position: absolute;
 	opacity: .7;
+	width: var(--width);
+	height: var(--height);
 }
 .window.maximized, .hud {
 	top: 0 !important;
-	height: 100% !important;
+	--height: calc(100vh - var(--workspace-start-top)) !important;
 }
 .window.maximized.maximized-max, .hud-max {
 	left: 0 !important;
-	width: 100% !important;
+	--width: 100vw !important;
 }
 .window.maximized.maximized-left, .hud-left {
 	left: 0 !important;
-	width: 50% !important;
+	--width: 50vw !important;
 }
 .window.maximized.maximized-right, .hud-right {
 	left: 50% !important;
-	width: 50% !important;
+	--width: 50vw !important;
 }
 .window.maximized:not(.minimized) {
 	border-radius: 0;
@@ -234,22 +244,17 @@ body:before {
 .window.minimized .titlebar .tabbar {
 	max-width: calc(100% - 112px);
 }
-.window.minimized iframe {
-	display: none;
-}
 .window.minimized.hover {
 	z-index: 1000 !important;
 	max-height: 120px;
 }
-.window.minimized.hover iframe {
+.window.minimized .tabs {
+	display: none;
+	transform: scale(0.298);
+	transform-origin: top left;
+}
+.window.minimized.hover .tabs {
 	display: block;
-	transform: scale(0.8);
-	transform-origin: 0 0;
-	-webkit-transform: scale(0.8);
-	-webkit-transform-origin: 0 0;
-	width: 125%;
-	height: 125%;
-	margin-bottom: -40px;
 }
 .window.minimized .ui-resizable-handle {
 	display: none !important;
