@@ -7,6 +7,8 @@
 	left: 0 !important;
 	top: 0 !important;
 	background-color: transparent !important;
+	pointer-events: none;
+	border: none;
 }
 .window:before {
 	opacity: 1;

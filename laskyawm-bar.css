@@ -1,21 +1,21 @@
 #bar {
-	background-color: rgba(255, 255, 255, .5);
+	background-color: rgba(255, 255, 255, .3);
 	z-index: -1000;
 	position: absolute;
 	width: 100%;
 	height: 25px;
 	color: white;
-	text-shadow: 1px 1px 1px black;
+	font-weight: 100;
+	border-bottom: 1px solid rgba(255,255,255,0.2);
 }
 .barButton {
 	color: white;
-	text-shadow: 1px 1px 1px black;
 	cursor: pointer;
-	font-weight: bold;
+	font-weight: 100;
 }
 #toggleApps {
-	padding: 3px 0;
-	height: 25px;
+	line-height: 25px;
+	font-size: 16px;
 	width: 100px;
 	text-align: center;
 	display: inline-block;
@@ -24,30 +24,26 @@
 	float: right;
 }
 #barIcons > * {
-	padding: 3px 0;
-	font-size: 15px;
+	line-height: 25px;
+	font-size: 16px;
 	float: right;
 }
 #togglePowerMenu {
-	padding: 4px 10px;
+	padding: 3px 10px;
 	margin: 0;
-	line-height: 17px;
+	line-height: 15px;
 }
 .barMenu {
 	display: none;
 	z-index: 1000;
 	position: absolute;
-	background: white;
+	background: rgba(255,255,255,0.96);
 	padding: 10px;
 	border-radius: 7px;
-	box-shadow: 0px 0px 5px #888;
 	top: 34px;
-}
-#apps {
-	left: 10px;
-}
-#powerMenu {
-	right: 5px;
+	color: #000;
+	box-shadow: 0 0 4px rgba(0,0,0,0.2);
+	font-weight: 100;
 }
 .barMenu:after {
 	content: ' ';
@@ -55,9 +51,15 @@
 	position: absolute;
 	width: 0;
 	border: 11px solid transparent;
-	border-bottom-color: white;
+	border-bottom-color: rgba(255,255,255,0.96);
 	top: -22px;
 	pointer-events: none;
+}
+#apps {
+	left: 10px;
+}
+#powerMenu {
+	right: 5px;
 }
 #apps:after {
 	left: 12px;
@@ -99,7 +101,9 @@
 	direction: ltr;
 	color: #E6E6E6;
 	text-shadow: 1px 1px 1px black;
+	animation: 0.2s showAppIcon;
 }
+@keyframes showAppIcon { from { transform:scale(0.75); opacity: 0; } to { transform:scale(1); opacity: 1; }  }
 #sidebar .app img {
 	width: 64px;
 	height: 64px;

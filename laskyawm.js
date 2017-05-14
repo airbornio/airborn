@@ -114,6 +114,7 @@ $.ui.plugin.add('draggable', 'minimize', {
 		});
 		
 		if($('.hud').length) {
+			transitionWindow(this[0]);
 			this.removeClass('maximized-' + $(this).attr('data-pos'));
 			$(this).attr('data-pos', $('.hud').attr('data-pos'));
 			this.addClass('maximized maximized-' + $('.hud').attr('data-pos'));
@@ -387,6 +388,7 @@ openWindow = function(path, options, callback) {
 				
 				var tabbar;
 				var toggleMaximized = function() {
+					transitionWindow(div);
 					if($(div).hasClass('maximized'))
 						$(div).removeClass('maximized');
 					else
@@ -400,15 +402,20 @@ openWindow = function(path, options, callback) {
 					var closeBtn = document.createElement('button');
 					closeBtn.className = 'close';
 					closeBtn.addEventListener('click', function() {
-						iframe.src = 'about:blank';
-						iframe.onload = function() {
-							setTimeout(function() { // Fix infinite spinning indicator in Firefox.
-								windowsContainer.removeChild(div);
-								childDivs.splice(childDivs.indexOf(div), 1);
-								childWindows.splice(childWindows.indexOf(iframeWin), 1);
-								forceMinimize();
-							});
-						};
+						div.classList.add("closing");
+						div.addEventListener("animationend", function(event){
+							if (event.animationName == "closeWindow") {
+								iframe.src = 'about:blank';
+								iframe.onload = function() {
+									setTimeout(function() { // Fix infinite spinning indicator in Firefox.
+										windowsContainer.removeChild(div);
+										childDivs.splice(childDivs.indexOf(div), 1);
+										childWindows.splice(childWindows.indexOf(iframeWin), 1);
+										forceMinimize();
+									});
+								};
+							}
+						}, false);
 					});
 					closeBtn.addEventListener('mousedown', function(evt) {
 						evt.stopPropagation();
@@ -418,6 +425,7 @@ openWindow = function(path, options, callback) {
 					var minimizeBtn = document.createElement('button');
 					minimizeBtn.className = 'minimize';
 					minimizeBtn.addEventListener('click', function(evt) {
+						transitionWindow(div);
 						div.classList.toggle('minimized');
 						positionMinimized();
 						forceMinimize();
@@ -870,4 +878,12 @@ Array.prototype.alphanumSort = function(caseInsensitive) {
 	for (var z = 0; z < this.length; z++)
 	this[z] = this[z].join("");
 };
+
+function transitionWindow(windowElement) {
+	var transitionListener = windowElement.addEventListener("transitionend",function(){
+		windowElement.classList.remove("transitioning");
+		windowElement.removeEventListener(transitionListener);
+	},false);
+	windowElement.classList.add("transitioning");
+}
 /* jshint ignore:end *//* jscs: enable */
