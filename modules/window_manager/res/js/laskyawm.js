@@ -8,6 +8,8 @@ var workspace_start_top = deviceType === 'mobile' ? 0 : 25;
 var workspace_start_left = 0;
 function workspace_height() { return window.innerHeight - workspace_start_top; }
 function workspace_width() { return window.innerWidth - workspace_start_left; }
+function min_minimized_left() { return 100; }
+function max_minimized_left() { return workspace_width() - barIconsWidth - 260; }
 
 
 var windowsContainer = document.createElement('div');
@@ -86,11 +88,11 @@ function removeHUD() {
 
 $.ui.plugin.add('draggable', 'minimize', {
 	drag: function(event) {
+		this.removeClass('maximized');
+		updatePreviewScale(this[0]);
 		if(event.pageY < 5) {
 			removeHUD();
-			this.removeClass('maximized');
 			this.addClass('minimized');
-			this[0].style.setProperty('--preview-scale', Math.min(1, 250 / windowRect(this[0]).width));
 		} else if(event.pageY < workspace_start_top && !this.hasClass('minimized')) {
 			addHUD('max', this);
 		} else {
@@ -105,7 +107,6 @@ $.ui.plugin.add('draggable', 'minimize', {
 				} else {
 					removeHUD();
 				}
-				this.removeClass('maximized');
 			}
 		}
 	},
@@ -128,13 +129,16 @@ $.ui.plugin.add('draggable', 'minimize', {
 });
 
 $.ui.plugin.add('draggable', 'forceMinimize', {
-	drag: function() {
+	drag: function(event, ui) {
+		if(this.hasClass('minimized')) {
+			ui.position.left = Math.max(min_minimized_left(), Math.min(max_minimized_left(), ui.position.left));
+		}
 		var _this = this;
+		if(_this[0].realLeft) {
+			_this[0].style.cssText = _this[0].style.cssText.replace(/left: .+?;/, 'left: ' + _this[0].realLeft + ';');
+			delete _this[0].realLeft;
+		}
 		setTimeout(function() {
-			if(_this[0].realLeft) {
-				_this[0].style.cssText = _this[0].style.cssText.replace(/left: .+?;/, 'left: ' + _this[0].realLeft + ';');
-				delete _this[0].realLeft;
-			}
 			forceMinimize();
 		});
 	}
@@ -426,7 +430,7 @@ openWindow = function(path, options, callback) {
 					minimizeBtn.className = 'minimize';
 					minimizeBtn.addEventListener('click', function(evt) {
 						if(div.classList.toggle('minimized')) {
-							div.style.setProperty('--preview-scale', Math.min(1, 250 / windowRect(div).width));
+							updatePreviewScale(div);
 						}
 						positionMinimized();
 						forceMinimize();
@@ -669,11 +673,15 @@ function forceMinimize() {
 	positionMinimized();
 }
 
+function updatePreviewScale(div) {
+	div.style.setProperty('--preview-scale', Math.min(1, 250 / windowRect(div).width));
+}
+
 function forceMinimizeWin(div, minimize) {
 	if(minimize) {
 		div.classList.add('force-minimized');
 		div.classList.add('minimized');
-		div.style.setProperty('--preview-scale', Math.min(1, 250 / windowRect(div).width));
+		updatePreviewScale(div);
 	} else if(div.classList.contains('force-minimized')) {
 		div.classList.remove('force-minimized');
 		div.classList.remove('minimized');
@@ -722,7 +730,6 @@ function updateZIndex(hovered) {
 
 function positionMinimized() {
 	var full = {};
-	var minMinimizedLeft = 100;
 	[].slice.call(childDivs).reverse().forEach(function(win) {
 		var moved;
 		if(win.classList.contains('minimized')) {
@@ -733,11 +740,11 @@ function positionMinimized() {
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
 			var minimizedLeft, pushLeft;
-			if(left < minMinimizedLeft) {
-				minimizedLeft = minMinimizedLeft;
+			if(left < min_minimized_left()) {
+				minimizedLeft = min_minimized_left();
 				moved = true;
-			} else if(left > workspace_width() - barIconsWidth - 260) {
-				minimizedLeft = workspace_width() - barIconsWidth - 260;
+			} else if(left > max_minimized_left()) {
+				minimizedLeft = max_minimized_left();
 				moved = true;
 				pushLeft = true;
 			} else {
