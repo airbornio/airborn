@@ -8,7 +8,7 @@
 	loaderNode.id = 'loading';
 	loaderNode.innerHTML = [
 		'<img class="airborn-logo" src="images/logo.png">',
-		'<canvas id="loading-canvas" width="240" height="240"></canvas>',
+		'<canvas id="loading-canvas"></canvas>',
 		'<p>Loading…</p>',
 		'<style>',
 		'	#loading {',
@@ -56,6 +56,8 @@
 		'	}',
 		'	#loading-canvas {',
 		'		display: inline-block;',
+		'		width: 240px;',
+		'		height: 240px;',
 		'	}',
 		'	#loading p {',
 		'		position: relative;',
@@ -65,8 +67,11 @@
 	].join('\n');
 	document.body.appendChild(loaderNode);
 	
+	var dpr = window.devicePixelRatio || 1;
 	var canvas = document.getElementById('loading-canvas');
+	canvas.width = canvas.height = 240 * dpr;
 	var ctx = canvas.getContext('2d');
+	ctx.scale(dpr, dpr);
 	var circ = Math.PI * 2;
 	var quart = Math.PI / 2;
 	
@@ -79,7 +84,7 @@
 	ctx.stroke();
 	ctx.strokeStyle = '#fff';
 	
-	var imd = ctx.getImageData(0, 0, 240, 240);
+	var imd = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	
 	var last;
 	function updateLoader(current) {
