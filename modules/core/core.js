@@ -1339,6 +1339,8 @@ window.showNotice = function(id, message, closeButton) {
 			'.airborn-notice .close-button {',
 			'	pointer-events: all;',
 			'	cursor: pointer;',
+			'	padding: 10px;',
+			'	margin: -10px;',
 			'}',
 			'</style>',
 		].join('\n'));
