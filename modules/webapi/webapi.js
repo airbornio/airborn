@@ -1688,6 +1688,10 @@
 	
 	if(window === window.airborn_top) {
 		function updateIcon() {
+			if(!icon.href) {
+				airborn.wm.setIcon('');
+				return;
+			}
 			var img = document.createElement('img');
 			img.src = icon.href;
 			img.addEventListener('load', function() {
