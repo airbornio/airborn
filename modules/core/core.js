@@ -1315,12 +1315,13 @@ window.showNotice = function(id, message, closeButton) {
 			'	position: absolute;',
 			'	top: 0;',
 			'	left: 50%;',
-			'	height: 25px;',
+			'	height: var(--height);',
 			'	line-height: 25px;',
 			'	pointer-events: none;',
 			'	z-index: 999;',
 			'	transform: translateX(-50%);',
-			'	white-space: nowrap;',
+			'	margin-right: -50%;',
+			'	padding: 0 10px;',
 			'	transition: opacity 1s;',
 			'	color: white;',
 			'	text-shadow: 1px 1px 1px black;',
@@ -1332,18 +1333,35 @@ window.showNotice = function(id, message, closeButton) {
 			'	width: 100%;',
 			'	height: 100%;',
 			'	background: url(/images/logo-hanger.svg) no-repeat 0%/100% 100%;',
-			'	top: -25px;',
-			'	opacity: .3;',
+			'	top: -100%;',
 			'	z-index: -1;',
 			'	transform: scaleX(2.2);',
-			'	filter: drop-shadow(0px 25px #9a8400);',
+			'	filter: drop-shadow(0px var(--height) rgba(154, 132, 0, 0.3));',
 			'	border-bottom: transparent 1px solid; /* Force Chrome to render this offscreen element. */',
 			'}',
-			'.airborn-notice .close-button {',
+			'.airborn-notice .close-button, .airborn-notice a {',
 			'	pointer-events: all;',
-			'	cursor: pointer;',
+			'	color: inherit;',
 			'	padding: 10px;',
 			'	margin: -10px;',
+			'}',
+			'.airborn-notice .close-button {',
+			'	cursor: pointer;',
+			'	margin-left: 0;',
+			'	float: right;',
+			'}',
+			'@media only screen and (max-device-width: 640px) {',
+			'	.airborn-notice {',
+			'		top: auto;',
+			'		bottom: 0;',
+			'		width: 100%;',
+			'		color: inherit;',
+			'		text-shadow: none;',
+			'		background: rgba(154, 132, 0, 0.3);',
+			'	}',
+			'	.airborn-notice:before {',
+			'		display: none;',
+			'	}',
 			'}',
 			'</style>',
 		].join('\n'));
@@ -1351,12 +1369,13 @@ window.showNotice = function(id, message, closeButton) {
 	
 	notices[id] = document.createElement('div');
 	notices[id].className = 'airborn-notice';
-	notices[id].textContent = message;
+	notices[id].innerHTML = message;
 	notices[id].style.opacity = 0;
 	if(closeButton) {
-		notices[id].insertAdjacentHTML('beforeend', '&nbsp;&nbsp;&nbsp;<span class="close-button" onclick="window.hideNotice(\'' + id + '\')">✖</div>');
+		notices[id].insertAdjacentHTML('afterbegin', '<span class="close-button" onclick="window.hideNotice(\'' + id + '\')">✖</span>');
 	}
 	document.body.appendChild(notices[id]);
+	notices[id].style.setProperty('--height', notices[id].offsetHeight + 'px');
 	var img = new Image();
 	img.src = '/images/logo-hanger.svg';
 	img.addEventListener('load', function() {
