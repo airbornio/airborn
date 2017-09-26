@@ -1487,12 +1487,16 @@ function renameGlobalVariables(file, source, variables) {
 	}
 	console.log('Parsing', file, 'because it appears to contain the following variables:', variablesContained.join(', '));
 	var ast;
+	if(window.parseTime === undefined) window.parseTime = 0;
+	window.startTime = performance.now();
 	try {
 		ast = esprima.parse(source, {range: true});
 	} catch(e) {
 		console.log(e);
 		return source;
 	}
+	window.parseTime += performance.now() - window.startTime;
+	console.log('parse ' + file, performance.now() - window.startTime, 'cumulative:', window.parseTime);
 	var scopeChain = [];
 	var identifiers = [];
 	var replaces = [];
