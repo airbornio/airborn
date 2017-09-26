@@ -1,5 +1,5 @@
 /* This file is licensed under the Affero General Public License. */
-/*global jsyaml, esprima, estraverse, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, deepEquals: true */
+/*global jsyaml, cherow, estraverse, Promise, io, File, XDomainRequest, JSZip, getFile: true, putFile: true, prepareFile: true, prepareString: true, prepareUrl: true, startTransaction: true, endTransaction: true, deepEquals: true */
 
 var core_version = 3;
 
@@ -1088,7 +1088,7 @@ window.prepareUrl = function(url, options, callback, progress, createObjectURL) 
 };
 
 getFile('/Core/lib/yaml/js-yaml.js', eval);
-getFile('/Core/lib/esprima/esprima.js', eval);
+getFile('/Core/lib/cherow/cherow.js', eval);
 getFile('/Core/lib/estraverse/estraverse.js', eval);
 
 var mainWindow;
@@ -1451,7 +1451,7 @@ window.hasPermission = function(key, action, args) {
 
 // From: http://tobyho.com/2013/12/02/fun-with-esprima/
 function renameGlobalVariables(file, source, variables) {
-	if(typeof esprima === 'undefined' || typeof estraverse === 'undefined') return source;
+	if(typeof cherow === 'undefined' || typeof estraverse === 'undefined') return source;
 	if(source.substr(-22) === '//# airbornos:prepared') {
 		return source;
 	}
@@ -1464,7 +1464,7 @@ function renameGlobalVariables(file, source, variables) {
 	console.log('Parsing', file, 'because it appears to contain the following variables:', variablesContained.join(', '));
 	var ast;
 	try {
-		ast = esprima.parse(source, {range: true});
+		ast = cherow.parseScript(source);
 	} catch(e) {
 		console.log(e);
 		return source;
@@ -1477,13 +1477,13 @@ function renameGlobalVariables(file, source, variables) {
 		leave: leave
 	});
 	replaces.sort(function(a, b) {
-		return a.range[0] - b.range[0];
+		return a.start - b.start;
 	});
 	var replaced = [];
 	var lastEnd = 0;
 	for(var i = 0; i < replaces.length; i++) {
-		replaced.push(source.substring(lastEnd, replaces[i].range[0]), variables[replaces[i].name]);
-		lastEnd = replaces[i].range[1];
+		replaced.push(source.substring(lastEnd, replaces[i].start), variables[replaces[i].name]);
+		lastEnd = replaces[i].end;
 	}
 	return replaced.join('') + source.substr(lastEnd) + '\n//# airbornos:prepared';
 	
