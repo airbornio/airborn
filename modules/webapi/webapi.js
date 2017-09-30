@@ -550,6 +550,15 @@
 		});
 	}
 	
+	var windowOpen = window.open;
+	window.open = function(url) {
+		if(!rSchema.test(url)) {
+			airborn.wm.openWindow(rootParent, {path: url}, null);
+			return;
+		}
+		windowOpen.apply(this, arguments);
+	};
+	
 	var storageLocations = {
 		apps: '/Apps/',
 		music: '/Music/',

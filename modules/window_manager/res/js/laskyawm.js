@@ -314,7 +314,7 @@ openWindow = function(path, options, callback) {
 			urlArgs: (_path.match('/Apps/(.+?)/') || [])[1],
 			getObjectLocations: (manifest.permissions || {})['get-object-locations'],
 		};
-		airborn.fs.prepareUrl('/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
+		airborn.fs.prepareUrl(options.path || '/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
 			var div = options.targetDiv || document.createElement('div');
 			var iframeWin;
 			
@@ -540,6 +540,7 @@ openWindow = function(path, options, callback) {
 					iframeWin = iframe.contentWindow;
 					childWindows.push(iframeWin);
 					focusTab(tab);
+					focus();
 					//updateZIndex();
 					//forceMinimize();
 				} else {
