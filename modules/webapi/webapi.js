@@ -16,10 +16,12 @@
 	};
 	window.addEventListener('message', function(message) {
 		if(message.source === window.top || message.source === window.parent) {
-			var inReplyTo = message.data.inReplyTo;
-			if(typeof inReplyTo === 'string' && inReplyTo.indexOf('.') !== -1) {
-				message.data.inReplyTo = inReplyTo.slice(inReplyTo.indexOf('.') + 1);
-				windowsOpened[inReplyTo.slice(0, inReplyTo.indexOf('.'))].postMessage(message.data, '*');
+			if(message.data.inReplyTo) {
+				var callback = messageCallbacks[message.data.inReplyTo];
+				if(callback !== undefined && message.data.progress) callback = callback.progress;
+				if(callback === undefined) return;
+				callback.apply(window, message.data.result);
+				if(!message.data.progress && !callback.listener) messageCallbacks[message.data.inReplyTo] = null;
 			} else if(message.data.action) {
 				if(message.data.action === 'createObjectURL') {
 					var arg = message.data.args[0], object;
@@ -36,18 +38,9 @@
 				airborn.listeners[message.data.action + 'Request'].forEach(function(listener) {
 					listener.apply(airborn, message.data.args);
 				});
-			} else if(message.data.inReplyTo) {
-				var callback = messageCallbacks[message.data.inReplyTo];
-				if(callback !== undefined && message.data.progress) callback = callback.progress;
-				if(callback === undefined) return;
-				callback.apply(window, message.data.result);
-				if(!message.data.progress && !callback.listener) messageCallbacks[message.data.inReplyTo] = null;
 			}
 		} else if(window.parent === window.top) {
 			return;
-		} else if(windowsOpened.indexOf(message.source) !== -1) {
-			message.data.messageID = windowsOpened.indexOf(message.source) + '.' + (message.data.messageID || '');
-			window.top.postMessage(message.data, '*');
 		} else if([].map.call(document.getElementsByTagName('iframe'), function(iframe) { return iframe.contentWindow; }).indexOf(message.source) !== -1) {
 			if(message.data.action) {
 				action(message.data.action, message.data.args, function() {
@@ -556,26 +549,6 @@
 			});
 		});
 	}
-	
-	var windowOpen = window.open;
-	var windowsOpened = [];
-	window.open = function(url) {
-		var noSchema = !rSchema.test(url), _url;
-		if(noSchema) {
-			_url = url;
-			url = 'about:blank';
-		}
-		var win = windowOpen.apply(window, arguments);
-		if(noSchema) {
-			console.log(_url);
-			windowsOpened.push(win);
-			prepareUrl(_url, function(url) {
-				console.log(url);
-				win.location.href = url.replace(/window\.top/g, 'window.opener').replace(/window\.parent\.postMessage.+?%0A/g, '');
-			});
-		}
-		return win;
-	};
 	
 	var storageLocations = {
 		apps: '/Apps/',
