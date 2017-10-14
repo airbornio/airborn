@@ -27,24 +27,17 @@ window.endTransaction = function() {
 	var _transaction = transaction;
 	transaction = null;
 	var transactions = {};
-	var fileNamesSeen = {};
 	var _transactionPaths = Object.keys(_transaction);
 	_transactionPaths.forEach(function(path) {
-		var transactionId = transactionIdPrefix + ':' + (_transaction[path][1].transactionId || '');
+		var transactionId =
+			transactionIdPrefix +
+			(_transaction[path][1].S3Prefix ? ':' + _transaction[path][1].S3Prefix : '') +
+			(_transaction[path][1].transactionId ? ':' + _transaction[path][1].transactionId : '');
 		_transaction[path][1].fullTransactionId = transactionId;
 		if(!transactions[transactionId]) {
 			transactions[transactionId] = 0;
 		}
-		if(/\.history\/.+/.test(_transaction[path][0])) {
-			transactions[transactionId]++;
-			var nonHistFileName = _transaction[path][0].split('.history/')[0];
-			if(!fileNamesSeen[nonHistFileName] && _transaction[path][4].name === 'upload') {
-				fileNamesSeen[nonHistFileName] = true;
-				transactions[transactionId]++;
-			}
-		} else {
-			transactions[transactionId]++;
-		}
+		transactions[transactionId]++;
 	});
 	Object.keys(transactions).forEach(function(transactionId) {
 		if(transactions[transactionId] > 1) {
@@ -594,7 +587,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 		if(options.cache !== false) window.getFileCache[file] = {codec: options.codec, contents: contents, ts: Date.now()};
 	}
 	
-	if(!/\.history\//.test(file) && upload_history) {
+	if(!/\.history\//.test(file) && upload_history && !options.finishingTransaction) {
 		// Add to file history
 		filesToPut++;
 		getFile(file + '.history/', {codec: 'dir'}, function(history) {
@@ -614,124 +607,75 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				file + '.history/v' +
 				(history ? Math.max.apply(Math, Object.keys(history).map(function(name) { return parseInt(name.substr(1), 10); })) + 1 : 1) +
 				file.match(/(\/|\.\w+)?$/)[0];
-			putFile(histname, {codec: options.codec, transactionId: options.transactionId}, contents, {edited: now}, function upload(err, transactionId, messageCount, blob, reencrypted) {
-				
-				if(err) {
-					callback(err);
-					return;
-				}
-				
-				if(options.password != null && !reencrypted) {
-					var adata;
-					if(options.compress !== false) {
-						var compressed = pako.gzip(new Uint8Array(contents)).buffer;
-						if(compressed.byteLength < contents.byteLength) {
-							contents = compressed;
-							adata = {gz: 1};
-						}
-					}
-					encrypt(options.password, contents, {adata: adata, iter: options.iter, salt: options.salt}, function(encrypted) {
-						var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
-						upload(null, transactionId, messageCount, blob, true);
-					});
-					return;
-				}
-				
-				// Copy history file to destination
-				var req = new XMLHttpRequest();
-				req.open('PUT', getObjectUrl('PUT', file, options));
-				if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
-				if(options.ACL) { req.setRequestHeader('X-ACL', options.ACL); }
-				if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
-				if(options.objectAuthkey) { req.setRequestHeader('X-Object-Authentication', options.objectAuthkey); }
-				req.addEventListener('readystatechange', function() {
-					if(this.readyState === 4) {
-						if(this.status === 200) {
-							callback();
-							notifyFileChange(file, is_new_file ? 'created' : 'modified');
-						} else {
-							console.log('error', this);
-							callback({status: this.status, statusText: this.statusText});
-						}
-					}
-				});
-				req.send(blob);
-				
-			}, progress);
+			putFile(histname, {codec: options.codec, transactionId: options.transactionId}, contents, {edited: now});
 			filesToPut--;
 			if(transaction && !inTransaction && !filesToPut) window.endTransaction();
 		});
+	}
+	
+	if(!options.finishingTransaction) {
+		transaction[file] = [file, options, contents, attrs, callback, progress];
 	} else {
-		if(!options.finishingTransaction) {
-			transaction[file] = [file, options, contents, attrs, callback, progress];
-		} else {
-			// Upload file
-			console.log('PUT', file);
-			contents = codec[options.codec || 'utf8String'].toAB(contents);
-			var compressed, adata, histprevcached;
-			if(options.histprevname && (histprevcached = window.getFileCache[options.histprevname])) {
-				var histprevcachedbuf = codec[histprevcached.codec || 'utf8String'].toAB(histprevcached.contents);
-				compressed = pako.deflate(new Uint8Array(contents), {dictionary: _getRelativeDictionary(histprevcachedbuf)}).buffer;
-				if(compressed.byteLength * (histprevcached.chainLength + 1 || 2) < (histprevcached.compressionRatio || 1) * contents.byteLength) {
-					// We try to ensure that to download a particular history
-					// entry, you never have to download more than 2x the data
-					// that that entry compressed on its own would take (1x for
-					// the original version, compressed, and at most 1x for the
-					// chain of versions relative to that). This calculation
-					// ignores metadata, headers and latency in the
-					// consideration.
-					// However, we don't know what the size of the entry
-					// compressed on its own would be, so we estimate based on
-					// the compression ratio of the first version in the chain.
-					window.getFileCache[file].compressionRatio = histprevcached.compressionRatio;
-					window.getFileCache[file].chainLength = (histprevcached.chainLength || 0) + 1;
-					contents = compressed;
-					adata = {gz: 1, rel: _getObjectLocation(options.histprevname)};
-				}
+		// Upload file
+		console.log('PUT', file);
+		contents = codec[options.codec || 'utf8String'].toAB(contents);
+		var compressed, adata, histprevcached;
+		if(options.histprevname && (histprevcached = window.getFileCache[options.histprevname])) {
+			var histprevcachedbuf = codec[histprevcached.codec || 'utf8String'].toAB(histprevcached.contents);
+			compressed = pako.deflate(new Uint8Array(contents), {dictionary: _getRelativeDictionary(histprevcachedbuf)}).buffer;
+			if(compressed.byteLength * (histprevcached.chainLength + 1 || 2) < (histprevcached.compressionRatio || 1) * contents.byteLength) {
+				// We try to ensure that to download a particular history
+				// entry, you never have to download more than 2x the data
+				// that that entry compressed on its own would take (1x for
+				// the original version, compressed, and at most 1x for the
+				// chain of versions relative to that). This calculation
+				// ignores metadata, headers and latency in the
+				// consideration.
+				// However, we don't know what the size of the entry
+				// compressed on its own would be, so we estimate based on
+				// the compression ratio of the first version in the chain.
+				(window.getFileCache[file] || {}).compressionRatio = histprevcached.compressionRatio;
+				(window.getFileCache[file] || {}).chainLength = (histprevcached.chainLength || 0) + 1;
+				contents = compressed;
+				adata = {gz: 1, rel: _getObjectLocation(options.histprevname)};
 			}
-			if(options.compress !== false && !adata) {
-				compressed = pako.gzip(new Uint8Array(contents)).buffer;
-				if(compressed.byteLength < contents.byteLength) {
-					window.getFileCache[file].compressionRatio = compressed.byteLength / contents.byteLength;
-					contents = compressed;
-					adata = {gz: 1};
-				}
-			}
-			encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, extend({adata: adata}, options.password != null ? {iter: options.iter, salt: options.salt} : {}), function(encrypted) {
-				var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
-				var req = new XMLHttpRequest();
-				req.open('PUT', getObjectUrl('PUT', file, options) + '?');
-				var transactionId = options.fullTransactionId;
-				var messageCount = options.messageCount;
-				if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
-				if(options.ACL) { req.setRequestHeader('X-ACL', options.ACL); }
-				if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
-				if(options.objectAuthkey) { req.setRequestHeader('X-Object-Authentication', options.objectAuthkey); }
-				req.addEventListener('readystatechange', function() {
-					if(this.readyState === 4) {
-						if(this.status === 200) {
-							if(upload_history) {
-								// We were uploading a *.history/* file
-								callback(null, transactionId, messageCount, blob);
-							} else {
-								// We were uploading a normal file
-								callback();
-							}
-							notifyFileChange(file, is_new_file ? 'created' : 'modified');
-						} else {
-							console.log('error', this);
-							callback({status: this.status, statusText: this.statusText});
-						}
-					}
-				});
-				req.addEventListener('progress', function(evt) {
-					if(evt.lengthComputable) {
-						if(progress) progress(evt.loaded, evt.total);
-					}
-				});
-				req.send(blob);
-			});
 		}
+		if(options.compress !== false && !adata) {
+			compressed = pako.gzip(new Uint8Array(contents)).buffer;
+			if(compressed.byteLength < contents.byteLength) {
+				(window.getFileCache[file] || {}).compressionRatio = compressed.byteLength / contents.byteLength;
+				contents = compressed;
+				adata = {gz: 1};
+			}
+		}
+		encrypt(options.password != null ? options.password : startsWith('/key', file) || startsWith('/hmac', file) ? private_key : files_key, contents, extend({adata: adata}, options.password != null ? {iter: options.iter, salt: options.salt} : {}), function(encrypted) {
+			var blob = new Blob([encrypted], {type: 'binary/octet-stream'});
+			var req = new XMLHttpRequest();
+			req.open('PUT', getObjectUrl('PUT', file, options) + '?');
+			var transactionId = options.fullTransactionId;
+			var messageCount = options.messageCount;
+			if(messageCount > 1) { req.setRequestHeader('X-Transaction-Id', transactionId); }
+			if(options.ACL) { req.setRequestHeader('X-ACL', options.ACL); }
+			if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
+			if(options.objectAuthkey) { req.setRequestHeader('X-Object-Authentication', options.objectAuthkey); }
+			req.addEventListener('readystatechange', function() {
+				if(this.readyState === 4) {
+					if(this.status === 200) {
+						callback();
+						notifyFileChange(file, is_new_file ? 'created' : 'modified');
+					} else {
+						console.log('error', this);
+						callback({status: this.status, statusText: this.statusText});
+					}
+				}
+			});
+			req.addEventListener('progress', function(evt) {
+				if(evt.lengthComputable) {
+					if(progress) progress(evt.loaded, evt.total);
+				}
+			});
+			req.send(blob);
+		});
 	}
 };
 
