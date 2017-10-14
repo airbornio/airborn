@@ -607,7 +607,7 @@ window.putFile = function(file, options, contents, attrs, callback, progress) {
 				file + '.history/v' +
 				(history ? Math.max.apply(Math, Object.keys(history).map(function(name) { return parseInt(name.substr(1), 10); })) + 1 : 1) +
 				file.match(/(\/|\.\w+)?$/)[0];
-			putFile(histname, {codec: options.codec, transactionId: options.transactionId}, contents, {edited: now});
+			putFile(histname, {codec: options.codec, transactionId: options.transactionId, histprevname: history && file + '.history/' + Object.keys(history).pop()}, contents, {edited: now});
 			filesToPut--;
 			if(transaction && !inTransaction && !filesToPut) window.endTransaction();
 		});
