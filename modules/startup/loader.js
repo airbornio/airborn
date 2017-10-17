@@ -36,9 +36,16 @@
 		'		height: 240px;',
 		'		margin-top: 60px;',
 		'	}',
+		'	#loading-canvas.spinning {',
+		'		animation: spin 4s linear infinite;',
+		'	}',
 		'	#loading p {',
 		'		position: relative;',
 		'		top: -155px;',
+		'	}',
+		'	@keyframes spin {',
+		'		from { transform: rotate(0deg); }',
+		'		to { transform: rotate(360deg); }',
 		'	}',
 		'</style>',
 	].join('\n');
@@ -71,11 +78,12 @@
 		last = current;
 		ctx.putImageData(imd, 0, 0);
 		ctx.beginPath();
-		ctx.arc(120, 120, 70, -quart, current * circ - quart, false);
+		ctx.arc(120, 120, 70, -quart, Math.max(0.05, current) * circ - quart, false);
 		ctx.stroke();
+		canvas.className = current ? '' : 'spinning';
 	}
 	
-	updateLoader(0.05);
+	updateLoader(0);
 	
 	window.addEventListener('message', function(evt) {
 		if(evt.data.action === 'wm.setProgress') {
