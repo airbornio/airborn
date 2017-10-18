@@ -16,6 +16,7 @@
 		'		position: fixed;',
 		'		width: 100%;',
 		'		height: 100%;',
+		'		top: 0;',
 		'		text-align: center;',
 		'		color: #fff;',
 		'		font-size: 18px;',
