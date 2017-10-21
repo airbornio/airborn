@@ -52,7 +52,7 @@ window.addEventListener('message', function(message) {
 		} else {
 			throw new TypeError('Unknown action: ' + message.data.action);
 		}
-	} else {
+	}/* else {
 		console.info('Forwarding message.');
 		var src = message.source;
 		var parent = src.parent;
@@ -61,7 +61,7 @@ window.addEventListener('message', function(message) {
 			parent = src.parent;
 		}
 		src.postMessage({data: message.data, forwardedFrom: message.origin}, '*');
-	}
+	}*/
 });
 
 loadSettings();
