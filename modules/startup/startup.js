@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*globals setTitle, openWindow, getServerMessages, update, mainWindow, loadSettings, isValidAPIKey, hasPermission */
+/*globals setTitle, openWindow, getServerMessages, update, mainWindow, loadSettings, isValidAPIKey, hasPermission, guid */
 
 setTitle('');
 
@@ -18,7 +18,7 @@ openWindow('/modules/window_manager/index.html', function(iframe) {
 	});
 });
 
-var messageID = 0, messageCallbacks = {};
+var messageCallbacks = {};
 window.addEventListener('message', function(message) {
 	if(message.data.inReplyTo) {
 		messageCallbacks[message.data.inReplyTo].apply(this, message.data.result);
@@ -41,7 +41,8 @@ window.addEventListener('message', function(message) {
 			}, function() {
 				message.source.postMessage({inReplyTo: message.data.messageID, result: [].slice.call(arguments), progress: true}, '*');
 			}, function(data, callback) {
-				message.source.postMessage({action: 'createObjectURL', args: [data], messageID: ++messageID}, '*');
+				var messageID = guid();
+				message.source.postMessage({action: 'createObjectURL', args: [data], messageID: messageID}, '*');
 				messageCallbacks[messageID] = callback;
 			}));
 		} else if(message.data.action.substr(0, 3) === 'wm.') {

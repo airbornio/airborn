@@ -3,11 +3,12 @@
 /*global File, History, DOMError, airborn: true, laskya: true */
 
 (function() {
-	var messageID = 0, messageCallbacks = {};
+	var messageCallbacks = {};
 	var apikey = document.apikey;
 	delete document.apikey;
 	var action = function(action, args, callback, progress, transfer) {
-		(action.substr(0, 3) === 'wm.' ? window.parent : window.top).postMessage({messageID: ++messageID, action: action, args: args, apikey: apikey}, '*', transfer);
+		var messageID = guid();
+		(action.substr(0, 3) === 'wm.' ? window.parent : window.top).postMessage({messageID: messageID, action: action, args: args, apikey: apikey}, '*', transfer);
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) {
 			messageCallbacks[messageID].progress = progress;
@@ -55,6 +56,11 @@
 			console.info('unknown source');
 		}
 	}, false);
+	function guid() {
+		return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+			(c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+		)
+	}
 	airborn = laskya = {
 		listeners: {
 			openFileRequest: []
