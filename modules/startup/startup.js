@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*globals setTitle, openWindow, getServerMessages, update, mainWindow, loadSettings, isValidAPIKey, hasPermission, guid */
+/*globals setTitle, openWindow, getServerMessages, update, mainWindow, loadSettings, isValidAPIKey, hasPermission, APIKeys, guid */
 
 setTitle('');
 
@@ -45,6 +45,10 @@ window.addEventListener('message', function(message) {
 				message.source.postMessage({action: 'createObjectURL', args: [data], messageID: messageID}, '*');
 				messageCallbacks[messageID] = callback;
 			}));
+		} else if(message.data.action === 'core.openWindowTop') {
+			window.openWindowTop(message.data.args, APIKeys[message.data.apikey].appName, function(port) {
+				message.source.postMessage({inReplyTo: message.data.messageID, result: [port]}, '*', [port]);
+			});
 		} else if(message.data.action.substr(0, 3) === 'wm.') {
 			if(message.data.action === 'wm.hideProgress') {
 				window.wmLoaded = true;

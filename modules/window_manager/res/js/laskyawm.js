@@ -299,6 +299,7 @@ openWindow = function(path, options, callback) {
 			system: '/Core/',
 			videos: '/Videos/'
 		};
+		var appName = (_path.match('/Apps/(.+?)/') || [])[1];
 		var permissions = {
 			read: [path, appData].concat(Object.keys(manifest.permissions || {}).filter(function(permission) {
 				return storageLocations[permission.replace('device-storage:', '')] && ['readonly', 'readwrite', 'readcreate'].indexOf(manifest.permissions[permission].access) !== -1;
@@ -311,7 +312,8 @@ openWindow = function(path, options, callback) {
 				return storageLocations[permission.replace('device-storage:', '')];
 			})),
 			manageApps: (manifest.permissions || {})['webapps-manage'],
-			urlArgs: (_path.match('/Apps/(.+?)/') || [])[1],
+			appName: appName,
+			urlArgs: appName,
 			getObjectLocations: (manifest.permissions || {})['get-object-locations'],
 		};
 		airborn.fs.prepareUrl(options.path || '/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {

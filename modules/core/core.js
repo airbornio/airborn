@@ -1074,6 +1074,21 @@ window.setIcon = function(href) {
 	icon.href = href;
 };
 
+window.openWindowTop = function(args, appName, callback) {
+	var win = window.open.apply(window, args);
+	window.addEventListener('message', function(evt) {
+		if(evt.source === win && evt.data.action === 'requestMessageChannel') {
+			evt.stopImmediatePropagation();
+			var channel = new MessageChannel();
+			win.postMessage({
+				action: 'setupMessageChannel',
+				appName: appName,
+			}, '*', [channel.port1]);
+			callback(channel.port2);
+		}
+	});
+};
+
 var pushUrl, pushHandlers = {};
 function pushInit() {
 	return new Promise(function(resolve/*, reject*/) {
@@ -1402,6 +1417,7 @@ window.hasPermission = function(key, action, args) {
 			return givesAccessToPath(permissions, args[0].replace(/^airbornstorage:/, '')) && permissions.getObjectLocations;
 		case 'pushRegister':
 		case 'pushUnregister':
+		case 'openWindowTop':
 			return true;
 		case 'installPackage':
 			return permissions.hasOwnProperty('manageApps');

@@ -12,7 +12,7 @@
 		messageCallbacks[messageID] = callback;
 		if(messageCallbacks[messageID]) {
 			messageCallbacks[messageID].progress = progress;
-			messageCallbacks[messageID].listener = action === 'fs.listenForFileChanges' || action === 'fs.pushRegister' || action.substr(0, 10) === 'fs.prepare';
+			messageCallbacks[messageID].listener = action === 'fs.listenForFileChanges' || action === 'fs.pushRegister' || action.substr(0, 10) === 'fs.prepare' || action === 'core.openWindowTop';
 		}
 	};
 	window.addEventListener('message', function(message) {
@@ -104,6 +104,8 @@
 	addAction('fs.getObjectLocation');
 	addAction('fs.pushRegister');
 	addAction('fs.pushUnregister');
+	
+	addAction('core.openWindowTop');
 	
 	if(window.parent === window.top) {
 		addAction('core.setTitle');
