@@ -562,7 +562,16 @@
 			airborn.wm.openWindow(rootParent, {path: url}, null);
 			return;
 		}
-		windowOpen.apply(this, arguments);
+		var win = windowOpen.apply(this, arguments);
+		/* maybeWindowProxy(win) doesn't work in this case because at this point,
+		 * win contains about:blank. So we guess whether the window will be
+		 * same-origin with ours based on the url instead.
+		 */
+		if(url.substr(0, 9) === 'blob:null' || url.substr(0, 5) === 'data:') {
+			return win;
+		} else {
+			return windowProxy(win);
+		}
 	};
 	
 	var storageLocations = {
