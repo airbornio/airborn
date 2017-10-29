@@ -99,6 +99,7 @@
 	direction: ltr;
 	color: #E6E6E6;
 	text-shadow: 1px 1px 1px black;
+	font-size: 90%;
 }
 #sidebar .app img {
 	width: 64px;

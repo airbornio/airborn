@@ -8,7 +8,7 @@ body {
 	margin: 0;
 	background-color: #607B8B;
 	cursor: default;
-	font-family: sans-serif;
+	font-family: Calibri, Lato, Ubuntu, sans-serif;
 	height: 0;
 }
 body:before,
