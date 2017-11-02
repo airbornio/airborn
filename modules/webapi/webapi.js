@@ -1,8 +1,18 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global File, History, DOMError, airborn: true, laskya: true */
+/*global File, History, DOMError, HTMLAudioElement, FileReaderSync, ImageData, airborn: true, laskya: true */
 
 (function() {
+	var rootParent = document.rootParent;
+	delete document.rootParent;
+	var relativeParent = document.relativeParent;
+	delete document.relativeParent;
+	var appData = rootParent.replace('Apps', 'AppData').replace('Core', 'CoreData');
+	var rootParentWithoutSlash = rootParent.substr(0, rootParent.length - 1);
+	Object.defineProperty(document, 'baseURI', {get: function() { return relativeParent.replace(rootParentWithoutSlash, ''); }});
+	var filenames = document.filenames;
+	delete document.filenames;
+	
 	var messageCallbacks = {};
 	var apikey = document.apikey;
 	delete document.apikey;
@@ -58,8 +68,8 @@
 	}, false);
 	function guid() {
 		return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-			(c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-		)
+			(c ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+		);
 	}
 	airborn = laskya = {
 		listeners: {
@@ -206,8 +216,6 @@
 		}
 	}, true);
 	
-	var filenames = document.filenames;
-	delete document.filenames;
 	var rArgs = /[?#].*$/;
 	var rSchema = /^(?!airbornstorage)[a-z]+:/i;
 	var rAnySchema = /^[a-z]+:/i;
@@ -256,13 +264,6 @@
 	};
 	
 	var requestOpen = XMLHttpRequest.prototype.open;
-	var rootParent = document.rootParent;
-	delete document.rootParent;
-	var relativeParent = document.relativeParent;
-	delete document.relativeParent;
-	Object.defineProperty(document, 'baseURI', {get: function() { return relativeParent.replace(rootParentWithoutSlash, ''); }});
-	var appData = rootParent.replace('Apps', 'AppData').replace('Core', 'CoreData');
-	var rootParentWithoutSlash = rootParent.substr(0, rootParent.length - 1);
 	XMLHttpRequest.prototype.open = function(_method, url) {
 		var method = _method.toUpperCase();
 		var responseType;
@@ -278,17 +279,19 @@
 				console.log("codec = 'arrayBuffer';");
 				codec = 'arrayBuffer';
 			};
-			defineWithPrefixed(this, 'responseType', 'airborn_responseType', {set: function(_responseType) {
-				console.log(this, arguments);
-				console.log("codec = '" + _responseType + "';");
-				if(_responseType === 'arraybuffer') {
-					codec =          'arrayBuffer';
-				} else if(_responseType === 'json') {
-					codec = 'json';
-				} else {
-					responseType = _responseType;
-				}
-			}});
+			defineWithPrefixed(this, 'responseType', 'airborn_responseType', {
+				set: function(_responseType) {
+					console.log(this, arguments);
+					console.log("codec = '" + _responseType + "';");
+					if(_responseType === 'arraybuffer') {
+						codec =          'arrayBuffer';
+					} else if(_responseType === 'json') {
+						codec = 'json';
+					} else {
+						responseType = _responseType;
+					}
+				},
+			});
 			this.send = function() {
 				var req = this;
 				url = url.replace(/^file:(?:\/\/)?/, '');
@@ -298,15 +301,17 @@
 				airborn.fs.getFile(url, {codec: codec}, function(contents, err) {
 					defineWithPrefixed(req, 'readyState', 'airborn_readyState', {get: function() { return 4; }});
 					defineWithPrefixed(req, 'status', 'airborn_status', {get: function() { return !err && 200; }});
-					defineWithPrefixed(req, 'response', 'airborn_response', {get: function() {
-						if(responseType === 'document') {
-							var doc = document.implementation.createHTMLDocument('');
-							Object.defineProperty(doc, 'baseURI', {get: function() { return url.replace(rootParentWithoutSlash, ''); }});
-							doc.documentElement.innerHTML = contents;
-							return doc;
-						}
-						return contents;
-					}});
+					defineWithPrefixed(req, 'response', 'airborn_response', {
+						get: function() {
+							if(responseType === 'document') {
+								var doc = document.implementation.createHTMLDocument('');
+								Object.defineProperty(doc, 'baseURI', {get: function() { return url.replace(rootParentWithoutSlash, ''); }});
+								doc.documentElement.innerHTML = contents;
+								return doc;
+							}
+							return contents;
+						},
+					});
 					if(!codec) defineWithPrefixed(req, 'responseText', 'airborn_responseText', {get: function() { return contents; }});
 					setTimeout(function() {
 						req.dispatchEvent(new Event('readystatechange'));
@@ -460,7 +465,7 @@
 						delete this.complete;
 					}
 					this.removeEventListener('error', onError);
-				}
+				};
 			}
 		],
 		[HTMLIFrameElement, 'src', 'airborn_src',
@@ -634,7 +639,6 @@
 		Object.defineProperty(this, 'storageName', {value: storageName});
 		Object.defineProperty(this, 'default', {value: true});
 		var prefix = storageLocations[storageName];
-		var prefixLen = prefix.length;
 		var deviceStorage = this;
 		airborn.fs.listenForFileChanges(prefix, function(path, reason) {
 			if(path.substr(-1) !== '/' && !/\.history\//.test(path)) {
@@ -816,7 +820,7 @@
 		delete this[name];
 		flushStorage();
 	};
-	Storage_.prototype.clear = function(name) {
+	Storage_.prototype.clear = function() {
 		var _this = this;
 		Object.keys(_this).forEach(function(key) {
 			delete _this[key];
@@ -899,7 +903,7 @@
 				typedArr[i] = str.charCodeAt(i);
 			}
 		}
-
+		
 		function readAsBinaryString(obj, callback) {
 			if(typeof FileReader !== 'undefined') {
 				var reader = new FileReader();
@@ -916,6 +920,7 @@
 		}
 		
 		function structuredClonePrepare(obj, callback) {
+			var n, typedArr;
 			switch(Object.prototype.toString.call(obj)) {
 				case '[object Boolean]': callback({t: 0, v: obj ? 1 : 0}); break;
 				case '[object Null]': callback({t: 1}); break;
@@ -935,14 +940,14 @@
 					break;
 				case '[object String]': callback({t: 4, v: obj}); break;
 				case '[object Object]':
-					var keys = Object.keys(obj);
-					parallel(keys.map(function(key) {
+					var objKeys = Object.keys(obj);
+					parallel(objKeys.map(function(key) {
 						return function(cb) {
 							structuredClonePrepare(obj[key], cb);
 						};
 					}), function(results) {
 						var result = {};
-						keys.forEach(function(key, i) {
+						objKeys.forEach(function(key, i) {
 							result[key] = results[i];
 						});
 						callback({t: 5, v: result});
@@ -958,17 +963,17 @@
 					});
 					break;
 				case '[object Map]':
-					var keys = [];
-					for(var key of obj.keys()) {
-						keys.push(key);
+					var mapKeys = [];
+					for(var key of obj.mapKeys()) {
+						mapKeys.push(key);
 					}
-					parallel(keys.map(function(key) {
+					parallel(mapKeys.map(function(key) {
 						return function(cb) {
 							structuredClonePrepare(obj.get(key), cb);
 						};
 					}), function(results) {
 						var result = [];
-						keys.forEach(function(key, i) {
+						mapKeys.forEach(function(key, i) {
 							result.push([key, results[i]]);
 						});
 						callback({t: 9, v: result});
@@ -1022,18 +1027,18 @@
 					callback(result);
 					break;
 				case '[object ArrayBuffer]':
-					var typedArr = new Uint8Array(obj);
+					typedArr = new Uint8Array(obj);
 					callback({t: 18, v: ab2str(rtrim(typedArr)), l: obj.byteLength});
 					break;
-				case '[object Int8Array]':			var n = n || 1;
-				case '[object Uint8Array]':			var n = n || 2;
-				case '[object Uint8ClampedArray]':	var n = n || 3;
-				case '[object Int16Array]':			var n = n || 4;
-				case '[object Uint16Array]':		var n = n || 5;
-				case '[object Int32Array]':			var n = n || 6;
-				case '[object Uint32Array]':		var n = n || 7;
-				case '[object Float32Array]':		var n = n || 8;
-				case '[object Float64Array]':		var n = n || 9;
+				case '[object Int8Array]':			n = n || 1; /* falls through */
+				case '[object Uint8Array]':			n = n || 2; /* falls through */
+				case '[object Uint8ClampedArray]':	n = n || 3; /* falls through */
+				case '[object Int16Array]':			n = n || 4; /* falls through */
+				case '[object Uint16Array]':		n = n || 5; /* falls through */
+				case '[object Int32Array]':			n = n || 6; /* falls through */
+				case '[object Uint32Array]':		n = n || 7; /* falls through */
+				case '[object Float32Array]':		n = n || 8; /* falls through */
+				case '[object Float64Array]':		n = n || 9; /* falls through */
 					callback({t: 19, n: n, v: Array.prototype.slice.call(rtrim(obj)), l: obj.length});
 					break;
 				case '[object ImageData]': callback({t: 20, v: Array.prototype.slice.call(rtrim(obj.data)), w: obj.width, h: obj.height}); break;
@@ -1048,6 +1053,7 @@
 		}
 		
 		function structuredCloneRevive(obj) {
+			var typedArr;
 			switch(obj.t) {
 				case 0: return obj.v ? true : false;
 				case 1: return null;
@@ -1064,11 +1070,11 @@
 					});
 					return result;
 				case 8:
-					var result = new Array(obj.l);
+					var arr = new Array(obj.l);
 					obj.v.forEach(function(value, i) {
-						if(value) result[i] = structuredCloneRevive(value);
+						if(value) arr[i] = structuredCloneRevive(value);
 					});
-					return result;
+					return arr;
 				case 9:
 					return new Map(obj.v.map(function(entry) {
 						return [entry[0], structuredCloneRevive(entry[1])];
@@ -1076,11 +1082,11 @@
 				case 15: return new Set(obj.v.map(structuredCloneRevive));
 				case 6: return new Date(obj.v);
 				case 7:
-					var typedArr = new Uint8Array(obj.l);
+					typedArr = new Uint8Array(obj.l);
 					str2ab(obj.v, typedArr);
 					return new Blob([typedArr], obj.a);
 				case 16:
-					var typedArr = new Uint8Array(obj.l);
+					typedArr = new Uint8Array(obj.l);
 					str2ab(obj.v, typedArr);
 					var file = new File([typedArr], obj.n, obj.a);
 					if(obj.a.lastModified && +file.lastModifiedDate !== obj.a.lastModified) { // Firefox
@@ -1097,13 +1103,12 @@
 						});
 						Object.defineProperty(input.files, 'length', {get: function() { return results.length; }});
 						return input.files;
-					} catch(e) {
-						return results;
-					}
+					} catch(e) {}
+					return results;
 				case 10: return new RegExp(obj.v, obj.f);
 				case 18:
 					var buffer = new ArrayBuffer(obj.l);
-					var typedArr = new Uint8Array(buffer);
+					typedArr = new Uint8Array(buffer);
 					str2ab(obj.v, typedArr);
 					return buffer;
 				case 19:
@@ -1118,7 +1123,7 @@
 						obj.n === 8 ? Float32Array :
 						obj.n === 9 ? Float64Array :
 						undefined;
-					var typedArr = new TypedArr(obj.l);
+					typedArr = new TypedArr(obj.l);
 					typedArr.set(obj.v);
 					return typedArr;
 				case 20:
@@ -1126,12 +1131,11 @@
 					data.set(obj.v);
 					try {
 						return new ImageData(data, obj.w, obj.h);
-					} catch(e) {
-						var canvas = document.createElement('canvas');
-						var imageData = canvas.getContext('2d').createImageData(obj.w, obj.h);
-						imageData.data.set(data);
-						return imageData;
-					}
+					} catch(e) {}
+					var canvas = document.createElement('canvas');
+					var imageData = canvas.getContext('2d').createImageData(obj.w, obj.h);
+					imageData.data.set(data);
+					return imageData;
 				default: throw new TypeError("Can't parse type tag " + obj.t);
 			}
 		}
@@ -1146,10 +1150,6 @@
 				_ret = str;
 			});
 			return _ret;
-		}
-		
-		function simpleStructuredCloneParse(str) {
-			return structuredCloneParse(str);
 		}
 		
 		
@@ -1418,7 +1418,7 @@
 			});
 		}
 		
-		function Index(objectStore, name, keyPath, props) {
+		function Index(objectStore, name, keyPath, props) { // jshint ignore:line
 			Object.defineProperty(this, 'keyPath', {value: keyPath});
 			this.openCursor = function() {
 				console.log('index.openCursor', arguments);
@@ -1440,7 +1440,8 @@
 					for(var i = 0; i < records.length; i++) {
 						console.log(i, records[i], dumpedKey);
 						if(records[i][0] === dumpedKey) {
-							airborn.fs.getFile(appData + 'IDB/' + escapePathComponent(objectStore.transaction.db.name) + '/' + escapePathComponent(objectStore.name) + '/' + btoa(records[i][1]), function(contents) {
+							airborn.fs.getFile(appData + 'IDB/' + escapePathComponent(objectStore.transaction.db.name) + '/' + escapePathComponent(objectStore.name) + '/' + btoa(records[i][1]),
+							function(contents) { // jshint ignore:line
 								req.result = structuredCloneParse(contents);
 								req.dispatchEvent(new Event('success'));
 							});
@@ -1483,15 +1484,15 @@
 				var req = new DOMRequest();
 				airborn.fs.getFile(appData + 'IDB/' + escapePathComponent(name) + '/metadata', {codec: 'json'}, function(metadata) {
 					console.log('metadata:', JSON.stringify(metadata));
-					var oldVersion = metadata && metadata.version;
+					var db;
 					if(metadata) {
-						var db = new Database(metadata, name);
+						db = new Database(metadata, name);
 						if(version === undefined) {
 							version = metadata.version;
 						}
 					} else {
 						metadata = {version: 0, objectStores: {}};
-						var db = new Database(metadata, name);
+						db = new Database(metadata, name);
 						if(version === undefined) {
 							version = 1;
 						}
@@ -1542,7 +1543,7 @@
 	defineWithPrefixed(window, 'indexedDB', 'airborn_indexedDB', {value: IDB.indexedDB});
 	defineDummy('indexedDB', 'airborn_indexedDB');
 	Object.defineProperty(window, 'mozIndexedDB', {value: undefined});
-		
+	
 	function createLocationUrl(url, base) {
 		var urlobj = new URL(url, 'file://' + (base || ''));
 		var obj = {
@@ -1567,9 +1568,11 @@
 		return obj;
 	}
 	var locationurl = createLocationUrl(relativeParent.replace(rootParentWithoutSlash, ''));
-	Object.defineProperty(window, 'airborn_location', {get: function() {
-		return locationurl;
-	}});
+	Object.defineProperty(window, 'airborn_location', {
+		get: function() {
+			return locationurl;
+		},
+	});
 	defineDummy('location', 'airborn_location');
 	
 	function setState(state, url) {
@@ -1596,7 +1599,7 @@
 			hist[curr] = {href: locationurl.href, state: state};
 			window.location.hash = '#_airborn_state_' + curr;
 		};
-		History.prototype.pushState = function(state, title, url) {
+		History.prototype.pushState = function(state, title, url) { // jshint ignore:line
 			curr++;
 			History.prototype.replaceState.apply(this, arguments);
 		};
@@ -1660,7 +1663,7 @@
 	}
 	function maybeWindowProxy(window) {
 		try {
-			window.a;
+			window.a; // jshint ignore:line
 		} catch(e) {
 			return windowProxy(window);
 		}
@@ -1686,7 +1689,8 @@
 	defineDummy('contentWindow', 'airborn_contentWindow');
 	
 	if(window === window.airborn_top) {
-		function updateIcon() {
+		var icon;
+		function updateIcon() { // jshint ignore:line
 			if(!icon.href) {
 				airborn.wm.setIcon('');
 				return;
@@ -1709,7 +1713,7 @@
 		
 		var title = document.querySelector('head > title');
 		airborn.wm.setTitle(title && title.textContent);
-		var icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
+		icon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
 		if(icon) {
 			updateIcon();
 		} else {
