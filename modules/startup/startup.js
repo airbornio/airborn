@@ -2,6 +2,10 @@
 
 /*globals setTitle, openWindow, getServerMessages, update, mainWindow, loadSettings, isValidAPIKey, hasPermission, APIKeys, guid */
 
+if(navigator.userAgent.indexOf('Edge') !== -1) {
+	alert('Sorry, Edge is not supported. Please use Chrome or Firefox.');
+}
+
 setTitle('');
 
 openWindow('/modules/window_manager/index.html', function(iframe) {
