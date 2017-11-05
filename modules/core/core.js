@@ -67,6 +67,16 @@ window.endTransaction = function() {
 					setTimeout(function() {
 						putFile.apply(window, _transaction[path]);
 					}, 5000);
+					if(err.status === 403 && !_transaction[path][1].S3Prefix) {
+						var creds = JSON.parse(localStorage.creds || sessionStorage.creds || '{}');
+						if(window.login && creds && creds.username === window.username) {
+							window.login(creds, null, function() {}, function() {}, function() {
+								window.location.reload();
+							});
+						} else {
+							window.location.reload();
+						}
+					}
 					return;
 				}
 				if(++finished === chunkSize) {
