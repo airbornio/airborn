@@ -1637,6 +1637,7 @@
 		this.focus = function() {
 			window.focus.apply(window, arguments);
 		};
+		Object.defineProperty(this, 'location', {get: function() { return window.location; }, set: function(value) { window.location = value; }});
 	}
 	var windowProxies = new Map();
 	function windowProxy(window) {
