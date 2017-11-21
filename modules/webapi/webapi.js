@@ -26,7 +26,7 @@
 		}
 	};
 	window.addEventListener('message', function(message) {
-		if(message.source === window.top || message.source === window.parent) {
+		if(message.airborn_source === windowProxy(window.top) || message.airborn_source === windowProxy(window.parent)) {
 			if(message.data.inReplyTo) {
 				var callback = messageCallbacks[message.data.inReplyTo];
 				if(callback !== undefined && message.data.progress) callback = callback.progress;
@@ -249,6 +249,12 @@
 			Object.defineProperty(obj, prop, descriptor);
 		} catch(e) {}
 		Object.defineProperty(obj, rewrittenProp, descriptor);
+	}
+	function redefineWithPrefixed(obj, prop, rewrittenProp, getDescriptor) {
+		var realDescriptor = Object.getOwnPropertyDescriptor(obj, prop);
+		var realGet = realDescriptor && realDescriptor.get || function() { return this[prop]; };
+		var realSet = realDescriptor && realDescriptor.set || function(value) { this[prop] = value; };
+		defineWithPrefixed(obj, prop, rewrittenProp, getDescriptor(realGet, realSet));
 	}
 	var AirbornObjectPrototype = Object.create(null);
 	function defineDummy(prop, rewrittenProp) {
@@ -484,34 +490,29 @@
 		var onStart = element[3];
 		var onEnd = element[4];
 		
-		var realDescriptor = Object.getOwnPropertyDescriptor(HTMLElm.prototype, attr);
-		function set(elm, url) {
-			if(realDescriptor && realDescriptor.set) realDescriptor.set.call(elm, url);
-			else elm[attr] = url;
-		}
-		var descriptor = {
+		var descriptor = (get, set) => ({
 			get: function() {
 				// this.src is sometimes empty: https://crbug.com/291791
 				return this.getAttribute(attr) || '';
 			},
 			set: function(url) {
 				var _this = this;
-				if(rSchema.test(url)) return set(_this, url);
+				if(rSchema.test(url)) return set.call(_this, url);
 				var absoluteUrl = airborn.path.resolve(rootParent, url);
 				if(Object.keys(filenames).some(function(objectURL) {
 					if(filenames[objectURL] === absoluteUrl) {
-						set(_this, objectURL);
+						set.call(_this, objectURL);
 						return true;
 					}
 				})) return;
 				onEnd = onStart.call(_this) || onEnd;
 				prepareUrl(url, function(url) {
-					set(_this, url);
+					set.call(_this, url);
 					onEnd.call(_this);
 				});
 			}
-		};
-		defineWithPrefixed(HTMLElm.prototype, attr, rewrittenAttr, descriptor);
+		});
+		redefineWithPrefixed(HTMLElm.prototype, attr, rewrittenAttr, descriptor);
 		var realGetAttribute = HTMLElm.prototype.getAttribute;
 		HTMLElm.prototype.getAttribute = function(attrName) {
 			var realAttr = realGetAttribute.call(this, attrName);
@@ -529,28 +530,13 @@
 		}
 	});
 	defineDummy('pathname', 'airborn_pathname');
-	var elementInnerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-	try {
-		Object.defineProperty(Element.prototype, 'innerHTML', {
-			get: function() {
-				return elementInnerHTMLDescriptor.get.call(this);
-			},
-			set: function(html) {
-				elementInnerHTMLDescriptor.set.call(this, html);
-				findNewElements(this);
-			}
-		});
-	} catch(e) { // Safari
-		Object.defineProperty(Element.prototype, 'airborn_innerHTML', {
-			get: function() {
-				return this.innerHTML;
-			},
-			set: function(html) {
-				this.innerHTML = html;
-				findNewElements(this);
-			}
-		});
-	}
+	redefineWithPrefixed(Element.prototype, 'innerHTML', 'airborn_innerHTML', (get, set) => ({
+		get: get,
+		set: function(html) {
+			set.call(this, html);
+			findNewElements(this);
+		}
+	}));
 	defineDummy('innerHTML', 'airborn_innerHTML');
 	function findNewElements(context) {
 		['src', 'href', 'icon'].forEach(function(attrName) {
@@ -1682,10 +1668,10 @@
 	Object.defineProperty(window, 'airborn_parent', {value: window === window.airborn_top ? window : maybeWindowProxy(window.parent)});
 	defineDummy('parent', 'airborn_parent');
 	
-	Object.defineProperty(MessageEvent.prototype, 'airborn_source', {get: function() { return maybeWindowProxy(this.source); }});
+	redefineWithPrefixed(MessageEvent.prototype, 'source', 'airborn_source', get => ({get: function() { return maybeWindowProxy(get.call(this)); }}));
 	defineDummy('source', 'airborn_source');
 	
-	Object.defineProperty(HTMLIFrameElement.prototype, 'airborn_contentWindow', {get: function() { return maybeWindowProxy(this.contentWindow); }});
+	redefineWithPrefixed(HTMLIFrameElement.prototype, 'contentWindow', 'airborn_contentWindow', get => ({get: function() { return maybeWindowProxy(get.call(this)); }}));
 	defineDummy('contentWindow', 'airborn_contentWindow');
 	
 	if(window === window.airborn_top) {
