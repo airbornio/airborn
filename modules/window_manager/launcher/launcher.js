@@ -1,15 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, airborn, openWindow, deviceType */
-
-var appIconSize = (deviceType === 'mobile' ? 32 : 64) * (window.devicePixelRatio || 1);
-function getIconUrl(icons) {
-	if(!icons) return;
-	return icons[Object.keys(icons).sort(function(a, b) {
-		if(a >= appIconSize && b >= appIconSize) return a - b;
-		return b - a;
-	})[0]];
-}
+/*global $, airborn, openWindow, getIconUrl */
 
 var apps;
 

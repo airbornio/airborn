@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, barIconsWidth, apps, getIconUrl, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
+/*global $, barIconsWidth, apps, getIconUrl: true, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openFile: true, openWindow: true, extension: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
@@ -277,6 +277,15 @@ hideProgress = function(options) {
 	} else {
 		$(options.loaderElm).css({width: ''});
 	}
+};
+
+var appIconSize = (deviceType === 'mobile' ? 32 : 64) * (window.devicePixelRatio || 1);
+getIconUrl = function(icons) {
+	if(!icons) return;
+	return icons[Object.keys(icons).sort(function(a, b) {
+		if(a >= appIconSize && b >= appIconSize) return a - b;
+		return b - a;
+	})[0]];
 };
 
 openWindow = function(path, options, callback) {
