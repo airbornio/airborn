@@ -822,29 +822,50 @@
 		}
 	});
 	var localStorage = new Storage_(document.airborn_localStorage);
-	delete document.airborn_localStorage;
-	defineWithPrefixed(window, 'localStorage', 'airborn_localStorage', {
-		get: function() {
+	var localStorageDescr;
+	if(window.Proxy) {
+		localStorageDescr = {
+			value: new Proxy(localStorage, {
+				set: function(target, name, value) {
+					target.setItem(name, value);
+					return true;
+				},
+				deleteProperty: function(target, name) {
+					target.removeItem(name);
+					return true;
+				},
+			})
+		};
+	} else {
+		var stringifyStorageValues = function() {
+			Object.keys(localStorage).forEach(function(key) {
+				localStorage[key] += '';
+			});
+		};
+		var stringifyAndFlush = function() {
 			stringifyStorageValues();
-			return localStorage;
-		}
-	});
-	function stringifyStorageValues() {
-		Object.keys(localStorage).forEach(function(key) {
-			localStorage[key] += '';
-		});
+			flushStorage();
+		};
+		localStorageDescr = {
+			get: function() {
+				stringifyStorageValues();
+				return localStorage;
+			}
+		};
+		setInterval(stringifyAndFlush, 300);
+		window.addEventListener('unload', stringifyAndFlush); // Doesn't work on browser tab close or in Firefox
 	}
+	
+	delete document.airborn_localStorage;
+	defineWithPrefixed(window, 'localStorage', 'airborn_localStorage', localStorageDescr);
 	var localStorageJSON = JSON.stringify(localStorage);
 	function flushStorage() {
-		stringifyStorageValues();
 		var json = JSON.stringify(localStorage);
 		if(json !== localStorageJSON) {
 			airborn.fs.putFile(appData + 'localStorage', json);
 			localStorageJSON = json;
 		}
 	}
-	setInterval(flushStorage, 300);
-	window.addEventListener('unload', flushStorage); // Doesn't work on browser tab close or in Firefox
 	
 	Object.defineProperty(document, 'airborn_cookie', {value: ''});
 	defineDummy('cookie', 'airborn_cookie');
