@@ -1650,7 +1650,7 @@
 	}
 	function maybeWindowProxy(window) {
 		try {
-			window.a; // jshint ignore:line
+			if(window.location.href === undefined) throw 0;
 		} catch(e) {
 			return windowProxy(window);
 		}
