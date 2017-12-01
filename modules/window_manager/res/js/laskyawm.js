@@ -5,7 +5,7 @@
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
 var workspace_start_top = deviceType === 'mobile' ? 0 : 25;
-var workspace_start_left = deviceType === 'mobile' ? 0 : 100;
+var workspace_start_left = deviceType === 'mobile' ? 0 : 0;
 function workspace_height() { return window.innerHeight - workspace_start_top; }
 function workspace_width() { return window.innerWidth - workspace_start_left; }
 
@@ -129,7 +129,7 @@ $.ui.plugin.add('draggable', 'forceMinimize', {
 		var _this = this;
 		setTimeout(function() {
 			if(_this[0].realLeft) {
-				_this[0].style.cssText = _this[0].style.cssText.replace(/left: .+?;/, 'left: ' + _this[0].realLeft + ';');
+				_this[0].style.left = _this[0].realLeft;
 				delete _this[0].realLeft;
 			}
 			forceMinimize();
@@ -222,20 +222,21 @@ window.addEventListener('message', function(message) {
 					});
 				});
 			} else if(message.data.action === 'wm.openFile' || message.data.action === 'wm.openWindow') {
-				options = {};
+				options = message.data.args[1] = message.data.args[1] || {};
 				childDivs.forEach(function(div) {
 					$(div).find('.tab').each(function(i, tab) {
 						if($(tab).find('iframe')[0].contentWindow === message.source) {
+							options.targetDiv = div;
 							if(message.data.args[1] === 'replace') {
-								options.targetDiv = div;
 								options.targetTab = tab;
 								if(message.data.action === 'wm.openFile') options.loaderElm = $(tab.tabtitlebar).find('.loader')[0];
+							} else {
+								options.innewtab = true;
 							}
-							options.originDiv = div;
 						}
 					});
 				});
-				window[message.data.action.substr(3)].apply(window, message.data.args.concat(options));
+				window[message.data.action.substr(3)].apply(window, message.data.args);
 			} else if(message.data.action === 'wm.showProgress' || message.data.action === 'wm.setProgress' || message.data.action === 'wm.hideProgress') {
 				options = {};
 				childDivs.forEach(function(div) {
@@ -426,6 +427,11 @@ openWindow = function(path, options, callback) {
 					});
 					titlebarDiv.appendChild(closeBtn);
 					
+					var maximizeBtn = document.createElement('button');
+					maximizeBtn.className = 'maximize';
+					maximizeBtn.addEventListener('click', toggleMaximized);
+					titlebarDiv.appendChild(maximizeBtn);
+					
 					var minimizeBtn = document.createElement('button');
 					minimizeBtn.className = 'minimize';
 					minimizeBtn.addEventListener('click', function(evt) {
@@ -435,11 +441,6 @@ openWindow = function(path, options, callback) {
 						evt.stopPropagation();
 					});
 					titlebarDiv.appendChild(minimizeBtn);
-					
-					var maximizeBtn = document.createElement('button');
-					maximizeBtn.className = 'maximize';
-					maximizeBtn.addEventListener('click', toggleMaximized);
-					titlebarDiv.appendChild(maximizeBtn);
 					
 					tabbar = document.createElement('div');
 					tabbar.className = 'tabbar';
@@ -717,7 +718,6 @@ function positionMinimized() {
 	var full = {};
 	var minMinimizedLeft = deviceType === 'mobile' ? 100 : 50;
 	[].slice.call(childDivs).reverse().forEach(function(win) {
-		var moved;
 		if(win.classList.contains('minimized')) {
 			var left =
 				win.classList.contains('maximized') || deviceType === 'mobile' ?
@@ -725,32 +725,30 @@ function positionMinimized() {
 					win.classList.contains('maximized-right') ? Math.floor(workspace_width() / 2) :
 					console.error('Unknown maximized state')) :
 				parseInt(win.realLeft !== undefined ? win.realLeft : win.style.left) || 0;
-			var minimizedLeft, pushLeft;
-			if(left < minMinimizedLeft) {
+			var width =
+				win.classList.contains('maximized') || deviceType === 'mobile' ?
+					(win.classList.contains('maximized-max') || deviceType === 'mobile' ? workspace_width() :
+					Math.floor(workspace_width() / 2)) :
+				parseInt(win.style.width) || 800;
+			var minimizedLeft = left + width - 250;
+			var pushLeft;
+			if(minimizedLeft < minMinimizedLeft) {
 				minimizedLeft = minMinimizedLeft;
-				moved = true;
-			} else if(left > workspace_width() - barIconsWidth - 260) {
+			} else if(minimizedLeft > workspace_width() - barIconsWidth - 260) {
 				minimizedLeft = workspace_width() - barIconsWidth - 260;
-				moved = true;
 				pushLeft = true;
-			} else {
-				minimizedLeft = left;
-				moved = false;
 			}
-			for(; full[minimizedLeft]; moved = true) {
+			while(full[minimizedLeft]) {
 				if(pushLeft) {
 					full[minimizedLeft].style.left = parseInt(full[minimizedLeft].style.left) - 28 + 'px';
 				}
 				minimizedLeft += 28;
 			}
-			if(moved) {
-				if(!win.realLeft) win.realLeft = win.style.left;
-				win.style.cssText += '; left: ' + (pushLeft ? workspace_width() - barIconsWidth - 260 : minimizedLeft) + 'px !important;';
-			}
+			if(!win.realLeft) win.realLeft = win.style.left;
+			win.style.cssText += 'left: ' + (pushLeft ? workspace_width() - barIconsWidth - 260 : minimizedLeft) + 'px !important';
 			full[minimizedLeft] = win;
-		}
-		if(!moved && win.realLeft) {
-			win.style.cssText = win.style.cssText.replace(/left: .+?;/, 'left: ' + win.realLeft + ';');
+		} else if(win.realLeft) {
+			win.style.left = win.realLeft;
 			delete win.realLeft;
 		}
 	});

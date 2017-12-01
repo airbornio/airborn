@@ -27,7 +27,7 @@ document.body.appendChild(apps);
 
 var sidebar = document.createElement('div');
 sidebar.id = 'sidebar';
-document.body.appendChild(sidebar);
+//document.body.appendChild(sidebar);
 
 loadApps();
 
@@ -39,7 +39,8 @@ document.body.addEventListener('click', function(evt) {
 		if(!app || app.parentElement === app) return;
 	}
 	openWindow(app.dataset.path, {
-		originDiv: $('.window.focused')[0]
+		targetDiv: $('.window.focused')[0],
+		innewtab: true
 	});
 });
 document.body.addEventListener('keypress', function(evt) {
