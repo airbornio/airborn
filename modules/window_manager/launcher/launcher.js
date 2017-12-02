@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, airborn, openWindow, getIconUrl */
+/*global $, airborn, openTab, getIconUrl */
 
 var apps;
 
@@ -25,10 +25,6 @@ apps.className = 'barMenu';
 apps.textContent = 'Loading…';
 document.body.appendChild(apps);
 
-var sidebar = document.createElement('div');
-sidebar.id = 'sidebar';
-//document.body.appendChild(sidebar);
-
 loadApps();
 
 document.body.addEventListener('click', function(evt) {
@@ -38,10 +34,7 @@ document.body.addEventListener('click', function(evt) {
 		app = app.parentElement;
 		if(!app || app.parentElement === app) return;
 	}
-	openWindow(app.dataset.path, {
-		targetDiv: $('.window.focused')[0],
-		innewtab: true
-	});
+	openTab(app.dataset.path, {});
 });
 document.body.addEventListener('keypress', function(evt) {
 	if(evt.which !== 13) return;
@@ -54,12 +47,6 @@ document.body.addEventListener('keypress', function(evt) {
 	app.click();
 	$(apps).hide();
 });
-
-function updateSidebarHeight() {
-	sidebar.style.height = window.innerHeight - 25;
-}
-updateSidebarHeight();
-window.addEventListener('resize', updateSidebarHeight);
 
 function loadApps() {
 	var fragment = document.createDocumentFragment();
@@ -94,9 +81,7 @@ function loadApps() {
 			if(++done === total) cont();
 		}
 		function cont() {
-			var keys = Object.keys(allApps);
-			keys.alphanumSort();
-			keys.forEach(function(key) {
+			Object.keys(allApps).sort().forEach(function(key) {
 				var props = allApps[key];
 				var app = document.createElement('div');
 				app.className = 'app';
@@ -110,9 +95,7 @@ function loadApps() {
 				fragment.appendChild(app);
 			});
 			apps.innerHTML = '';
-			apps.appendChild(fragment.cloneNode(true));
-			sidebar.innerHTML = '';
-			sidebar.appendChild(fragment);
+			apps.appendChild(fragment);
 		}
 	});
 }

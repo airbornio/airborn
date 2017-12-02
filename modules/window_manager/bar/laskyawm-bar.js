@@ -18,17 +18,9 @@
 	
 	bar.addItem = function(node) {
 		$(barIcons).append(node);
-		bar.updateWidth();
 	};
 	
 	bar.removeItem = function(node) {
 		barIcons.removeChild(node);
-		bar.updateWidth();
 	};
-	
-	bar.updateWidth = function() {
-		window.barIconsWidth = barIcons.offsetWidth;
-	};
-	
-	bar.updateWidth();
 })(window);

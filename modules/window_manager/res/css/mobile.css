@@ -1,6 +1,3 @@
-#windows {
-	pointer-events: none;
-}
 .window {
 	width: 100% !important;
 	height: 100% !important;
@@ -19,9 +16,6 @@
 }
 .window:not(.minimized):before {
 	width: 120px;
-}
-.window * {
-	pointer-events: all;
 }
 .window .titlebar {
 	height: 50px;
@@ -119,7 +113,4 @@
 	width: 32px;
 	height: 32px;
 	vertical-align: -9px;
-}
-#sidebar {
-	display: none;
 }

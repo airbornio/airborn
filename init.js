@@ -30,7 +30,6 @@ if(loginButton) {
 [
 	'/Core/modules/window_manager/index.html',
 	'/Core/modules/window_manager/res/css/main.css',
-	'/Core/modules/window_manager/res/lib/jquery-ui/jquery-ui.min.css',
 	'/settings',
 	'/Apps/firetext/index.html',
 	'/Apps/firetext/styles.css'

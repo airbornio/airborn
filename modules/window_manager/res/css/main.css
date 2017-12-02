@@ -11,110 +11,35 @@ body {
 	font-family: Calibri, Lato, Ubuntu, sans-serif;
 	height: 0;
 }
-body:before,
-#sidebar:before,
-.window:before,
-.hud {
-	background-attachment: fixed;
-}
 body:before {
 	content: '';
 	position: absolute;
 	width: 100%;
 	height: 100%;
 	z-index: -1000;
-}
-#windows {
-	position: absolute;
-	right: 0;
-	bottom: 0;
+	background-attachment: fixed;
 }
 .window {
-	width: 800px;
-	height: 600px;
-	border-radius: 7px;
-	position: absolute !important;
 	top: 0;
 	left: 0;
-	box-shadow: 0px 0px 20px rgba(0, 0, 0, .3);
-	background-color: rgba(255, 255, 255, .2);
-}
-.window:before {
-	content: '';
-	position: absolute;
 	width: 100%;
 	height: 100%;
-	opacity: .5;
-	z-index: -1;
-	border-radius: 7px;
+	position: absolute !important;
+	pointer-events: none;
+}
+.window .titlebar > *,
+.window .tabs {
+	pointer-events: all;
 }
 .window .titlebar {
 	height: 25px;
-	border-top-left-radius: 7px;
-	border-top-right-radius: 7px;
 	padding: 0 5px;
 }
-.window.focused {
-	background-color: rgba(255, 255, 255, .6);
-}
-.window .titlebar button {
-	border: 1px solid transparent;
-	border-radius: 7px;
-	width: 18px;
-	height: 18px;
-	margin-top: 3px;
-	float: right;
-	background-color: transparent;
-	background-position: center;
-	background-repeat: no-repeat;
-}
-.window .titlebar .close {
-	background-image: url(../img/close.png);
-}
-.window .titlebar .minimize {
-	background-image: url(../img/minimize.png);
-}
-.window.minimized .titlebar .minimize {
-	background-image: url(../img/unminimize.png);
-}
-.window.minimized .titlebar .maximize {
-	display: none;
-}
-.window .titlebar .maximize {
-	background-image: url(../img/maximize.png);
-}
-.window.maximized .titlebar .maximize {
-	background-image: url(../img/unmaximize.png);
-}
-.window.maximized.maximized-max:not(.minimized) {
-	background-color: transparent;
-	pointer-events: none;
-}
-.window.maximized.maximized-max:not(.minimized) .titlebar > *,
-.window.maximized.maximized-max:not(.minimized) .tabs {
-	pointer-events: all;
-}
-.window.maximized.maximized-max:not(.minimized):before {
-	content: none;
-}
-.window.maximized.maximized-max:not(.minimized) .titlebar {
+.window .titlebar {
 	padding: 0 100px;
 }
-.window.maximized.maximized-max:not(.minimized) .titlebar .icon,
-.window.maximized.maximized-max:not(.minimized) .titlebar button {
+.window .titlebar .icon {
 	display: none;
-}
-.window .titlebar button:hover {
-	border-color: rgba(204, 204, 204, 0.5);
-	background-color: rgba(245, 245, 245, .5) !important;
-}
-.window .titlebar button:focus {
-	outline: 1px solid gray;
-	-moz-outline-radius: 4px;
-	outline: -webkit-focus-ring-color auto 5px;
-}
-.window .titlebar button::-moz-focus-inner {
-	border: 0;
 }
 .window .titlebar .tabbar {
 	display: inline-block;
@@ -175,69 +100,9 @@ body:before {
 	width: 100%;
 	height: 100%;
 	border: 0;
-	border-bottom-left-radius: 7px;
-	border-bottom-right-radius: 7px;
 	background-color: white;
 	position: absolute;
 	left: 0;
-}
-.hud {
-	position: absolute;
-	border-radius: 7px;
-	opacity: .7;
-}
-.window.maximized, .hud {
-	top: 0 !important;
-	height: calc(100% + 25px) !important;
-}
-.window.maximized.maximized-max, .hud-max {
-	top: -25px !important;
-	left: 0 !important;
-	width: 100% !important;
-}
-.window.maximized.maximized-left, .hud-left {
-	left: 0 !important;
-	width: 50% !important;
-}
-.window.maximized.maximized-right, .hud-right {
-	left: 50% !important;
-	width: 50% !important;
-}
-.window.maximized:not(.minimized) {
-	box-shadow: none;
-}
-.window.minimized.minimized { /* same specificity as .maximized above */
-	top: -25px !important;
-	width: 250px !important;
-	max-height: 25px;
-	overflow: hidden;
-	background-color: white;
-}
-.window.minimized .titlebar .tabbar {
-	max-width: calc(100% - 112px);
-}
-.window.minimized iframe {
-	display: none;
-}
-.window.minimized.hover {
-	z-index: 1000 !important;
-	max-height: 120px;
-}
-.window.minimized.hover iframe {
-	display: block;
-	transform: scale(0.8);
-	transform-origin: 0 0;
-	-webkit-transform: scale(0.8);
-	-webkit-transform-origin: 0 0;
-	width: 125%;
-	height: 125%;
-	margin-bottom: -40px;
-}
-.window.minimized .ui-resizable-handle {
-	display: none !important;
-}
-.ui-resizable-handle {
-	z-index: 0 !important;
 }
 .loader {
 	position: absolute;

@@ -125,12 +125,7 @@ function updateBackground(timer) {
 	var image = 'url(' + dataUrl + ')';
 	
 	var cssText = [
-		'body:before,',
-		'#sidebar:before,',
-		'.window:before,',
-		'.window:not(.minimized) .titlebar:before,',
-		'.window:not(.minimized) .titlebar:after,',
-		'.hud {',
+		'body:before {',
 		timer ?
 		'	transition: background-image 4s, opacity 4s;' :
 		'	transition: none;',
@@ -138,38 +133,15 @@ function updateBackground(timer) {
 		'	image-rendering: pixelated;',
 		'	image-rendering: -moz-crisp-edges;',
 		'	-ms-interpolation-mode: nearest-neighbor;',
-		'}',
-		'body:before,',
-		'#sidebar:before,',
-		'.window:before {',
 		'	background-image:' + image + ';',
 		'}',
-		'.window.minimized:before,',
-		'.window:not(.minimized):nth-of-type(1):nth-last-of-type(1) .titlebar:after,',
-		'.hud {',
-		'	background-image: linear-gradient(to right, rgba(255, 255, 255, .5), rgba(255, 255, 255, .5)),' + image + ';',
-		'}',
-		'@media only screen and (max-device-width: 640px) {',
-		'	.window:before,',
-		'	.window:not(.minimized) .titlebar:before {',
-		'		background-image: linear-gradient(to right, rgba(255, 255, 255, .8), rgba(255, 255, 255, .8)),' + image + ';',
-		'	}',
-		'	.window.minimized:before,',
-		'	.window:not(.minimized) .titlebar:after {',
-		'		background-image: linear-gradient(to right, rgba(255, 255, 255, .7), rgba(255, 255, 255, .7)),' + image + ';',
-		'	}',
-		'}'
 	].join('\n');
 	
 	if(style.textContent && navigator.userAgent.indexOf('Firefox') !== -1) {
 		/* Firefox doesn't support cross-fading `background-image`s (https://bugzil.la/546052).
 		 * Instead, we fade to blue and then to the new image. */
 		style.textContent += [
-			'body:before,',
-			'#sidebar:before,',
-			'.window:before,',
-			'.window:not(.minimized) .titlebar:before,',
-			'.window:not(.minimized) .titlebar:after {',
+			'body:before {',
 			'	opacity: 0;',
 			'}',
 		].join('\n');

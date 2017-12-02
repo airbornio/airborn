@@ -73,35 +73,3 @@
 	height: 16px;
 	margin-right: 5px;
 }
-
-#sidebar {
-	width: 100px;
-	overflow: auto;
-	background: rgba(255, 255, 255, .2);
-	direction: rtl; /* Move scrollbar to the left. */
-	position: absolute;
-	z-index: 900;
-}
-#sidebar:before {
-	content: '';
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	opacity: .5;
-	z-index: -1;
-}
-#sidebar .app {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	text-align: center;
-	cursor: pointer;
-	padding: 5px;
-	direction: ltr;
-	color: #E6E6E6;
-	text-shadow: 1px 1px 1px black;
-	font-size: 90%;
-}
-#sidebar .app img {
-	width: 64px;
-	height: 64px;
-}
