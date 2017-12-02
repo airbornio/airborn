@@ -1073,7 +1073,7 @@ window.openWindow = function(path, callback) {
 };
 
 window.setTitle = function(t) {
-	document.title = t ? t + ' - Airborn OS' : 'Airborn OS';
+	document.title = t ? t + ' - Airborn' : 'Airborn';
 };
 
 var icon = document.createElement('link');
@@ -1241,7 +1241,7 @@ window.update = function() {
 		getFile('/Core/version-id', function(contents) {
 			if(currentId !== contents) {
 				if(!(settings.core && settings.core.notifyOfUpdates || account_info.tier >= 10) || (document.hasFocus() && confirm(
-					'There is an update for Airborn OS. Do you want to install it now? You can continue using Aiborn while and after updating. The update will apply next time you open Airborn OS.\nIf you click Cancel, you will be asked again in 1 hour or next time you open Airborn OS.'
+					'There is an update for Airborn. Do you want to install it now? You can continue using Aiborn while and after updating. The update will apply next time you open Airborn.\nIf you click Cancel, you will be asked again in 1 hour or next time you open Airborn.'
 				))) {
 					includeJSZip();
 					corsReq('/v2/current', function() {
