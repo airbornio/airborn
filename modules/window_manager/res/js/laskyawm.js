@@ -478,6 +478,11 @@ openWindow = function(path, options, callback) {
 					tabtitlebar.appendChild(titleloader);
 				}
 				
+				var focus = function() {
+					focusWindow(div);
+					$(div).find('iframe').blur().focus();
+				};
+				
 				if(!options.targetDiv) {
 					var addtab = document.createElement('div');
 					addtab.textContent = '+';
@@ -503,10 +508,6 @@ openWindow = function(path, options, callback) {
 					}
 					titlebarDiv.appendChild(icon);
 					
-					var focus = function() {
-						focusWindow(div);
-						$(div).find('iframe').blur().focus();
-					};
 					div.addEventListener('mousedown', function() {
 						focus();
 						var nohover = function(evt) { evt.stopImmediatePropagation(); };
@@ -548,15 +549,11 @@ openWindow = function(path, options, callback) {
 					
 					clipResizableHandles.call(div, null, {position: $(div).position()});
 					
-					iframeWin = iframe.contentWindow;
-					childWindows.push(iframeWin);
-					focusTab(tab);
-					focus();
-					//updateZIndex();
-					//forceMinimize();
-				} else {
-					iframeWin = iframe.contentWindow;
+					childWindows.push(iframe.contentWindow);
 				}
+				iframeWin = iframe.contentWindow;
+				focusTab(tab);
+				focus();
 				
 				if(callback)
 					callback(iframeWin, tab, div);
