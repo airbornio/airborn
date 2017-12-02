@@ -1,108 +1,19 @@
-.window {
-	width: 100% !important;
-	height: 100% !important;
-	left: 0 !important;
-	top: 0 !important;
-	background-color: transparent !important;
-}
-.window:before {
-	opacity: 1;
-}
-.window.minimized:before {
-	/* Workaround for Chrome mobile, which doesn't support background-attachment: fixed.
-	 * We only align the background for the first minimized window, which at least makes the rounded tabs look right. */
-	background-attachment: scroll;
-	background-position: -100px 0;
-}
-.window:not(.minimized):before {
-	width: 120px;
-}
-.window .titlebar {
-	height: 50px;
-	width: 120px;
-	position: relative;
-	box-shadow: 0px 0px 5px #888;
-}
-.window:not(.minimized) .titlebar:before, .window:not(.minimized) .titlebar:after {
-	content: "";
-	width: 7px;
-	height: 7px;
-	position: absolute;
-	bottom: 0;
-	left: 100%;
-	
-	/* Workaround for Chrome mobile, which doesn't support background-attachment: fixed. */
-	background-attachment: scroll;
-	background-position: -120px -43px;
-}
-.window:not(.minimized) .titlebar:before {
-	background-color: #ECECEC;
-}
-.window:not(.minimized).focused .titlebar:before {
-	background-color: #D4E4EC;
-}
-.window:not(.minimized) .titlebar:after {
-	background-color: #ECECEC;
-	border-bottom-left-radius: 7px;
-	box-shadow: inset 7px 0 5px -7px #888;
-}
-.window:not(.minimized):nth-of-type(1):nth-last-of-type(1) .titlebar:after {
-	background-color: #485C68;
-}
-.window .titlebar button {
-	margin-top: 16px;
-	margin-left: 10px;
-}
-.window .titlebar .maximize {
-	display: none;
-}
-.window .titlebar .tabbar .tabtitlebar, .window .titlebar .addtab {
-	display: none;
-}
-.window .titlebar .icon {
-	height: 32px;
-	position: absolute;
-	right: 13px;
-	margin-top: 10px;
-}
-.window .tabs {
-	height: calc(100% - 50px);
-}
-.window iframe {
-	border-top-right-radius: 7px;
-}
-.window.minimized.minimized {
-	top: 0 !important;
-	width: 60px !important;
-	max-height: 50px;
-}
-.window.minimized .titlebar {
-	width: 100%;
-}
-.window.minimized .titlebar .close, .window.minimized .titlebar .minimize, .window.minimized .titlebar .addtab {
-	visibility: hidden;
-}
-#bar {
-	height: 50px;
+#bar,
+#toggleApps,
+.window .titlebar,
+.window .titlebar .tabbar .tabtitlebar,
+.window .titlebar .addtab {
+	height: 40px !important;
+	line-height: 40px;
 }
 #toggleApps {
-	position: absolute;
-	right: 50px;
-	top: 13px;
-}
-#apps {
-	left: auto;
-	right: 50px;
-}
-#apps:after {
-	left: auto;
-	right: 40px;
+	padding: 0;
 }
 #togglePowerMenu {
-	padding: 17px;
+	padding: 12px 17px;
 }
 .barMenu {
-	top: 54px;
+	top: 44px;
 }
 .barMenu > div {
 	line-height: 32px;
@@ -113,4 +24,10 @@
 	width: 32px;
 	height: 32px;
 	vertical-align: -9px;
+}
+.window .tabs {
+	height: calc(100% - 40px);
+}
+.window .titlebar .tabbar {
+	overflow-x: auto;
 }

@@ -33,10 +33,7 @@ body:before {
 }
 .window .titlebar {
 	height: 25px;
-	padding: 0 5px;
-}
-.window .titlebar {
-	padding: 0 100px;
+	padding-left: 100px;
 }
 .window .titlebar .icon {
 	display: none;
@@ -44,7 +41,7 @@ body:before {
 .window .titlebar .tabbar {
 	display: inline-block;
 	white-space: nowrap;
-	max-width: calc(100% - 130px);
+	max-width: calc(100% - 38px - var(--bar-icons-width));
 	overflow: hidden;
 	z-index: 1;
 	position: relative;
