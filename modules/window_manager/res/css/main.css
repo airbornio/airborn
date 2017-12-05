@@ -35,9 +35,6 @@ body:before {
 	height: 25px;
 	padding-left: 100px;
 }
-.window .titlebar .icon {
-	display: none;
-}
 .window .titlebar .tabbar {
 	display: inline-block;
 	white-space: nowrap;
@@ -68,9 +65,9 @@ body:before {
 	background-color: white;
 }
 .window .titlebar .icon {
-	float: left;
-	margin-top: 6px;
+	margin-right: 6px;
 	height: 16px;
+	vertical-align: -3px;
 }
 .window .tabs {
 	height: calc(100% - 25px);

@@ -43,9 +43,7 @@ window.addEventListener('message', function(message) {
 				$(childDiv).find('.tab').each(function(i, tab) {
 					if($(tab).find('iframe')[0].contentWindow === message.source) {
 						var cont = function(icon) {
-							tab.icon = icon;
-							if($(tab).hasClass('focused')) $(childDiv).find('.icon').attr('src', icon);
-							//window.parent.postMessage({action: 'core.setIcon', args: [icon]}, '*');
+							$(tab.tabtitlebar).find('.icon').attr('src', icon);
 						};
 						if(message.data.args[0]) {
 							cont(message.data.args[0]);
@@ -217,6 +215,16 @@ openTab = function(path, options, callback) {
 			tab.tabtitlebar = tabtitlebar;
 			tabbar.appendChild(tabtitlebar);
 			
+			var icon = document.createElement('img');
+			icon.className = 'icon';
+			var iconUrl = getIconUrl(manifest.icons);
+			if(iconUrl) {
+				airborn.fs.prepareUrl(iconUrl, {relativeParent: path, rootParent: path}, function(url) {
+					icon.src = url;
+				});
+			}
+			tabtitlebar.appendChild(icon);
+			
 			var title = document.createElement('span');
 			title.className = 'title';
 			title.textContent = manifest.name; // This element needs at least a nbsp
@@ -254,6 +262,5 @@ function focusTab(tab) {
 	var $window = $(tab).closest('.window');
 	$window.find('.tabtitlebar').removeClass('focused');
 	tab.tabtitlebar.classList.add('focused');
-	$window.find('.icon').attr('src', tab.icon);
 	airborn.core.setTitle(tab.tabtitlebar.textContent.replace('\u00a0', ''));
 }
