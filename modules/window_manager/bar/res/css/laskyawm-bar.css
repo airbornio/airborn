@@ -34,7 +34,6 @@
 	line-height: 17px;
 }
 .barMenu {
-	display: none;
 	z-index: 1000;
 	position: absolute;
 	background: white;
@@ -42,6 +41,9 @@
 	border-radius: 7px;
 	box-shadow: 0px 0px 5px #888;
 	top: 34px;
+}
+.barMenu:not(.shown) {
+	display: none;
 }
 #apps {
 	left: 20px;

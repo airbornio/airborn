@@ -1,7 +1,5 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $ */
-
 (function() {
 	// Add namespace
 	var bar = window.bar = {};
@@ -17,7 +15,7 @@
 	barElement.appendChild(barIcons);
 	
 	bar.addItem = function(node) {
-		$(barIcons).append(node);
+		barIcons.appendChild(node);
 		bar.updateWidth();
 	};
 	

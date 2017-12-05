@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, airborn, deviceType, bar */
+/*global airborn, deviceType, bar */
 
 var powerMenu;
 
@@ -16,7 +16,7 @@ airborn.fs.prepareUrl('/Core/modules/window_manager/bar/res/img/power.png', {roo
 	});
 });
 togglePowerMenu.addEventListener('click', function() {
-	$(powerMenu).toggle();
+	powerMenu.classList.toggle('shown');
 });
 bar.addItem(togglePowerMenu);
 
@@ -47,5 +47,5 @@ powerMenu.appendChild(logout);
 document.body.appendChild(powerMenu);
 
 document.documentElement.addEventListener('click', function(evt) {
-	if(evt.target !== powerMenu && evt.target !== togglePowerMenu) $(powerMenu).hide();
+	if(evt.target !== powerMenu && evt.target !== togglePowerMenu) powerMenu.classList.remove('shown');
 });

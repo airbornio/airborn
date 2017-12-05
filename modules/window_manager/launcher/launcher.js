@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, airborn, openTab, getIconUrl */
+/*global airborn, openTab, getIconUrl */
 
 var apps;
 
@@ -10,11 +10,11 @@ toggleApps.className = 'barButton';
 toggleApps.textContent = 'Apps';
 toggleApps.tabIndex = '0';
 toggleApps.addEventListener('click', function() {
-	$(apps).toggle();
+	apps.classList.toggle('shown');
 });
 toggleApps.addEventListener('keypress', function(evt) {
 	if(evt.which === 13 || evt.which === 32) {
-		$(apps).toggle();
+		apps.classList.toggle('shown');
 	}
 });
 document.body.appendChild(toggleApps);
@@ -45,7 +45,7 @@ document.body.addEventListener('keypress', function(evt) {
 		if(!app || app.parentElement === app) return;
 	}
 	app.click();
-	$(apps).hide();
+	apps.classList.remove('shown');
 });
 
 function loadApps() {
@@ -105,5 +105,5 @@ airborn.fs.listenForFileChanges('/Apps/', function(path) {
 });
 
 document.documentElement.addEventListener('click', function(evt) {
-	if(evt.target !== apps && evt.target !== toggleApps) $(apps).hide();
+	if(evt.target !== apps && evt.target !== toggleApps) apps.classList.remove('shown');
 });

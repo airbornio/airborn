@@ -1,77 +1,40 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global $, apps, getIconUrl: true, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openWindow: true, openTab: true */
+/*global apps, getIconUrl: true, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openWindow: true, openTab: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
 var childDiv;
+var childTabs = [];
 var childWindows = [];
 
 
 window.addEventListener('message', function(message) {
-	if(childWindows.indexOf(message.source) !== -1) {
+	var index = childWindows.indexOf(message.source);
+	if(index !== -1) {
 		if(message.data.action.substr(0, 3) === 'wm.') {
+			var tab = childTabs[index];
 			var options;
 			if(message.data.action === 'wm.focus') {
-				$(childDiv).find('.tab').each(function(i, tab) {
-					if($(tab).find('iframe')[0].contentWindow === message.source) {
-						focusTab(tab);
-					}
-				});
+				focusTab(tab);
 			} else if(message.data.action === 'wm.reportClicked') {
-				$(apps).hide();
-				$(powerMenu).hide();
+				apps.classList.remove('shown');
+				powerMenu.classList.remove('shown');
 			} else if(message.data.action === 'wm.setTitle') {
-				$(childDiv).find('.tab').each(function(i, tab) {
-					if($(tab).find('iframe')[0].contentWindow === message.source) {
-						var cont = function(title) {
-							$(tab.tabtitlebar).find('.title').text(title);
-							$(tab).find('iframe')[0].name = title; // Webkit Developer Tools hint.
-							if($(tab).hasClass('focused')) airborn.core.setTitle(title);
-						};
-						if(message.data.args[0]) {
-							cont(message.data.args[0]);
-						} else {
-							airborn.fs.getFile(tab.path + 'manifest.webapp', function(manifest) {
-								manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
-								cont(manifest.name);
-							});
-						}
-					}
-				});
+				var title = message.data.args[0] || tab.manifest.name;
+				tab.tabtitlebar.querySelector('.title').textContent = title;
+				tab.querySelector('iframe').name = title; // Webkit Developer Tools hint.
+				if(tab.classList.contains('focused')) airborn.core.setTitle(title);
 			} else if(message.data.action === 'wm.setIcon') {
-				$(childDiv).find('.tab').each(function(i, tab) {
-					if($(tab).find('iframe')[0].contentWindow === message.source) {
-						var cont = function(icon) {
-							$(tab.tabtitlebar).find('.icon').attr('src', icon);
-						};
-						if(message.data.args[0]) {
-							cont(message.data.args[0]);
-						} else {
-							airborn.fs.getFile(tab.path + 'manifest.webapp', function(manifest) {
-								manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
-								var icon = getIconUrl(manifest.icons);
-								if(icon) {
-									airborn.fs.prepareUrl(icon, {relativeParent: tab.path, rootParent: tab.path}, function(url) {
-										cont(url);
-									});
-								} else {
-									cont();
-								}
-							});
-						}
-					}
-				});
+				var icon = message.data.args[0] || tab.defaultIcon;
+				tab.tabtitlebar.querySelector('.icon').src = icon;
 			} else if(message.data.action === 'wm.openFile') {
 			} else if(message.data.action === 'wm.openWindow') {
 				window.openTab.apply(window, message.data.args);
 			} else if(message.data.action === 'wm.showProgress' || message.data.action === 'wm.setProgress' || message.data.action === 'wm.hideProgress') {
-				options = {};
-				$(childDiv).find('.tab').each(function(i, tab) {
-					if($(tab).find('iframe')[0].contentWindow === message.source) {
-						options.loaderElm = $(tab.tabtitlebar).find('.loader')[0];
-					}
-				});
+				options = {
+					loaderElm: tab.tabtitlebar.querySelector('.loader')
+				};
 				window[message.data.action.substr(3)].apply(window, message.data.args.concat(options));
 			} else {
 				throw 'unknown action';
@@ -96,14 +59,7 @@ setProgress = function(frac, options) {
 };
 hideProgress = function(options) {
 	if(!options.loaderElm) return;
-	if(options.loaderHighlight !== false) {
-		setProgress(1, options);
-		$(options.loaderElm).animate({backgroundColor: 'transparent'}).queue(function() {
-			$(this).css({width: ''}).dequeue();
-		});
-	} else {
-		$(options.loaderElm).css({width: ''});
-	}
+	options.loaderElm.style.width = '';
 };
 
 var appIconSize = (deviceType === 'mobile' ? 32 : 64) * (window.devicePixelRatio || 1);
@@ -138,7 +94,7 @@ openWindow = function(path, options, callback) {
 	addtab.textContent = '+';
 	addtab.className = 'addtab';
 	addtab.addEventListener('click', function() {
-		openTab($(div).find('.tab.focused')[0].path, {}, function() {
+		openTab(div.querySelector('.tab.focused').path, {}, function() {
 			tabbar.scrollLeft = tabbar.scrollWidth;
 		});
 	});
@@ -190,7 +146,7 @@ openTab = function(path, options, callback) {
 		airborn.fs.prepareUrl(options.path || '/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
 			var div = childDiv;
 			
-			var tabs = $(div).find('.tabs')[0];
+			var tabs = div.querySelector('.tabs');
 			
 			var tab = document.createElement('div');
 			tab.className = 'tab';
@@ -204,7 +160,7 @@ openTab = function(path, options, callback) {
 			tab.appendChild(iframe);
 			tab.path = path;
 			
-			var tabbar = $(div).find('.tabbar')[0];
+			var tabbar = div.querySelector('.tabbar');
 			
 			var tabtitlebar = document.createElement('div');
 			tabtitlebar.className = 'tabtitlebar';
@@ -220,7 +176,7 @@ openTab = function(path, options, callback) {
 			var iconUrl = getIconUrl(manifest.icons);
 			if(iconUrl) {
 				airborn.fs.prepareUrl(iconUrl, {relativeParent: path, rootParent: path}, function(url) {
-					icon.src = url;
+					icon.src = tab.defaultIcon = url;
 				});
 			}
 			tabtitlebar.appendChild(icon);
@@ -234,10 +190,13 @@ openTab = function(path, options, callback) {
 			titleloader.className = 'loader';
 			tabtitlebar.appendChild(titleloader);
 			
+			childTabs.push(tab);
 			var iframeWin = iframe.contentWindow;
 			childWindows.push(iframeWin);
 			focusTab(tab);
-			$(div).find('iframe').blur().focus();
+			iframe.focus();
+			
+			tab.manifest = manifest;
 			
 			airborn_localStorage.lastApp = path;
 			
@@ -257,10 +216,8 @@ openWindow(
 
 
 function focusTab(tab) {
-	$(tab).siblings('.focused').removeClass('focused');
+	childDiv.querySelectorAll('.tabs .tab.focused, .tabtitlebar.focused').forEach(elm => elm.classList.remove('focused'));
 	tab.classList.add('focused');
-	var $window = $(tab).closest('.window');
-	$window.find('.tabtitlebar').removeClass('focused');
 	tab.tabtitlebar.classList.add('focused');
 	airborn.core.setTitle(tab.tabtitlebar.textContent.replace('\u00a0', ''));
 }
