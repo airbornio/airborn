@@ -34,7 +34,7 @@ document.body.addEventListener('click', function(evt) {
 		app = app.parentElement;
 		if(!app || app.parentElement === app) return;
 	}
-	openTab(app.dataset.path, {});
+	openTab(app.dataset.path);
 });
 document.body.addEventListener('keypress', function(evt) {
 	if(evt.which !== 13) return;

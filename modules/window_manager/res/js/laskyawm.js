@@ -70,7 +70,7 @@ getIconUrl = function(icons) {
 	})[0]];
 };
 
-openWindow = function(path, options, callback) {
+openWindow = function() {
 	var div = document.createElement('div');
 	div.className = 'window';
 	
@@ -93,17 +93,13 @@ openWindow = function(path, options, callback) {
 	addtab.textContent = '+';
 	addtab.className = 'addtab';
 	addtab.addEventListener('click', function() {
-		openTab(div.querySelector('.tab.focused').path, {}, function() {
-			tabbar.scrollLeft = tabbar.scrollWidth;
-		});
+		openTab(div.querySelector('.tab.focused').path);
 	});
 	titlebarDiv.appendChild(addtab);
 	
 	document.body.appendChild(div);
 	
 	childDiv = div;
-	
-	openTab(path, options, callback);
 };
 
 openTab = function(path, options, callback) {
@@ -142,7 +138,7 @@ openTab = function(path, options, callback) {
 			urlArgs: appName,
 			getObjectLocations: (manifest.permissions || {})['get-object-locations'],
 		};
-		airborn.fs.prepareUrl(options.path || '/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
+		airborn.fs.prepareUrl(options && options.path || '/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
 			var div = childDiv;
 			
 			var tabs = div.querySelector('.tabs');
@@ -182,6 +178,9 @@ openTab = function(path, options, callback) {
 					icon.src = tab.defaultIcon = url;
 				});
 			}
+			icon.addEventListener('load', function() {
+				tabbar.scrollLeft = tabbar.scrollWidth;
+			});
 			tabtitlebar.appendChild(icon);
 			
 			var title = document.createElement('span');
@@ -199,6 +198,8 @@ openTab = function(path, options, callback) {
 			switchTab(tab);
 			focusTab(tab);
 			
+			tabbar.scrollLeft = tabbar.scrollWidth;
+			
 			tab.manifest = manifest;
 			
 			airborn_localStorage.lastApp = path;
@@ -210,11 +211,11 @@ openTab = function(path, options, callback) {
 };
 
 var hashArgumentOpenApp = airborn.top_location.hash.match(/[#&;]open=([^&;]+)/);
-openWindow(
+openWindow();
+openTab(
 	hashArgumentOpenApp ? '/Apps/' + hashArgumentOpenApp[1].replace(/[./]/g, '') + '/' :
 	airborn_localStorage.lastApp ||
-	'/Apps/firetext/',
-	{}
+	'/Apps/firetext/'
 );
 
 
