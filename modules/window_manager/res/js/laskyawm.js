@@ -16,7 +16,6 @@ window.addEventListener('message', function(message) {
 			var tab = childTabs[index];
 			var options;
 			if(message.data.action === 'wm.focus') {
-				focusTab(tab);
 			} else if(message.data.action === 'wm.reportClicked') {
 				apps.classList.remove('shown');
 				powerMenu.classList.remove('shown');
@@ -165,7 +164,11 @@ openTab = function(path, options, callback) {
 			var tabtitlebar = document.createElement('div');
 			tabtitlebar.className = 'tabtitlebar';
 			tabtitlebar.addEventListener('mousedown', function() {
+				switchTab(tabtitlebar.tab);
+			});
+			tabtitlebar.addEventListener(navigator.userAgent.includes('Firefox') ? 'click' : 'mousedown', function(evt) {
 				focusTab(tabtitlebar.tab);
+				evt.preventDefault(); // Prevent focus from leaving iframe.
 			});
 			tabtitlebar.tab = tab;
 			tab.tabtitlebar = tabtitlebar;
@@ -193,8 +196,8 @@ openTab = function(path, options, callback) {
 			childTabs.push(tab);
 			var iframeWin = iframe.contentWindow;
 			childWindows.push(iframeWin);
+			switchTab(tab);
 			focusTab(tab);
-			iframe.focus();
 			
 			tab.manifest = manifest;
 			
@@ -215,9 +218,13 @@ openWindow(
 );
 
 
-function focusTab(tab) {
+function switchTab(tab) {
 	childDiv.querySelectorAll('.tabs .tab.focused, .tabtitlebar.focused').forEach(elm => elm.classList.remove('focused'));
 	tab.classList.add('focused');
 	tab.tabtitlebar.classList.add('focused');
 	airborn.core.setTitle(tab.tabtitlebar.textContent.replace('\u00a0', ''));
+}
+
+function focusTab(tab) {
+	tab.querySelector('iframe').focus();
 }
