@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global apps, getIconUrl: true, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openWindow: true, openTab: true */
+/*global apps, getName: true, getIconUrl: true, powerMenu, airborn, airborn_localStorage, showProgress: true, setProgress: true, hideProgress: true, openWindow: true, openTab: true */
 
 var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').matches ? 'mobile' : 'desktop';
 
@@ -20,7 +20,7 @@ window.addEventListener('message', function(message) {
 				apps.classList.remove('shown');
 				powerMenu.classList.remove('shown');
 			} else if(message.data.action === 'wm.setTitle') {
-				var title = message.data.args[0] || tab.manifest.name;
+				var title = message.data.args[0] || getName(tab.manifest);
 				tab.tabtitlebar.querySelector('.title').textContent = title;
 				tab.querySelector('iframe').name = title; // Webkit Developer Tools hint.
 				if(tab.classList.contains('focused')) airborn.core.setTitle(title);
@@ -59,6 +59,16 @@ setProgress = function(frac, options) {
 hideProgress = function(options) {
 	if(!options.loaderElm) return;
 	options.loaderElm.style.width = '';
+};
+
+getName = function(manifest) {
+	var name;
+	if(manifest.locales) {
+		(navigator.languages || [navigator.language]).some(function(lang) {
+			return (name = manifest.locales[lang] && manifest.locales[lang].name || lang === manifest.default_locale && manifest.name);
+		});
+	}
+	return name || manifest.name;
 };
 
 var appIconSize = (deviceType === 'mobile' ? 32 : 64) * (window.devicePixelRatio || 1);
@@ -185,7 +195,7 @@ openTab = function(path, options, callback) {
 			
 			var title = document.createElement('span');
 			title.className = 'title';
-			title.textContent = manifest.name; // This element needs at least a nbsp
+			title.textContent = getName(manifest); // This element needs at least a nbsp
 			tabtitlebar.appendChild(title);
 			
 			var titleloader = document.createElement('div');

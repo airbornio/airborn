@@ -1,6 +1,6 @@
 /* This file is licensed under the Affero General Public License. */
 
-/*global airborn, openTab, getIconUrl */
+/*global airborn, openTab, getName, getIconUrl */
 
 var apps;
 
@@ -57,13 +57,7 @@ function loadApps() {
 				total++;
 				airborn.fs.getFile('/Apps/' + line + 'manifest.webapp', function(manifest) {
 					manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
-					var name;
-					if(manifest.locales) {
-						(navigator.languages || [navigator.language]).some(function(lang) {
-							return (name = manifest.locales[lang] && manifest.locales[lang].name || lang === manifest.default_locale && manifest.name);
-						});
-					}
-					name = name || manifest.name || line[0].toUpperCase() + line.substr(1, line.length - 2);
+					var name = getName(manifest);
 					var icon = getIconUrl(manifest.icons);
 					if(icon) {
 						airborn.fs.prepareUrl(icon, {relativeParent: '/Apps/' + line, rootParent: '/Apps/' + line}, function(url) {
