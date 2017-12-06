@@ -25,8 +25,6 @@ window.addEventListener('message', function(message) {
 				tab.querySelector('iframe').name = title; // Webkit Developer Tools hint.
 				if(tab.classList.contains('focused')) airborn.core.setTitle(title);
 			} else if(message.data.action === 'wm.setIcon') {
-				var icon = message.data.args[0] || tab.defaultIcon;
-				tab.tabtitlebar.querySelector('.icon').src = icon;
 			} else if(message.data.action === 'wm.openFile') {
 			} else if(message.data.action === 'wm.openWindow') {
 				window.openTab.apply(window, message.data.args);
@@ -185,7 +183,7 @@ openTab = function(path, options, callback) {
 			var iconUrl = getIconUrl(manifest.icons);
 			if(iconUrl) {
 				airborn.fs.prepareUrl(iconUrl, {relativeParent: path, rootParent: path}, function(url) {
-					icon.src = tab.defaultIcon = url;
+					icon.src = url;
 				});
 			}
 			icon.addEventListener('load', function() {

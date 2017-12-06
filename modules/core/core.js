@@ -1076,12 +1076,7 @@ window.setTitle = function(t) {
 	document.title = t ? t + ' - Airborn' : 'Airborn';
 };
 
-var icon = document.createElement('link');
-icon.rel = 'shortcut icon';
-document.head.appendChild(icon);
-window.setIcon = function(href) {
-	icon.href = href;
-};
+window.setIcon = function() {};
 
 window.openWindowTop = function(args, appName, callback) {
 	var win = window.open.apply(window, args);
