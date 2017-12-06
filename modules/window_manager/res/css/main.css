@@ -6,18 +6,9 @@ html {
 }
 body {
 	margin: 0;
-	background-color: #607B8B;
 	cursor: default;
 	font-family: Calibri, Lato, Ubuntu, sans-serif;
 	height: 0;
-}
-body:before {
-	content: '';
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	z-index: -1000;
-	background-attachment: fixed;
 }
 .window {
 	top: 0;
