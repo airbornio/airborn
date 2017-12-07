@@ -41,7 +41,7 @@ body {
 	background-color: #DDD;
 	display: inline-block;
 	height: 25px;
-	margin-left: 6px;
+	margin-right: 6px;
 	line-height: 27px;
 	padding: 0 10px;
 	cursor: default;
@@ -49,11 +49,14 @@ body {
 	position: relative;
 	vertical-align: top;
 }
-.window .titlebar .tabbar .tabtitlebar:first-child {
-	margin-left: 0;
+.window .titlebar .tabbar .tabtitlebar:last-child {
+	margin-right: 0;
 }
 .window .titlebar .tabbar .tabtitlebar.focused {
 	background-color: white;
+}
+.window .titlebar .addtab {
+	margin-left: 6px;
 }
 .window .titlebar .icon {
 	margin-right: 6px;

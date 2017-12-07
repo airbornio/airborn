@@ -21,9 +21,10 @@ window.addEventListener('message', function(message) {
 				powerMenu.classList.remove('shown');
 			} else if(message.data.action === 'wm.setTitle') {
 				var title = message.data.args[0] || getName(tab.manifest);
-				tab.tabtitlebar.querySelector('.title').textContent = title;
+				tab.tabtitlebar.querySelector('.title').textContent = tab.title = title;
 				tab.querySelector('iframe').name = title; // Webkit Developer Tools hint.
 				if(tab.classList.contains('focused')) airborn.core.setTitle(title);
+				updateDummyTabs();
 			} else if(message.data.action === 'wm.setIcon') {
 			} else if(message.data.action === 'wm.openFile') {
 			} else if(message.data.action === 'wm.openWindow') {
@@ -136,9 +137,9 @@ openTab = function(path, options) {
 	});
 	tabtitlebar.tab = tab;
 	tab.tabtitlebar = tabtitlebar;
-	tabbar.appendChild(tabtitlebar);
+	tabbar.insertBefore(tabtitlebar, options.after && options.after.tabtitlebar.nextSibling);
 	
-	childTabs.push(tab);
+	childTabs.splice(options.after ? childTabs.indexOf(options.after) + 1 : childTabs.length, 0, tab);
 	
 	airborn.fs.getFile(path + 'manifest.webapp', function(manifest) {
 		
@@ -152,14 +153,11 @@ openTab = function(path, options) {
 				icon.src = url;
 			});
 		}
-		icon.addEventListener('load', function() {
-			tabbar.scrollLeft = tabbar.scrollWidth;
-		});
 		tabtitlebar.appendChild(icon);
 		
 		var title = document.createElement('span');
 		title.className = 'title';
-		title.textContent = getName(manifest); // This element needs at least a nbsp
+		title.textContent = tab.title = getName(manifest); // This element needs at least a nbsp
 		tabtitlebar.appendChild(title);
 		
 		var titleloader = document.createElement('div');
@@ -168,15 +166,26 @@ openTab = function(path, options) {
 		
 		tab.manifest = manifest;
 		
-		var _loadTab = loadTab.bind(this, path, options, tab);
+		tab.dummy = options.dummy;
+		updateDummyTabs();
+		
 		if(options.dummy) {
-			tabtitlebar.addEventListener('mousedown', _loadTab, {once: true});
+			tabtitlebar.addEventListener('mousedown', function() {
+				tab.tabtitlebar.style.display = 'none';
+				openTab(path, {after: tab});
+			});
 		} else {
-			_loadTab();
+			loadTab(path, options, tab);
 			
 			switchTab(tab);
 			
-			tabbar.scrollLeft = tabbar.scrollWidth;
+			if(!options.after) {
+				tabbar.scrollLeft = tabbar.scrollWidth;
+				
+				icon.addEventListener('load', function() {
+					tabbar.scrollLeft = tabbar.scrollWidth;
+				});
+			}
 			
 			airborn_localStorage.lastApp = path;
 		}
@@ -233,17 +242,27 @@ function loadTab(path, options, tab) {
 	});
 }
 
+function updateDummyTabs() {
+	childTabs.forEach(function(tab, i) {
+		if(tab.dummy) {
+			var nextTab = childTabs[i + 1];
+			tab.tabtitlebar.style.display = nextTab && nextTab.path === tab.path && nextTab.title === tab.title ? 'none' : '';
+		}
+	});
+}
+
+
 openWindow();
 
 openTab('/Apps/firetext/', {dummy: true});
 openTab('/Apps/strut/', {dummy: true});
 
 var hashArgumentOpenApp = airborn.top_location.hash.match(/[#&;]open=([^&;]+)/);
-openTab(
+var firstApp =
 	hashArgumentOpenApp ? '/Apps/' + hashArgumentOpenApp[1].replace(/[./]/g, '') + '/' :
 	airborn_localStorage.lastApp ||
-	'/Apps/firetext/'
-);
+	'/Apps/firetext/';
+openTab(firstApp, {after: firstApp === '/Apps/firetext/' ? childTabs[0] : null});
 
 
 function switchTab(tab) {
