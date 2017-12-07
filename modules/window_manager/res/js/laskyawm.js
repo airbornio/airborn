@@ -7,13 +7,13 @@ var deviceType = window.matchMedia('only screen and (max-device-width: 640px)').
 var childDiv;
 var childTabs = [];
 var childWindows = [];
+var childWindowsTabs = new Map();
 
 
 window.addEventListener('message', function(message) {
-	var index = childWindows.indexOf(message.source);
-	if(index !== -1) {
+	var tab = childWindowsTabs.get(message.source);
+	if(tab) {
 		if(message.data.action.substr(0, 3) === 'wm.') {
-			var tab = childTabs[index];
 			var options;
 			if(message.data.action === 'wm.focus') {
 			} else if(message.data.action === 'wm.reportClicked') {
@@ -110,116 +110,135 @@ openWindow = function() {
 	childDiv = div;
 };
 
-openTab = function(path, options, callback) {
+openTab = function(path, options) {
+	if(!options) options = {};
+	
+	var div = childDiv;
+	
+	var tabs = div.querySelector('.tabs');
+	
+	var tab = document.createElement('div');
+	tab.className = 'tab';
+	tabs.appendChild(tab);
+	
+	tab.path = path;
+	
+	var tabbar = div.querySelector('.tabbar');
+	
+	var tabtitlebar = document.createElement('div');
+	tabtitlebar.className = 'tabtitlebar';
+	tabtitlebar.addEventListener('mousedown', function() {
+		switchTab(tabtitlebar.tab);
+	});
+	tabtitlebar.addEventListener(navigator.userAgent.includes('Firefox') ? 'click' : 'mousedown', function(evt) {
+		focusTab(tabtitlebar.tab);
+		evt.preventDefault(); // Prevent focus from leaving iframe.
+	});
+	tabtitlebar.tab = tab;
+	tab.tabtitlebar = tabtitlebar;
+	tabbar.appendChild(tabtitlebar);
+	
+	childTabs.push(tab);
+	
 	airborn.fs.getFile(path + 'manifest.webapp', function(manifest) {
+		
 		manifest = manifest ? JSON.parse(manifest.replace(/^\uFEFF/, '')) : {};
 		
-		var launch_path = manifest.launch_path ? manifest.launch_path.replace(/^\//, '') : path.match(/[^/]+(?=\/$)/)[0] + '.html';
-		var _path = path + launch_path;
-		var appData = path.replace('Apps', 'AppData');
+		var icon = document.createElement('img');
+		icon.className = 'icon';
+		var iconUrl = getIconUrl(manifest.icons);
+		if(iconUrl) {
+			airborn.fs.prepareUrl(iconUrl, {relativeParent: path, rootParent: path}, function(url) {
+				icon.src = url;
+			});
+		}
+		icon.addEventListener('load', function() {
+			tabbar.scrollLeft = tabbar.scrollWidth;
+		});
+		tabtitlebar.appendChild(icon);
 		
-		var csp = manifest.csp || "default-src *; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'";
-		if(csp.indexOf('-src ') !== -1) csp = csp.replace(/-src /g, '-src data: ');
-		else csp = 'default-src data:; ' + csp;
-		var storageLocations = {
-			apps: '/Apps/',
-			music: '/Music/',
-			pictures: '/Pictures/',
-			sdcard: '/Documents/',
-			system: '/Core/',
-			videos: '/Videos/'
-		};
-		var appName = (_path.match('/Apps/(.+?)/') || [])[1];
-		var permissions = {
-			read: [path, appData].concat(Object.keys(manifest.permissions || {}).filter(function(permission) {
-				return storageLocations[permission.replace('device-storage:', '')] && ['readonly', 'readwrite', 'readcreate'].indexOf(manifest.permissions[permission].access) !== -1;
-			}).map(function(permission) {
-				return storageLocations[permission.replace('device-storage:', '')];
-			})),
-			write: [appData].concat(Object.keys(manifest.permissions || {}).filter(function(permission) {
-				return storageLocations[permission.replace('device-storage:', '')] && ['readwrite', 'readcreate', 'createonly'].indexOf(manifest.permissions[permission].access) !== -1;
-			}).map(function(permission) {
-				return storageLocations[permission.replace('device-storage:', '')];
-			})),
-			manageApps: (manifest.permissions || {})['webapps-manage'],
-			appName: appName,
-			urlArgs: appName,
-			getObjectLocations: (manifest.permissions || {})['get-object-locations'],
-		};
-		airborn.fs.prepareUrl(options && options.path || '/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
-			var div = childDiv;
+		var title = document.createElement('span');
+		title.className = 'title';
+		title.textContent = getName(manifest); // This element needs at least a nbsp
+		tabtitlebar.appendChild(title);
+		
+		var titleloader = document.createElement('div');
+		titleloader.className = 'loader';
+		tabtitlebar.appendChild(titleloader);
+		
+		tab.manifest = manifest;
+		
+		var _loadTab = loadTab.bind(this, path, options, tab);
+		if(options.dummy) {
+			tabtitlebar.addEventListener('mousedown', _loadTab, {once: true});
+		} else {
+			_loadTab();
 			
-			var tabs = div.querySelector('.tabs');
-			
-			var tab = document.createElement('div');
-			tab.className = 'tab';
-			tabs.appendChild(tab);
-			
-			var iframe = document.createElement('iframe');
-			iframe.sandbox = 'allow-scripts allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox';
-			iframe.setAttribute('allowfullscreen', 'true');
-			iframe.src = url;
-			iframe.name = path; // Webkit Developer Tools hint.
-			tab.appendChild(iframe);
-			tab.path = path;
-			
-			var tabbar = div.querySelector('.tabbar');
-			
-			var tabtitlebar = document.createElement('div');
-			tabtitlebar.className = 'tabtitlebar';
-			tabtitlebar.addEventListener('mousedown', function() {
-				switchTab(tabtitlebar.tab);
-			});
-			tabtitlebar.addEventListener(navigator.userAgent.includes('Firefox') ? 'click' : 'mousedown', function(evt) {
-				focusTab(tabtitlebar.tab);
-				evt.preventDefault(); // Prevent focus from leaving iframe.
-			});
-			tabtitlebar.tab = tab;
-			tab.tabtitlebar = tabtitlebar;
-			tabbar.appendChild(tabtitlebar);
-			
-			var icon = document.createElement('img');
-			icon.className = 'icon';
-			var iconUrl = getIconUrl(manifest.icons);
-			if(iconUrl) {
-				airborn.fs.prepareUrl(iconUrl, {relativeParent: path, rootParent: path}, function(url) {
-					icon.src = url;
-				});
-			}
-			icon.addEventListener('load', function() {
-				tabbar.scrollLeft = tabbar.scrollWidth;
-			});
-			tabtitlebar.appendChild(icon);
-			
-			var title = document.createElement('span');
-			title.className = 'title';
-			title.textContent = getName(manifest); // This element needs at least a nbsp
-			tabtitlebar.appendChild(title);
-			
-			var titleloader = document.createElement('div');
-			titleloader.className = 'loader';
-			tabtitlebar.appendChild(titleloader);
-			
-			childTabs.push(tab);
-			var iframeWin = iframe.contentWindow;
-			childWindows.push(iframeWin);
 			switchTab(tab);
-			focusTab(tab);
 			
 			tabbar.scrollLeft = tabbar.scrollWidth;
 			
-			tab.manifest = manifest;
-			
 			airborn_localStorage.lastApp = path;
-			
-			if(callback)
-				callback(iframeWin, tab, div);
-		});
+		}
 	});
 };
 
-var hashArgumentOpenApp = airborn.top_location.hash.match(/[#&;]open=([^&;]+)/);
+function loadTab(path, options, tab) {
+	var manifest = tab.manifest;
+	
+	var launch_path = manifest.launch_path ? manifest.launch_path.replace(/^\//, '') : path.match(/[^/]+(?=\/$)/)[0] + '.html';
+	var _path = path + launch_path;
+	var appData = path.replace('Apps', 'AppData');
+	
+	var csp = manifest.csp || "default-src *; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'";
+	if(csp.indexOf('-src ') !== -1) csp = csp.replace(/-src /g, '-src data: ');
+	else csp = 'default-src data:; ' + csp;
+	var storageLocations = {
+		apps: '/Apps/',
+		music: '/Music/',
+		pictures: '/Pictures/',
+		sdcard: '/Documents/',
+		system: '/Core/',
+		videos: '/Videos/'
+	};
+	var appName = (_path.match('/Apps/(.+?)/') || [])[1];
+	var permissions = {
+		read: [path, appData].concat(Object.keys(manifest.permissions || {}).filter(function(permission) {
+			return storageLocations[permission.replace('device-storage:', '')] && ['readonly', 'readwrite', 'readcreate'].indexOf(manifest.permissions[permission].access) !== -1;
+		}).map(function(permission) {
+			return storageLocations[permission.replace('device-storage:', '')];
+		})),
+		write: [appData].concat(Object.keys(manifest.permissions || {}).filter(function(permission) {
+			return storageLocations[permission.replace('device-storage:', '')] && ['readwrite', 'readcreate', 'createonly'].indexOf(manifest.permissions[permission].access) !== -1;
+		}).map(function(permission) {
+			return storageLocations[permission.replace('device-storage:', '')];
+		})),
+		manageApps: (manifest.permissions || {})['webapps-manage'],
+		appName: appName,
+		urlArgs: appName,
+		getObjectLocations: (manifest.permissions || {})['get-object-locations'],
+	};
+	airborn.fs.prepareUrl(options.path || '/', {rootParent: path, relativeParent: _path, permissions: permissions, csp: csp, appData: appData}, function(url) {
+		var iframe = document.createElement('iframe');
+		iframe.sandbox = 'allow-scripts allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox';
+		iframe.setAttribute('allowfullscreen', 'true');
+		iframe.src = url;
+		iframe.name = path; // Webkit Developer Tools hint.
+		tab.appendChild(iframe);
+		
+		childWindows.push(iframe.contentWindow);
+		childWindowsTabs.set(iframe.contentWindow, tab);
+		
+		focusTab(tab);
+	});
+}
+
 openWindow();
+
+openTab('/Apps/firetext/', {dummy: true});
+openTab('/Apps/strut/', {dummy: true});
+
+var hashArgumentOpenApp = airborn.top_location.hash.match(/[#&;]open=([^&;]+)/);
 openTab(
 	hashArgumentOpenApp ? '/Apps/' + hashArgumentOpenApp[1].replace(/[./]/g, '') + '/' :
 	airborn_localStorage.lastApp ||
