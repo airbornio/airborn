@@ -31,3 +31,11 @@
 .window .titlebar .tabbar {
 	overflow-x: auto;
 }
+@media (max-width: 480px) {
+	#toggleApps {
+		display: none;
+	}
+	.window .titlebar {
+		padding-left: 0;
+	}
+}
