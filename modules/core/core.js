@@ -1079,16 +1079,19 @@ window.setTitle = function(t) {
 window.setIcon = function() {};
 
 window.openWindowTop = function(args, appName, callback) {
-	var win = window.open.apply(window, args);
+	window.open.apply(window, args);
 	window.addEventListener('message', function(evt) {
-		if(evt.source === win && evt.data.action === 'requestMessageChannel') {
-			evt.stopImmediatePropagation();
-			var channel = new MessageChannel();
-			win.postMessage({
-				action: 'setupMessageChannel',
-				appName: appName,
-			}, '*', [channel.port1]);
-			callback(channel.port2);
+		if(evt.data.action === 'requestMessageChannel') {
+			var win = window.open('', args[1]); // Get reference to window by name.
+			if(evt.source === win) {
+				evt.stopImmediatePropagation();
+				var channel = new MessageChannel();
+				win.postMessage({
+					action: 'setupMessageChannel',
+					appName: appName,
+				}, '*', [channel.port1]);
+				callback(channel.port2);
+			}
 		}
 	});
 };
