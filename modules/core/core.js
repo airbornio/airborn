@@ -68,14 +68,7 @@ window.endTransaction = function() {
 						putFile.apply(window, _transaction[path]);
 					}, 5000);
 					if(err.status === 403 && !_transaction[path][1].S3Prefix) {
-						var creds = JSON.parse(localStorage.creds || sessionStorage.creds || '{}');
-						if(window.login && creds && creds.username === window.username) {
-							window.login(creds, null, function() {}, function() {}, function() {
-								window.location.reload();
-							});
-						} else {
-							window.location.reload();
-						}
+						relogin();
 					}
 					return;
 				}
@@ -422,6 +415,10 @@ window.getFile = function(file, options, callback) {
 				}).catch(function(e) {
 					callback(null, e.status ? e : {status: 0, statusText: e.message});
 				});
+			} else if(req.status === 403 && !options.S3Prefix) {
+				relogin(function() {
+					getFile(file, options, callback);
+				});
 			} else {
 				console.error('GET', file);
 				callback(null, {status: req.status, statusText: req.statusText});
@@ -429,6 +426,26 @@ window.getFile = function(file, options, callback) {
 		}
 	}
 };
+
+var relogging = false;
+function relogin(callback) {
+	if(relogging) {
+		if(callback) setTimeout(callback, 100);
+		return;
+	}
+	var creds = JSON.parse(localStorage.creds || sessionStorage.creds || '{}');
+	if(window.login && creds && creds.username === window.username) {
+		relogging = true;
+		window.login(creds, null, function() {}, function() {
+			relogging = false;
+			if(callback) callback();
+		}, function() {
+			window.location.reload();
+		});
+	} else {
+		window.location.reload();
+	}
+}
 
 var fileChangeListeners = [];
 window.listenForFileChanges = function(path, fn) {
