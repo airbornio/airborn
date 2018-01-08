@@ -275,3 +275,7 @@ function switchTab(tab) {
 function focusTab(tab) {
 	tab.querySelector('iframe').focus();
 }
+
+window.addEventListener('scroll', function() {
+	window.scrollTo(0, 0);
+});
