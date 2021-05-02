@@ -327,6 +327,7 @@ window.getFile = function(file, options, callback) {
 	if(callback === undefined) {
 		callback = function() {};
 	}
+	const fromlive = file.startsWith('/Core/') || file.startsWith('/Apps/firetext/') || file.startsWith('/Apps/strut/');
 	
 	if((options.S3Prefix && options.S3Prefix !== window.S3Prefix) || options.object) {
 		options.cache = false;
@@ -364,7 +365,8 @@ window.getFile = function(file, options, callback) {
 	}
 	req.addEventListener('readystatechange', cb);
 	if(!requestCache) {
-		req.open('GET', getObjectUrl('GET', file, options));
+		req.open('GET', fromlive ? '/v2/live' + file : getObjectUrl('GET', file, options));
+		if (fromlive) req.responseType = 'arraybuffer';
 		if(options.S3Prefix) { req.setRequestHeader('X-S3Prefix', options.S3Prefix); }
 		req.send(null);
 	}
@@ -377,6 +379,10 @@ window.getFile = function(file, options, callback) {
 				currentFilename = file;
 				var outparams = {};
 				new Promise(function(resolve, reject) {
+					if (fromlive) {
+						resolve(req.response);
+						return;
+					}
 					decrypt(options.password != null ? options.password : files_key, req.response, outparams, function(decrypted, e) {
 						if(e) {
 							decrypt(password, req.response, outparams, function(decrypted, e2) {

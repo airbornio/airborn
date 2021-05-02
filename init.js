@@ -2,8 +2,8 @@
 
 /*global GET, decryptAndMaybeUngzip, sjcl, files_hmac, files_key, getFile */
 
-GET('object/' + sjcl.codec.hex.fromBits(files_hmac.mac('/Core/modules/core/core.js')), function(response) {
-	window.eval(decryptAndMaybeUngzip(files_key, response));
+GET('/v2/live/Core/modules/core/core.js', function(response) {
+	window.eval(response);
 	
 	getFile('/Core/modules/startup/startup.js', function(contents) {
 		window.eval(contents);
