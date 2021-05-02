@@ -63,16 +63,14 @@ window.endTransaction = function() {
 			}
 			let callback = _transaction[path][4];
 			_transaction[path][4] = function(err) { // jshint ignore:line
-				if(err && 'status' in err) {
+				if(err && err.status === 403 && !_transaction[path][1].S3Prefix) {
 					setTimeout(function() {
 						putFile.apply(window, _transaction[path]);
 					}, 5000);
-					if(err.status === 403 && !_transaction[path][1].S3Prefix) {
-						relogin();
-					}
+					relogin();
 					return;
 				}
-				if(++finished === chunkSize) {
+				if(!err && ++finished === chunkSize) {
 					transactionChunk();
 				}
 				callback.apply(this, arguments);
